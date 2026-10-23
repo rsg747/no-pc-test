@@ -1,0 +1,1343 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>N&amp;O PC Run-and-Grade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: IOS clipboard — sticky teal N&O header with PCWU / PC event chip, step tabs, then Brief · Run (stick diagram + event card) · Grade sheet (RFT form replica) · Debrief & submit. */
+:root{
+  --bg:#edf1f0; --panel:#ffffff; --panel2:#f5f8f7; --ink:#152120; --muted:#5b6a68; --line:#d2dbd9; --shade:#cfd6d4;
+  --brand:#0c4a4f; --brand2:#12646a; --on-brand:#ffffff; --signal:#de7419; --signal-ink:#ffffff;
+  --pcwu:#12646a; --pc:#b8560f;
+  --ok:#21784a; --okbg:#e3f3ea; --warn:#9a6200; --warnbg:#fdf1d8; --bad:#b0261d; --badbg:#fbe9e7;
+  --info:#355d8c; --infobg:#e6eef8; --mute:#6c7776; --mutebg:#e9eded; --focus:#2f6fdb;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Sans 3",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1415; --panel:#131f20; --panel2:#182728; --ink:#e2ebea; --muted:#93a4a1; --line:#273839; --shade:#2b3a3b;
+    --brand:#0b3b3f; --brand2:#11555a; --signal:#f08f3a; --signal-ink:#1a1206; --pcwu:#3fa3a9; --pc:#f08f3a;
+    --ok:#5fcf8f; --okbg:#143223; --warn:#f0c45a; --warnbg:#382c10; --bad:#ff8a80; --badbg:#3a1a18;
+    --info:#9cbbe6; --infobg:#18263a; --mute:#9aa6a4; --mutebg:#1e2a2b; --focus:#7aa7ff; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1415; --panel:#131f20; --panel2:#182728; --ink:#e2ebea; --muted:#93a4a1; --line:#273839; --shade:#2b3a3b;
+  --brand:#0b3b3f; --brand2:#11555a; --signal:#f08f3a; --signal-ink:#1a1206; --pcwu:#3fa3a9; --pc:#f08f3a;
+  --ok:#5fcf8f; --okbg:#143223; --warn:#f0c45a; --warnbg:#382c10; --bad:#ff8a80; --badbg:#3a1a18;
+  --info:#9cbbe6; --infobg:#18263a; --mute:#9aa6a4; --mutebg:#1e2a2b; --focus:#7aa7ff; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--brand)}
+h1,h2,h3,h4,h5{font-family:var(--f-display);font-weight:600;margin:0;letter-spacing:.2px;text-wrap:balance}
+h2{font-size:30px;line-height:1.1} h3{font-size:22px;margin:24px 0 10px} h4{font-size:19px;margin:0 0 8px}
+h5{font-size:14px;margin:12px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.muted{color:var(--muted)} .small{font-size:14px} .grow{flex:1}
+.eyebrow{display:block;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.end{justify-content:flex-end;margin-top:16px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:1260px;margin:0 auto}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--brand);color:var(--on-brand);border-bottom:4px solid var(--signal)}
+.brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+.stamp{font-family:var(--f-display);font-weight:700;font-size:26px;line-height:1;padding:7px 10px 5px;border-radius:6px;letter-spacing:.5px;background:var(--signal);color:var(--signal-ink)}
+.ttl h1{font-size:26px;line-height:1}
+.ttl .eyebrow{color:var(--on-brand);opacity:.75;font-size:11px}
+.kchip{font-family:var(--f-display);font-weight:700;font-size:18px;padding:2px 10px;border-radius:5px;border:2px solid var(--on-brand)}
+.kchip.pc{background:var(--signal);border-color:var(--signal);color:var(--signal-ink)}
+.cur{display:flex;flex-direction:column;line-height:1.15;text-align:right}
+.cur b{font-family:var(--f-display);font-size:20px} .cur span{font-size:13px;opacity:.85}
+.pill{font-size:12px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.12)}
+.pill.ok::before{content:"● ";color:#7fe0a8}
+.pill.warn{background:var(--warnbg);color:var(--warn)}
+.pill.demo{background:var(--signal);color:var(--signal-ink);font-weight:700}
+.ghost{background:transparent;border:1px solid rgba(255,255,255,.4);color:var(--on-brand);border-radius:6px;width:38px;height:38px;cursor:pointer;font-size:18px}
+nav.steps{display:flex;gap:4px;overflow-x:auto}
+nav.steps button{background:none;border:0;color:var(--on-brand);opacity:.72;padding:10px 14px 9px;font-family:var(--f-display);font-size:18px;font-weight:600;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav.steps button.on{opacity:1;border-bottom-color:var(--signal)}
+nav.steps button b{background:var(--bad);color:#fff;border-radius:999px;font-size:12px;padding:0 6px;margin-left:4px;font-family:var(--f-body)}
+main{padding-block:22px 80px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:9px 15px;cursor:pointer;min-height:42px;font-weight:600}
+.btn:hover{border-color:var(--brand2)}
+.btn.primary{background:var(--brand2);border-color:var(--brand2);color:var(--on-brand)}
+.btn.pcb{background:var(--pc);border-color:var(--pc);color:var(--signal-ink)}
+.btn.danger{color:var(--bad)}
+.btn.small{min-height:34px;padding:4px 11px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.chip{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--okbg);color:var(--ok)} .chip.warn{background:var(--warnbg);color:var(--warn)} .chip.bad{background:var(--badbg);color:var(--bad)}
+.chip.info{background:var(--infobg);color:var(--info)} .chip.mute{background:var(--mutebg);color:var(--mute)}
+.chip.pcwu{background:var(--pcwu);color:#fff} .chip.pc{background:var(--pc);color:var(--signal-ink)}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted);min-width:0}
+label.f input,label.f select,label.f textarea,input.in,select.in,textarea.in{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--panel);font-weight:400;font-size:16px;color:var(--ink);width:100%;min-height:42px}
+textarea{resize:vertical}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;align-items:start}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel);flex-wrap:wrap}
+.seg button{border:0;background:none;padding:9px 14px;cursor:pointer;font-weight:600;min-height:42px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--brand2);color:var(--on-brand)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:20;max-width:calc(100% - 32px)}
+.mono{font-family:var(--f-mono);font-size:13px}
+pre.mono{white-space:pre-wrap;margin:6px 0 0}
+.empty{border:1.5px dashed var(--line);border-radius:10px;padding:22px;color:var(--muted)}
+details.ref{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+details.ref summary{padding:12px 16px;cursor:pointer;font-weight:700}
+details.ref>div{padding:0 16px 14px}
+details.ref ul{margin:0;padding-left:20px}
+.scroll{overflow-x:auto}
+.tbl{border-collapse:collapse;width:100%}
+.tbl th,.tbl td{border-top:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;font-size:14px}
+.tbl th{font-weight:700;background:var(--panel2)}
+.banner{border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:15px}
+.banner.warn{background:var(--warnbg);color:var(--warn)} .banner.bad{background:var(--badbg);color:var(--bad)} .banner.info{background:var(--infobg);color:var(--info)} .banner.ok{background:var(--okbg);color:var(--ok)}
+.banner b{color:inherit}
+
+/* home */
+.intro{display:flex;gap:20px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.lede{max-width:70ch;color:var(--muted);margin:8px 0 0}
+.slist{display:flex;flex-direction:column;gap:8px}
+.srow{display:grid;grid-template-columns:90px 1fr auto auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.srow .smain{display:flex;flex-direction:column;min-width:0}
+.sact{display:flex;gap:6px}
+.starts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.start{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.start.pcwu{border-top:5px solid var(--pcwu)} .start.pc{border-top:5px solid var(--pc)}
+.start p{margin:0}
+.start .btn{align-self:flex-start;margin-top:auto}
+
+/* brief */
+.bhead{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.clock .big{font-family:var(--f-mono);font-size:38px;font-weight:600;font-variant-numeric:tabular-nums;margin:2px 0 6px}
+.bar{height:6px;background:var(--mutebg);border-radius:6px;overflow:hidden;margin-bottom:10px}
+.bar span{display:block;height:100%;background:var(--signal)}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px;align-items:start}
+.cnt{float:right;font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:600}
+ul.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.cb{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:6px 4px;cursor:pointer;border-radius:6px;font-size:15px}
+.cb:hover{background:var(--panel2)}
+.cb .box{flex:none;width:20px;height:20px;border:2px solid var(--line);border-radius:5px;margin-top:1px;display:grid;place-items:center}
+.cb.on .box{background:var(--ok);border-color:var(--ok)}
+.cb.on .box::after{content:"";width:9px;height:5px;border:2.5px solid var(--panel);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.cb.on>span:last-child{color:var(--muted)}
+.cb small{display:block;color:var(--muted);font-size:13px}
+.ofps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}
+.ofp{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--brand2);border-radius:8px;padding:14px;min-width:0}
+.ofp-h{font-family:var(--f-display);font-size:20px;font-weight:700;margin-bottom:8px}
+.ofp dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin:0;font-size:14px}
+.ofp dt{color:var(--muted);font-weight:600} .ofp dd{margin:0;font-family:var(--f-mono);font-size:13px}
+.tlr{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px;margin-top:8px}
+.tlr pre{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:0;font:12px/1.4 var(--f-mono);white-space:pre;overflow-x:auto}
+.pilottabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.qa{border-top:1px solid var(--line);padding:8px 0;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:start}
+.qa .q{font-weight:600}
+.qa .a{grid-column:1/-1;font-size:14px;background:var(--panel2);border-radius:6px;padding:6px 10px;white-space:pre-wrap}
+.qa .a small{display:block;color:var(--muted)}
+.mk{display:inline-flex;gap:4px}
+.mk button{border:1px solid var(--line);background:var(--panel);border-radius:6px;min-width:40px;min-height:36px;cursor:pointer;font-weight:700}
+.mk button.on.ok{background:var(--ok);border-color:var(--ok);color:var(--panel)}
+.mk button.on.bad{background:var(--bad);border-color:var(--bad);color:var(--panel)}
+
+/* run */
+.runbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.simclock{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:6px 8px 6px 12px}
+.simclock b{font-family:var(--f-mono);font-size:22px;font-variant-numeric:tabular-nums}
+.stickwrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;-webkit-overflow-scrolling:touch}
+.stick{display:block}
+.sk-cap{position:sticky;left:0;display:flex;justify-content:space-between;gap:12px;padding:10px 14px 0;font-family:var(--f-display);font-size:18px;color:var(--muted);flex-wrap:wrap}
+.sk-line{fill:none;stroke:var(--brand2);stroke-width:2.5;stroke-linejoin:round}
+.sk-axis{stroke:var(--line);stroke-width:1} .sk-time{font:600 11px var(--f-mono);fill:var(--muted)}
+.sk-stem{stroke:var(--muted);stroke-width:1;opacity:.5}
+.sk-lab{font:600 12px var(--f-body);fill:var(--ink)}
+.sk-ev{cursor:pointer} .sk-ev:focus{outline:none}
+.sk-ev:focus-visible .sk-ring{stroke:var(--focus);stroke-width:3}
+.sk-ring{fill:none;stroke:var(--line);stroke-width:1.5}
+.sk-ev.on .sk-ring{stroke:var(--signal);stroke-width:4}
+.sk-ev.on .sk-lab{fill:var(--signal);font-weight:700}
+.sk-ev.on .sk-stem{stroke:var(--signal);opacity:1;stroke-width:2}
+.sk-ev.crit .sk-lab{fill:var(--bad)}
+.h-none{fill:var(--panel2)} .h-ok{fill:var(--ok)} .h-warn{fill:var(--warn)} .h-bad{fill:var(--bad)} .h-info{fill:var(--info)} .h-mute{fill:var(--mute)}
+.sk-key{display:flex;gap:12px;flex-wrap:wrap;padding:0 14px 10px;font-size:13px;color:var(--muted)}
+.sk-key i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.xchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.xchip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px 5px 6px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;min-height:36px}
+.xchip.on{border-color:var(--signal);box-shadow:inset 0 0 0 2px var(--signal)}
+.xchip svg{flex:none}
+.evcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.ios{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.ios ul{margin:4px 0 0;padding-left:20px}
+.pilots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}
+.pcard{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--panel);border-top:4px solid var(--brand2);min-width:0}
+.pcard.p1{border-top-color:var(--info)}
+.ph{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seat{font-family:var(--f-display);font-weight:700;font-size:15px;background:var(--brand2);color:var(--on-brand);border-radius:5px;padding:1px 7px}
+.pcard.p1 .seat{background:var(--info)}
+.sts{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.st{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:8px 2px;cursor:pointer;font-size:13px;font-weight:700;min-height:42px}
+.st.on.ok{background:var(--ok);border-color:var(--ok);color:var(--panel)} .st.on.warn{background:var(--warn);border-color:var(--warn);color:var(--panel)}
+.st.on.bad{background:var(--bad);border-color:var(--bad);color:var(--panel)} .st.on.info{background:var(--info);border-color:var(--info);color:var(--panel)}
+.st.on.mute{background:var(--mute);border-color:var(--mute);color:var(--panel)}
+.reps{display:flex;align-items:center;gap:6px} .reps b{font-family:var(--f-mono);min-width:18px;text-align:center}
+
+/* grade widget */
+.gi{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
+.gi.need{border-color:var(--bad);box-shadow:inset 3px 0 0 var(--bad)}
+.gi.done{box-shadow:inset 3px 0 0 var(--ok)}
+.gi-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.gi-h .no{font-family:var(--f-mono);font-weight:600;color:var(--muted);min-width:22px}
+.gi-h .nm{font-weight:600;flex:1;min-width:140px}
+.gv{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.gb{border:1px solid var(--line);background:var(--panel);border-radius:6px;min-width:42px;min-height:38px;padding:0 8px;cursor:pointer;font:700 15px var(--f-mono)}
+.gb.on{color:var(--panel)}
+.gb.on.v-S,.gb.on.v-C{background:var(--ok);border-color:var(--ok)}
+.gb.on.v-U,.gb.on.v-I{background:var(--bad);border-color:var(--bad)}
+.gb.on.v-W{background:var(--info);border-color:var(--info)}
+.gb.on.v-sl{background:var(--mute);border-color:var(--mute)}
+.gb.rep.on{background:var(--warn);border-color:var(--warn)}
+.gsub{display:flex;gap:4px;flex-wrap:wrap}
+.sb{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:3px 10px;cursor:pointer;font-size:13px;font-weight:600;min-height:32px}
+.sb.on{background:var(--brand2);border-color:var(--brand2);color:var(--on-brand)}
+.why{font-size:13px;color:var(--muted)}
+.why.bad{color:var(--bad)} .why.cr{color:var(--ok)}
+.req{font:700 11px var(--f-mono);border-radius:4px;padding:1px 5px;background:var(--mutebg);color:var(--mute)}
+.req.R{background:var(--badbg);color:var(--bad)} .req.W{background:var(--infobg);color:var(--info)} .req.C{background:var(--okbg);color:var(--ok)}
+.sym{font-size:12px;font-weight:700;color:var(--info)}
+input.note{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel2);font-size:14px;width:100%;color:var(--ink)}
+
+/* grade sheet (RFT form) */
+.formhdr{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.formhdr>div{background:var(--panel);padding:8px 10px;min-width:0;flex:1 1 230px}
+.formhdr .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.formhdr .v{font-weight:600;overflow-wrap:anywhere}
+.boxes{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:14px}
+.boxes span::before{content:"☐ ";color:var(--muted)} .boxes span.x{font-weight:700} .boxes span.x::before{content:"☒ ";color:var(--ink)}
+.sheet{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr));gap:14px;align-items:start}
+table.rft{border-collapse:collapse;width:100%;background:var(--panel);border:1.5px solid var(--ink)}
+table.rft th,table.rft td{border:1px solid var(--line);padding:5px 6px;font-size:14px;vertical-align:middle}
+table.rft thead th{background:var(--panel2);font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+table.rft td.sec{background:var(--shade);font-weight:700;text-align:center;font-family:var(--f-display);font-size:16px;letter-spacing:.04em}
+table.rft td.c{width:62px;text-align:center;font:700 16px var(--f-mono);cursor:pointer}
+table.rft td.c.sh{background:var(--shade);cursor:default}
+table.rft td.c.miss{background:var(--badbg);color:var(--bad)}
+table.rft td.c.auto{color:var(--muted);font-weight:400}
+table.rft td.c.v-U,table.rft td.c.v-I{color:var(--bad)}
+table.rft td.c.v-W{color:var(--info)}
+table.rft td.c.ro{cursor:default}
+table.rft tr.sel td{background:var(--infobg)}
+table.rft td.n{width:30px;font-family:var(--f-mono);color:var(--muted)}
+table.rft td .det{display:block;font-size:12px;color:var(--muted)}
+.legend{display:flex;gap:4px 16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:8px 0}
+
+/* debrief */
+ul.probs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+ul.probs li{border-left:3px solid var(--bad);background:var(--badbg);padding:6px 10px;border-radius:4px;font-size:15px;cursor:pointer}
+ul.probs li.w{border-left-color:var(--warn);background:var(--warnbg)}
+ul.probs li b{font-family:var(--f-mono)}
+.carry{display:flex;flex-wrap:wrap;gap:6px}
+
+/* presenter (TV) */
+.pres{position:fixed;inset:0;z-index:50;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.pres img{max-width:100vw;max-height:100vh;width:auto;height:auto;object-fit:contain;display:block}
+.pres .tapL,.pres .tapR{position:absolute;top:0;bottom:0;width:30%;z-index:1}
+.pres .tapL{left:0} .pres .tapR{right:0}
+.pres .pbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:2;display:flex;gap:8px;align-items:center;background:rgba(20,30,30,.88);border-radius:14px;padding:8px 10px;transition:opacity .25s;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}
+.pres .pbar.hide{opacity:0;pointer-events:none}
+.pres .pbar button{background:#2b3b3c;color:#fff;border:0;border-radius:9px;min-height:46px;min-width:56px;padding:0 14px;font:600 17px var(--f-body);cursor:pointer}
+.pres .pbar button.rev{background:var(--signal);color:var(--signal-ink)}
+.pres .pbar button:disabled{opacity:.35}
+.pres .pbar .ct{font:600 15px var(--f-mono);padding:0 6px;color:#cfd8d7}
+.pres .msg{font:600 22px var(--f-body);color:#cfd8d7;text-align:center;padding:24px}
+.tvbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--infobg);color:var(--info);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:14px}
+.tvbar .btn{color:var(--ink)}
+.qa .tv{min-width:40px;min-height:36px;border:1px solid var(--line);background:var(--panel);border-radius:6px;cursor:pointer}
+@media (max-width:860px){
+  .bhead{grid-template-columns:1fr}
+  .srow{grid-template-columns:1fr auto}
+  .srow .scode,.srow .sact{grid-column:1/-1}
+  .cur{display:none}
+  table.rft td.c{width:48px}
+}
+@media (max-width:520px){
+  .sts{grid-template-columns:repeat(3,1fr)}
+  h2{font-size:26px}
+  .ttl .eyebrow{display:none}
+  .ttl h1{font-size:20px} .stamp{font-size:20px;padding:5px 8px 3px} .brandrow{gap:8px;padding-block:6px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+
+<header class="top"><div class="wrap"><div class="inner"><div id="hdr"></div><nav class="steps" id="nav" aria-label="Session steps"></nav></div></div></header>
+<main class="wrap"><div class="inner" id="main"></div></main>
+<div class="toast" id="toast" role="status" hidden></div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<div id="pres" class="pres" hidden></div>
+<script>
+/* ============================================================
+   SOURCES (all transcribed from the attached Atlas documents)
+   ============================================================ */
+const SRC = {
+  form:"Pilot Training / Check Grade Sheet TC_PC_RFT_REC · 07 JUN 17",
+  pcg:"747-400/8 Proficiency Check Simulator Check Pilot Guide · Rev 6.7.2 · 13 OCT 2026",
+  pcwu:"747-400/8 Proficiency Check Warm-Up Guide (SPOTS) · Rev 13 · 27 JUL 2026",
+  brief:"Standardized Proficiency Check Briefing · Oct 2026",
+  setup:"B-747-4 / -8 PCWU & PC Support Material · KGS 19 DEC 25",
+  oral:"PC Oral Question Banks 1–5 (747) · Rev 3",
+  walk:"747-400F Virtual Walk-Around Exam (8900.1 CHG 702, 3-1280)"
+};
+const SCHEMA = "atlas-no-pc/1";
+
+/* ---------- RFT form items (TC_PC_RFT_REC). cred = ✈ creditable during PCWU (Check Airman only); wv = ★ waiver authority; naf = Non-Appendix F (C, I or /) ---------- */
+const SECS = {2:"Ground Operations",5:"Takeoffs",10:"Instrument Procedures",20:"In-Flight Maneuvers",22:"Landings",27:"Non Appendix F Maneuvers ( C, I or / )",34:"General"};
+const ITEMS = [
+ {n:1,t:"Equipment / Oral Examination / Briefing"},
+ {n:2,t:"Preflight Inspection"},
+ {n:3,t:"Taxi / Runway Operations"},
+ {n:4,t:"Powerplant Checks"},
+ {n:5,t:"Normal"},
+ {n:6,t:"Instrument"},
+ {n:7,t:"Crosswind (with gust)"},
+ {n:8,t:"With Powerplant Failure"},
+ {n:9,t:"Rejected T/O",cred:1,wv:1},
+ {n:10,t:"RNAV1 Departure / RNAV1 Arrival (one required)",wv:1,subs:[["dep","RNAV1 Departure"],["arr","RNAV1 Arrival"]]},
+ {n:11,t:"Holding",cred:1,wv:1},
+ {n:12,t:"Normal ILS Approach",subs:[["man","Manual"],["auto","Autoland"]]},
+ {n:13,t:"Engine out ILS"},
+ {n:14,t:"CAT II ILS Approach — PF (CA) / PM (FO)",cred:1,subs:[["nrm","Normal"],["oei","One Engine Inoperative"]]},
+ {n:15,t:"CAT III ILS Approach — PF (CA) / PM (FO)",cred:1,subs:[["nrm","Normal"],["oei","One Engine Inoperative"]]},
+ {n:16,t:"Non-Precision approach",subs:[["VOR","VOR"],["NDB","NDB"],["LOC","LOC"],["ASR","ASR"],["RNAV","RNAV"],["man","Manual"]]},
+ {n:17,t:"Second Non-Precision approach",subs:[["VOR","VOR"],["NDB","NDB"],["LOC","LOC"],["ASR","ASR"],["RNAV","RNAV"],["man","Manual"]]},
+ {n:18,t:"Missed Approach from ILS"},
+ {n:19,t:"Second Missed Approach"},
+ {n:20,t:"Steep Turns",cred:1,wv:1},
+ {n:21,t:"Approach to Stall (one in turn, T/O config required)",cred:1,wv:1,subs:[["to","T/O (in turn)"],["ldg","LDG"],["clean","Clean"]]},
+ {n:22,t:"Landing from an ILS"},
+ {n:23,t:"Crosswind Landing (with gust)"},
+ {n:24,t:"Rejected Landing",cred:1},
+ {n:25,t:"Landing with an Engine Inoperative"},
+ {n:26,t:"Landing with 50% Power Loss"},
+ {n:27,t:"Windshear",naf:1},
+ {n:28,t:"Unusual Attitude / Airplane Upset Recovery",naf:1},
+ {n:29,t:"CFIT",naf:1},
+ {n:30,t:"TCAS",naf:1},
+ {n:31,t:"Seat Specific (CA)",naf:1},
+ {n:32,t:"PRM",naf:1},
+ {n:33,t:"PAR",naf:1},
+ {n:34,t:"CRM / TEM"},
+ {n:35,t:"Emergency / Abnormal Procedures"},
+ {n:36,t:"Use of Checklists"},
+ {n:37,t:"FMC / CDU"},
+ {n:38,t:"English Proficient"},
+ {n:39,t:"Judgment"}
+];
+const IT = n => ITEMS[n-1];
+const NAF_NOTE = {28:"Not on the PC Guide 6.7.2 progressive summary; record C if trained, otherwise “/”.",32:"Conducted during initial CAT II/III qualification syllabus.",33:"Conducted during initial CAT II/III qualification syllabus."};
+
+/* ---------- PC categories → PC Guide 6.7.2 Progressive Summary columns ---------- */
+const CATS = [
+ {k:"REC",  label:"Recurrent PC",                         form:"RECURRENT"},
+ {k:"RQF",  label:"Requalification PC — failed event",    form:"REQUALIFICATION", noW:"Requalification after a failed event"},
+ {k:"RQ12", label:"Requalification PC — up to 12 months", form:"REQUALIFICATION", noW:"Requalification"},
+ {k:"RQ35", label:"Requalification PC — 12–35 months",    form:"REQUALIFICATION", noW:"Requalification"},
+ {k:"RQ59", label:"Requalification PC — 36–59 months",    form:"REQUALIFICATION", noW:"Requalification"},
+ {k:"RQ60", label:"Requalification PC — more than 59 months", form:"REQUALIFICATION", noW:"Requalification"},
+ {k:"TRN",  label:"Transition PC",                        form:"TRANSITION"},
+ {k:"UPG",  label:"Upgrade PC",                           form:"UPGRADE", noW:"PIC Upgrade"},
+ {k:"INI",  label:"Initial (new hire) PC",                form:"INITIAL", noW:"Initial qualification", note:"PC Guide 6.7.2 has no Initial column; the app applies the Upgrade column (no waivers, all stalls). Confirm with Standards."},
+ {k:"ST",   label:"Special Tracking PC",                  form:"RECURRENT", note:"Form has no Special Tracking box; the app checks RECURRENT and adds “Special Tracking” to remarks."}
+];
+const CAT = k => CATS.find(c => c.k === k) || CATS[0];
+/* matrix code: R required · W waivable · / not required · * CAT II/III required on PC if U or / on PCWU · N required unless completed (C) on PCWU · T stall: T/O config in turn required, others waivable */
+function baseCode(n, cat){
+  const pcwuCols = ["REC","RQF","RQ12"];
+  if (n===14 || n===15) return pcwuCols.includes(cat) ? "*" : "/";
+  if (n>=27 && n<=31 && n!==28) return pcwuCols.includes(cat) ? "N" : "/";
+  if (n===28 || n===32 || n===33) return "/";
+  if (n===9 || n===11 || n===20) return ["RQF","UPG","INI"].includes(cat) ? "R" : "W";
+  if (n===21) return ["RQF","UPG","INI"].includes(cat) ? "R" : "T";
+  return "R";
+}
+const CODE_LABEL = {R:"Required", W:"Waivable", "/":"Not required", "*":"Required unless S on PCWU (SCP)", N:"Required unless C on PCWU", T:"T/O stall in turn required; LDG / Clean waivable"};
+
+/* ---------- Flight data: KGS 19 DEC 25 support material (KSFO → KLAX, GTI 400) ---------- */
+const OFP = {
+  route:"KSFO → KLAX · GTI 400 · T/O ALT KOAK",
+  rows:[["Route","SUSEY EBAYE AVE"],["Runway / SID","10L · SAHEY_ SUSEY transition"],["OFP TOW (-400 / -8)","278.0 / 338.0"],["OFP ZFW (-400 / -8)","200.0 / 260.0"],["Ramp fuel","78.0"],["Taxi fuel","0.9"],["Reserve","9.9"],["Cost index / FL","44 / FL370"],["Distance","303"],["CG","21%"],["DDG","None"]],
+  wx:"San Francisco International Information “Alpha” XXxxz, wind 190/10G25, visibility ¼ sm FG, overcast 001, temperature 06, dew point 06, altimeter 29.92, departing runway 10L, RVR 10L 500/500/500. On initial contact advise you have information Alpha.",
+  clr:"Cleared to Los Angeles International airport, SAHEY departure, SUSEY transition, EBAYE, AVE then as filed. Climb via the SID, expect FL370 one zero minutes after departure, squawk 1747. Expect runway 10L for departure.",
+  eo:"SPECIAL ENG FAIL TAKEOFF PROCEDURES\nRWY CLB VIA REACHING  OR         TURN    FRA  HOLD\n19L V2      RWY END   D0.9 SFO     LT OAK  1013 STD\n19R V2      RWY END   D0.8 SFO     LT OAK  1013 STD\n28L         D1.8 SFO  D0.7 IGWQ    RT H305 1100\n28R         D2.3 SFO  D1.1 IGWQ    RT H305 1100\n10L / 10R   RT H120   ACCEL 1000",
+  tlr:[
+   ["KSFO 10L · CF680C2B1F","GRWT 278.0  VREF30 154\nFLAPS 10   ATM 50C\nTHR D-TO-2 N1 92.3\nV1 140  VR 148  V2 157\nCG 21.0  TRIM 6.2\nSMRGN 2184  RT H120"],
+   ["KSFO 10L · CF680C2B5F","GRWT 278.0  VREF30 155\nFLAPS 10   ATM 50C\nTHR D-TO-2 N1 93.1\nV1 140  VR 148  V2 157\nCG 21.0  TRIM 6.2\nSMRGN 2184  RT H120"],
+   ["KSFO 10L · GENX-2B67 (-8)","GRWT 338.0  VREF30 158\nFLAPS 20   ATM 48C\nTHR D-TO-2 N1 82.6\nV1 147  VR 152  V2 160\nCG 21.0  TRIM 7.9\nSMRGN 675  RT H120"],
+   ["KSFO 10R · CF680C2B1F","GRWT 278.0  VREF30 155\nFLAPS 10   ATM 50C\nTHR D-TO-2 N1 92.3\nV1 141  VR 149  V2 158\nCG 21.0  TRIM 6.2\nSMRGN 2743  RT H120"],
+   ["KSFO 10R · CF680C2B5F","GRWT 278.0  VREF30 156\nFLAPS 10   ATM 50C\nTHR D-TO-2 N1 93.1\nV1 141  VR 149  V2 158\nCG 21.0  TRIM 6.2\nSMRGN 2743  RT H120"],
+   ["KSFO 10R · GENX-2B67 (-8)","GRWT 338.0  VREF30 158\nFLAPS 20   ATM 48C\nTHR D-TO-2 N1 82.6\nV1 145  VR 152  V2 160\nCG 21.0  TRIM 7.9\nSMRGN 700  RT H120"],
+   ["KSFO 10L · PW4056 (2021 set)","GRWT 278.0  VREF30 154\nFLAPS 10\nTHR TO-2  EPR 1.37\nV1 142  VR 148  V2 157\nCG 21.0  TRIM 6.2\nSMRGN 2784  RT H120"]
+  ],
+  llws:[
+   ["28R LLWS · CF680C2B1F","GRWT 300.0  VREF30 157\nOAT +15  FLAPS 20\nTHR TO  N1 108.4\nV1 155  VR 155  V2 173\nTRIM 6.0  SPECIAL"],
+   ["28R LLWS · CF680C2B5F","GRWT 300.0  VREF30 157\nOAT +23  FLAPS 20\nTHR TO  N1 108.4\nV1 155  VR 155  V2 173\nTRIM 6.0  SPECIAL"],
+   ["28R LLWS · GENX-2B67 (-8)","GRWT 338.0  VREF30 158\nOAT +23  FLAPS 20\nTHR TO  N1 99.3\nV1 168  VR 173  V2 183\nTRIM 7.9  SPECIAL"]
+  ],
+  llwsNote:"PCWU LLWS use only. LLWS ADVISORY = YES in ACARS gives TO thrust (no assumed), Flaps 20 and improved climb V-speeds. Low gross weight / aft CG: ensure TO-2 is selected. 28R special: reaching D2.3 SFO or D1.1 IGWQ RT H305."
+};
+const WX_SETUP = [
+ ["Takeoff","90° x-wind, 10 kt steady + 5 kt gust (FAA Gust NOT selected)","Variable","200 OVC","6 °C"],
+ ["Low-vis takeoff","90° x-wind, 10 kt steady + 5 kt gust (FAA Gust NOT selected)","< ¼ / RVR 500/500/500","—","15 °C"],
+ ["EFP (V1–V2)","10–15 kt","CAT I ILS mins (1800–2400 ft)","—","15 °C"],
+ ["RTO","10–15 kt","< ¼ / RVR 500/500/500","—","15 °C"],
+ ["ILS","10–15 kt","CAT I mins (1800–2400 ft)","DA + 100","15 °C"],
+ ["Non-ILS","90° x-wind, 10 kt steady + 5 kt gust (FAA Gust NOT selected)","Mins + ¼ sm","DA + 100","15 °C"],
+ ["LNAV / VNAV","10–15 kt","2 sm","DA + 100","15 °C"],
+ ["CAT II","10–15 kt","CAT II mins (app chart)","Pub DH / RA","15 °C"],
+ ["CAT III","10–15 kt","CAT III mins (app chart)","RA 100 ft","15 °C"],
+ ["Visual","10–15 kt","CAVOK","—","—"]
+];
+const TOL = [
+ ["Altitude","± 100 ft"],["Airspeed","± 10 kt"],["MDA","+ 50 / − 0 ft"],["Heading","± 10°"],["Turn recovery","± 10° of predetermined heading"],
+ ["Steep turns","Bank ± 5°, A/S ± 10 kt, roll-out ± 10°, ALT ± 100 ft"],["Airspeed at DH / MDA","± 5 kt of target"],["Takeoff heading","± 5°"],["Takeoff airspeed","Target ± 5 kt (initial climb)"],
+ ["Approach to stall","Manufacturer’s recovery procedure takes precedence"],["Engine failure on takeoff (V1 cut)","Heading ± 5°, airspeed ± 5 kt (initial climb)"],["Rejected takeoff","Manufacturer procedure; safe stop with adequate runway remaining"],
+ ["Departure procedure","Intercept courses, radials, bearings timely; meet speed and altitude restrictions"],["Precision — prior to FAS","ALT ± 100 ft, A/S ± 10 kt, HDG ± 5°"],["Precision — final","Stabilized FAF to DA/DH; ≤ ¼-scale LOC or G/S; A/S ± 5 kt"],
+ ["Non-precision — prior to FAS","ALT ± 100 ft, A/S ± 10 kt, HDG ± 5°"],["Non-precision — final","≤ ¼-scale CDI; A/S ± 5 kt; MDA + 50 / − 0"],["Missed approach","Comply with ATC and MAP; ALT ± 100 ft, A/S ± 5 kt, HDG ± 5°"],
+ ["Landings","Correct configuration and V-speeds; Vref ± 5 kt; positive directional and crosswind control; approved speedbrake, reverse and braking"]
+];
+const BULLETINS = [
+ {h:"Removal of FAA Gust Factor on checking events", b:["Crosswind takeoff and crosswind landing with gusts are required on each PC.","Crosswind component 10–15 kt.","Do NOT use the FAA Gust or Upset Recovery wind models. The SCP enters winds and gust manually on the IOS."]},
+ {h:"Standardization of low-speed RTO — FO as PF", b:["The RTO is conducted with the Captain as PM and the First Officer as PF.","Initiated by a Non-Normal: engine failure at low speed during the takeoff roll.","Waiving the RTO for an FO, or in an FO/FO pairing, needs the judgment standard — it is not automatically waived."]},
+ {h:"Airman Certificate Verification (Standards CA, expires 27 DEC 2026)", b:["Correct type rating: B-747-4 (B-747 alone is incorrect).","Not acceptable: “subject to the limitations of §61.160”, “limited to SIC privileges only”, “B-747-4 is subject to PIC limitations”.","May be acceptable: PIC limitation on a previous type (e.g. CL-65).","Medical: first class, valid for holder’s age. Crew ID: expiration date.","Discrepancy in the sim: escalate to Standards CA or Director of Training (alternate Chief Pilot). FOM Ch. 3."]}
+];
+
+/* ---------- Brief checklists ---------- */
+const BRIEF_PCWU = [
+ {h:"Preflight (red items are emphasis)", items:["Exterior Safety Inspection","Aircraft Log Inspection — Captain","Preliminary Flight Deck Procedure","CDU Preflight — CA and FO","Flight Deck Procedure — CA / FO","Obtaining ATC departure clearance (CPDLC)","Final Flight Deck Procedure (takeoff briefing)","Additional: exterior, security (FO), upper deck / cockpit (FO), fuel verification, final document (FO)"]},
+ {h:"Engine starts", items:["Autostart — normal and non-normal (hot, hung, no EGT rise → IAI then ENG AUTOSTART checklist)","No N1 / abnormal oil pressure by idle N2 → IAI then Aborted Engine Start","Manual start — normal and non-normal (Supplementary Procedures)","STARTER CUTOUT, START VLV, FIRE ENG TAILPIPE"]},
+ {h:"Takeoff", items:["Crosswind with gust — per bulletin (no FAA Gust)","Low visibility takeoff (RVR 500)","RNAV / RNP departure — retrievable by name, OpSpec C063"]},
+ {h:"Stalls", items:["Turning stall — takeoff configuration (required)","Landing configuration stall (optional)","Clean stall — A/T has no wake-up in FLCH SPD / VNAV SPD (optional)","Re-automate without instructor prompts"]},
+ {h:"FMS · TCAS · Non-normals", items:["FMS / LNAV exercises (radials, re-route, PBD, abeam, offset)","TCAS RA — RA pitch region, TA / RA symbology","Non-normal checklist use — consequential EICAS messages","Use of glareshield checklist"]},
+ {h:"CAT II / III (AWO)", items:["CAT III ILS to full stop","CAT II ILS one engine inop to missed approach","QRH AWO review, Required Indications and Equipment table","Flown from qualified seat; FO half may do CAT I autoland in lieu of CAT III; CAT II MAP not required for FO","CAT II/III certification requires a Check Pilot to grade"]},
+ {h:"Windshear · CFIT · Non-ILS VNAV", items:["Windshear — departure or approach (instructor selects one)","Terrain avoidance","Non-ILS VNAV — terminology and “what if” clearances"]},
+ {h:"RTO · Engine failure", items:["RTO — FO as PF, CA as PM, low-speed engine failure (bulletin)","Engine fail V1–V2 — QRC protocol, rudder trim technique","Standards Questions #1 track or heading, #7 bury the nose"]},
+ {h:"Engine-out approaches · Landings", items:["ILS one engine inop — manually flown, rejected landing","Two engine inop visual (50% loss of thrust) — Standards Question #8","Crosswind landing presentation (Comply) viewed","Landing Energy Management — FDP as a decision tool","Bounced landing recovery"]},
+ {h:"Optional · SPOTs", items:["Steep turns","Holding (or SPOT 6)","SPOT 1 — inadvertent TOGA application","SPOT 2 — crosswind landings (crab, de-crab, slippery rollout, bounced)"]},
+ {h:"Emphasis items", items:["Leadership and Command Training for PICs","Tail strike avoidance · flaps-up maneuvering","Typical takeoff tail clearance","TOGA switches — inadvertent application","Go-around after touchdown","FMA awareness and re-automation"]}
+];
+const BRIEF_PC = [
+ {h:"Before the brief", items:["FTSP photo submitted for any non-U.S. citizen / national / green card holder (once per curriculum)","Documents checked (each pilot, below)","Briefing conducted from the Standardized PC Briefing (PC Guide 6.7.2)"]},
+ {h:"Policy", items:["Regulatory basis — §121.441, Appendix F, AQS N&O","Scenario design — realistic line ops, non-normals carried to an end state","Three parts — oral, walk-around (individually), flight maneuvers","The PC evaluates; it is not a training event"]},
+ {h:"Running the event", items:["Sim period 2:15–2:30 per applicant; preflight and taxi credited to both","SCP acts as dispatch, ATC, ground, maintenance","Failures removed after each landing","Sim rules — breaks, illness before any unsat, QRC / ECL / QRH, sterile flight deck, note taking"]},
+ {h:"Standards", items:["English language proficiency — ICAO Level 4","Waiver authority and its restrictions","Satisfactory performance standards","Unsatisfactory performance and critical error","Performance tolerances"]},
+ {h:"Required maneuvers", items:["Minimum required maneuvers","Training and re-checking — one repeat per item, failure recorded before training","Seat restriction after a failure — no crew seat or seat support","Crosswind with gusts set manually (10–15 kt, no FAA Gust)"]},
+ {h:"747 and device", items:["747: engine-inop ILS to missed approach, then loss of second engine on the same side","Device weights, engine variant, panel differences","Nearest exits and motion cutoff switches","Qualification scope — CAT II/III recorded “S” per CAT II/III Policy Guide"]},
+ {h:"Close", items:["Questions — scope, standards, waivers, seat restriction, CAT II/III recording","Equipment examination (oral) complete","Visual inspection (walk-around) complete, individually"]}
+];
+const DOCS = [["atp","Airman certificate — ATP, type rating B-747-4"],["lim","No unacceptable limitations (§61.160, SIC only, B-747-4 PIC)"],["eng","English Proficient shown on certificate"],["med","Medical — first class, valid for age"],["fcc","FCC radiotelephone operator permit"],["photo","Government photo ID (passport or driver’s license)"],["crew","Employee crew ID not expired"],["ftsp","FTSP photo submitted, or not applicable"]];
+
+/* ---------- Walk-around exam (planted abnormals are the SCP's answer key) ---------- */
+const WALK = [
+ {a:"Exterior safety inspection", f:["Gear door release handle not stowed; main gear doors open"]},
+ {a:"Nose wheel well", f:["Nose gear downlock pin installed"]},
+ {a:"Number 3 and 4 engines", f:["Pylon alignment stripe out of limits","Strut delaminated"]},
+ {a:"Right wing and leading edge", f:["Fuel measuring stick not stowed"]},
+ {a:"Right wing tip and trailing edge", f:["Aileron skin delaminating"]},
+ {a:"Right wing and body gear", f:["Main gear downlock pin installed"]},
+ {a:"Tail", f:["Evidence of possible tail strike"]},
+ {a:"Left aft fuselage", f:["Negative pressure relief doors open","Outflow valve in closed position"]},
+ {a:"Left body and wing gear", f:["Brake delamination","Tire failure"]},
+ {a:"Number 1 and 2 engines", f:["Fan blade damage","Pod strike damage"]},
+ {a:"Cockpit area (security)", f:["Prohibited item — hand grenade"]},
+ {a:"Upper deck area", f:["Prohibited item — suspected illicit drugs","Unsecured forms kit","Fire extinguisher discharged","Improper safety pin installed and bolted"]},
+ {a:"Main deck area", f:["Cargo impinging upon sidewall surface"]}
+];
+const WALK_FLAT = WALK.flatMap((g,gi) => g.f.map((f,fi) => ({k:gi+"."+fi, a:g.a, f})));
+
+/* ---------- Oral question banks (parsed from PC Oral Question Bank 1–5) ---------- */
+const ORAL = [{"bank":1,"title":"PC Oral Question Bank 1","qs":[{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"What is the wingspan of the 400F / -8?","a":"213 feet (64.9 meters)\n224.5 feet (68.4 meters)","ref":"FCOM, VOL 2; 1.10.2/747-8 1.10.1"},{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"With body gear steering, what is the minimum width of pavement for a 180 degree turn of the 400F / -8?","a":"4 153 feet (46.6 meters)\n8 172 feet (52.4 meters)","ref":"FCOM, VOL 2; 1.10.3/747-8 1.10.2"},{"sec":"AC Gen, Limitations, & Performance","topic":"IMMEDIATE ACTION ITEMS","q":"Give examples of Immediate Action Items on the Quick Reference Checklist.","a":"CABIN ALTITUDE-Rapid Depressurization\n\nENG 1,2,3,4 AUTOSTART-Aborted Engine start\n\nEngine Limit or Surge or Stall\n\nIAS DISAGREE-Airspeed Unreliable\n\nFIRE ENG 1,2,3,4-Engine Severe Damage or Separation\n\nMultiple Engine Flameout or Stall","ref":"Back of Normal Checklist"},{"sec":"Engines","topic":"EEC","q":"In the normal mode, what does the EEC use as the controlling parameter for the GE engines? For PW engines?","a":"N1\nEPR","ref":"FCOM, VOL 2; 7.20.4 / 7.21.4"},{"sec":"Engines","topic":"EEC","q":"What EEC normal mode protection feature is not available in EEC Alternate mode?","a":"Thrust limiting at maximum N1 (maximum thrust can be achieved prior to thrust lever position at full forward)","ref":"FCOM, VOL 2; 7.20.4"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"How is the engine thrust reverser actuated on the GE Engine?","a":"Pneumatically actuated fan air.","ref":"FCOM, VOL 2; 7.20.15"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"How many igniters are selected for ground start, and how many for in-flight start?","a":"One igniter for ground start\n  Two for in-flight start","ref":"FCOM, VOL 2; 7.20.6"},{"sec":"APU","topic":"APU","q":"Can the APU be operated in flight?","a":"Yes \n When left running for takeoff it can be operated in\n      flight up to 20,000 feet","ref":"FCOM, VOL 2; 7.30.1"},{"sec":"APU","topic":"APU","q":"How long should you wait before turning the battery switch OFF after the APU selector is rotated to OFF, and why?","a":"2 minutes\n Allows a complete shutdown sequence, with fire detection capability.","ref":"FCOM, VOL 2; 7.30.2"},{"sec":"Electrical","topic":"ELECTRICAL SYSTEM","q":"What does the “AVAIL” light indicate on the External and APU PWR switches?","a":"The related power source (APU or EXT) is plugged in and available and the power quality is acceptable.","ref":"FCOM, VOL 2; 6.10.4/.5"},{"sec":"Electrical","topic":"ELECTRICAL SYSTEM","q":"How do you reconnect an IDG that has been disconnected?","a":"Maintenance action is required\n  The IDG cannot be restored by flight crew action","ref":"FCOM, VOL 2; 6.10.6"},{"sec":"Electrical","topic":"ELECTRICAL SYSTEM","q":"When is the main cargo deck handling bus powered?","a":"When the “AVAIL” light is displayed on the APU 2 or EXT 2 switches.","ref":"FCOM, VOL 2; 6.10.4"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does the hydraulic system (SYS FAULT) fault light indicate?","a":"Low hydraulic system pressure\n Low hydraulic reservoir quantity\n Excessive hydraulic fluid temperature\n(2 Lows & a High)","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does a hydraulic demand pump low PRESS light indicate?","a":"Demand pump selector positioned to OFF or AUX\n Demand pump operates and output pressure is low","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What degraded or inoperative systems can you expect from a loss of hydraulic system 1?","a":"(Answer is a diagram in the question bank — see reference.)","ref":"QRH 13.15 & FCOM VOL 2 13.20.3"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"How many ENGINE fire extinguishers are  provided?","a":"2 on each wing (4 TOTAL)","ref":"FCOM, VOL 2; 8.20.4"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"How many APU fire bottles are provided?","a":"1","ref":"FCOM, VOL 2; 8.20.4"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"FIRE CARGO FWD: Pressing the FWD cargo fire ARM switch causes what actions?","a":"Additional information\nTwo packs are automatically shut down \narms lower cargo compartment fire extinguishers\nconfigures equipment cooling to override mode and turns off all airflow and heat into lower cargo  compartments\ncloses master trim air valve","ref":"FCOM, VOL 2; 8.10.6 & QRH 8.16"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"Which cross feed valves are controlled by Fuel System Management logic when setting T/O flaps?","a":"Crossfeed valves 2 and 3","ref":"FCOM, VOL 2; 12.20.13"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"During the Before Start Procedure, at what center wing tank quantity are you required to select the center wing pumps on? Quantity in lbs for the LCF?","a":"7,700 kgs or more in center wing tank\n17,000 lbs or more in center wing tank","ref":"FCOM, VOL 2; 12.20.13, LCF 12.20.8"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"What is the impact on the aircraft with excessive fuel imbalance?","a":"Adversely affects CG\n  Aerodynamic drag\n  Fuel economy","ref":"FCOM, VOL 2; 12.20.3"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"In which tank is fuel temperature measured?","a":"Main tank 1","ref":"FCOM, VOL 2; 12.20.1"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"Does the Nacelle Anti-­Ice AUTO position function on the ground?","a":"No, the AUTO function only works in flight","ref":"FCOM, VOL 2; 3.10.2"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"Window heat ON switches provide both anti-icing and anti-fogging protections to which flight-deck windows?","a":"Forward left and right windshields only","ref":"FCOM, VOL 2; 3.10.4"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"How many pitot‐static probes are provided, and when are they heated?","a":"4 pitot‐static probes \nElectrically heated when any engine is operating.","ref":"FCOM, VOL 2, 3.20.3"},{"sec":"Air Systems","topic":"EQUIPMENT COOLING","q":"On the ground, when is warm equipment cooling air ducted overboard?","a":"Engines not operating\nEquipment cooling selector in NORM \nAmbient temperature moderate or high","ref":"FCOM, VOL 2; 2.20.14"},{"sec":"Air Systems","topic":"PRESSURIZATION SYSTEM","q":"When in the descent mode, will the cabin altitude controllers program a positive or a negative pressurization at touchdown?","a":"Small positive pressurization at touchdown.","ref":"FCOM, VOL 2; 2.30.2"},{"sec":"Air Systems","topic":"ENGINE BLEED AIR SYSTEM","q":"Under what conditions would High Pressure (HP) air be used?","a":"Descent\nOther low power setting operations","ref":"FCOM, VOL 2. 2.40.1"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re-engage the autothrottles when the pitch mode is ALT, V/S or G/S?","a":"Push the speed switch","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re‐engage the autothrottle when the pitch mode is VNAV ___ or FLCH SPD?","a":"Cycle the A/T ARM switch to OFF and back to ARM","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How can you de‐select the approach mode AFTER localizer and glide‐slope captured?","a":"Select TO/GA or Disengage autopilot and position both F/D switches off.","ref":"FCOM, VOL 2; 4.10.16"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"When will VNAV activate during takeoff?","a":"VNAV activates at 400 feet above runway elevation","ref":"FCOM, VOL 2; 4.10.8"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"On the 747-8, What does the FAC (armed) as a Roll Mode FMA indicate?","a":"APP switch selected and AFDS is set for conduct of an IAN (Integrated Approach Navigation) procedure","ref":"FCOM, VOL 2 747-8; 4.10.18"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"What source selector switch would you likely move in the event of an ALT or SPD flag in view on the PFD?","a":"Air Data Source Selector","ref":"FCOM, VOL 2; 10.10.33/58"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"On the 747-8, when do IAN Scales display?","a":"LNAV/VNAV are not active modes\nApproach is in the active flight plan\n<150 NM from destination or\n<50 NM from T/D\n<FMC is in the descent mode","ref":"FCOM, VOL 2 747-8; 10.10.13"},{"sec":"Navigation","topic":"INERTIAL REFERENCE SYSTEM","q":"When is full alignment of the IRS required?","a":"When the time from the last full alignment to the next expected arrival time exceeds 18 hours.","ref":"FCOM, VOL 2; 11.20.3"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What CDU pages are available during Alternate Navigation?","a":"Alternate navigation LEGS\nAlternate navigation PROGRESS\nAlternate navigation RADIO","ref":"FCOM, VOL 2; 11.50.2"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What VNAV Pitch mode would you expect at arrow #3 and arrow #4 with a “climb via” clearance?","a":"#3 VNAV SPD\n#4 VNAV PTH","ref":"FCOM, VOL 2; 11.31.22"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"When does the CDU message INSUFFICIENT FUEL display?","a":"Estimated fuel at destination is less than fuel reserve (FMC RSV) entered on the PERF INIT page.","ref":"FCOM, VOL 2 747-8; 11.32.5"},{"sec":"Flight Controls","topic":"FLAPS","q":"How many groups of leading flaps are provided, and how are they normally powered?","a":"Three groups on each wing: outboard, midspan, and inboard sections.\n  Normally pneumatically powered from the bleed air duct.","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What are the two groups of trailing edge flaps, and how are they powered?","a":"Inboard and outboard\n  Inboard powered by hydraulic system 1\n  Outboard by system 4","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What protection features do FCUs provide  for trailing edge flaps in primary mode?","a":"Asymmetry protection\nFlap load relief\nFlap position information to EICAS and other systems","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What does the BRAKE SOURCE amber light indicate when illuminated?","a":"Active brake hydraulic sources (hydraulic systems 4, 1, and 2) have low pressure","ref":"FCOM, VOL 2; 14.10.5"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What conditions must be satisfied in order for the landing gear lever lock to release?","a":"Main gear are tilted\n  Body gear centered","ref":"FCOM, VOL 2; 14.20.2"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What value on the brake \ntemperature monitoring system \ncauses the BRAKE TEMP Advisory \nEICAS message to appear?","a":"5","ref":"FCOM, VOL 2; 14.30.2"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"Can warning messages be canceled by pushing the CANC switch?","a":"No","ref":"FCOM, VOL 2; 15.10.1"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"List some of the configuration conditions that will cause the CONFIG message to display during takeoff?","a":"Flaps not in a takeoff position\nBody gear not centered\nParking brake set\nSpeedbrake lever not in DN detent\nStabilizer trim not in takeoff range","ref":"FCOM, VOL 2; 15.20.11"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"What RED alert displays are shown or displayed on the PFD?","a":"WINDSHEAR\nPULL UP\nPULL  UP","ref":"FCOM, VOL 2; 15.10.5"},{"sec":"Warning Systems","topic":"FOM","q":"Safety is best defined as __?","a":"Managed Risk\nThis acknowledges that “zero risk” is an impossibility but striving for it is not","ref":"FOM, 1.1.1"},{"sec":"Warning Systems","topic":"FOM","q":"When faced with competing objectives, what must always remain the highest priority?","a":"SAFETY","ref":"FOM, 1.1.2"}]},{"bank":2,"title":"PC Oral Question Bank 2","qs":[{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"What is the wingspan of the 400F / -8?","a":"213 feet (64.9 meters)\n224.5 feet (68.4 meters)","ref":"FCOM, VOL 2; 1.10.2/747-8 1.10.1"},{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"With body gear steering, what is the minimum width of pavement for a 180 degree turn of the 400F / -8?","a":"4 153 feet (46.6 meters)\n8 172 feet (52.4 meters)","ref":"FCOM, VOL 2; 1.10.3/747-8 1.10.2"},{"sec":"AC Gen, Limitations, & Performance","topic":"LIMITATIONS","q":"What VNAV limitation applies to level­‐off within 2,000 feet after changing the altimeter setting from QNE to QNH, or QNH to QNE?","a":"Do not use VNAV for level‐off if the QNH is \tless than 29.70in/1006 hPa.","ref":"FCOM, VOL 1; L.10.17"},{"sec":"AC Gen, Limitations, & Performance","topic":"NORMAL PROCEDURES","q":"On the 400F, 400C and -8, the Final Upper Deck/Cockpit Procedure requires the FO to do what with the Smoke Barrier Door?","a":"Ensure the door is closed and all three security locks are moved to the locked position.","ref":"FCOM, VOL 1; NP.15.34"},{"sec":"Engines","topic":"EEC","q":"What occurs with the auto-throttle system when any EEC control is switched to alternate mode?","a":"The auto-throttles disconnect, but can be reconnected when all EECs have been switched to alternate mode.","ref":"FCOM, VOL 2; 7.20.5"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"When does GENX2B67 engine selects minimum or approach idle?","a":"Engine Anti-Ice ON\n Landing Gear Down\n Flaps 20 selected\n Flap in landing position\n Thrust Reverser operation","ref":"FCOM, VOL 2 747-8; 7.20.5"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"GEnx engine inflight start attempt will increase EGT limit by 25°C after 4 start attempts and will repeat this action on subsequent reattempts until?","a":"Start is achieved or EGT limit is reached","ref":"FCOM, VOL 2 747-8; 7.20.9"},{"sec":"APU","topic":"APU","q":"How long should you wait before turning the battery switch OFF after the APU selector is rotated to OFF, and why?","a":"2 minutes\n Allows a complete shutdown sequence, with fire detection capability.","ref":"FCOM, VOL 2; 7.30.2"},{"sec":"APU","topic":"ELECTRICAL SYSTEM","q":"What does a Bus Isolation (ISLN) light illuminated indicate?","a":"BTB open\n AC bus isolated from synchronous bus","ref":"FCOM, VOL 2; 6.10.6 & QRH 6.5"},{"sec":"Electrical","topic":"ELECTRICAL SYSTEM","q":"What does the “AVAIL” light indicate on the External and APU PWR switches?","a":"The related power source (APU or EXT) is plugged in and available and the power quality is acceptable.","ref":"FCOM, VOL 2; 6.10.4/.5"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does the hydraulic system (SYS FAULT) fault light indicate?","a":"Low hydraulic system pressure\n Low hydraulic reservoir quantity\n Excessive hydraulic fluid temperature\n(2 Lows & a High)","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does a hydraulic demand pump low PRESS light indicate?","a":"Demand pump selector positioned to OFF or AUX\n Demand pump operates and output pressure is low","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"How many ENGINE fire extinguishers are  provided?","a":"2 on each wing (4 TOTAL)","ref":"FCOM, VOL 2; 8.20.4"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"Can you shut down the APU from outside the airplane?","a":"Yes\n\n\nAdditional information\nLocated in the right body gear well is the APU Ground Control Fire Protection Panel. This panel has an APU stop switch, and APU Extinguisher Discharge Switch.","ref":"FCOM, VOL 2; 8.10.9"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"Is there smoke detection provided for the Crew Rest areas?","a":"Yes\n\nSmoke detectors are installed in the crew rest areas. An aural warning sounds in the crew rest compartment when smoke is detected in that compartment.","ref":"FCOM, VOL 2; 8.20.3"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"Which cross feed valves are controlled by Fuel System Management logic when setting T/O flaps?","a":"Crossfeed valves 2 and 3","ref":"FCOM, VOL 2; 12.20.13"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"What is the impact on the aircraft with excessive fuel imbalance?","a":"Adversely affects CG\n  Aerodynamic drag\n  Fuel economy","ref":"FCOM, VOL 2; 12.20.3"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"Which fuel tanks do reserve tank 1 and 4 transfer to on the 747-8?","a":"Main tanks 1 and 4","ref":"FCOM, VOL 2 747-8; 12.20.8"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"Does the Nacelle Anti-­Ice AUTO position function on the ground?","a":"No, the AUTO function only works in flight","ref":"FCOM, VOL 2; 3.10.2"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"Is wing anti­ice effective with the leading edge flaps extended?","a":"No, wing anti‐ice is ineffective when the LEF are not \n retracted.","ref":"FCOM, VOL 2; 3.10.2"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"The 747-8 EICAS msg BLD LOW TEMP indicates __?","a":"Engine bleed air to low for sufficient wing anti-icing","ref":"FCOM, VOL 2 747-8; 3.20.2"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"What is the function of the LOWER LOBE  CARGO CONDITIONED AIR FLOW RATE Selector?","a":"Provides forward and aft cargo lobe conditioned air","ref":"FCOM, VOL 2; 2.20.7"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"On the 747-8 with Main Deck and FWD/AFT lower lobe temperature selector in the OFF position, what is the temperature zone target?","a":"68◦F/ 20◦C","ref":"FCOM, VOL 2 747-8; 2.10.11"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"The 747-8 Lower Lobe Aft Cargo Heat Selector regulates temperature control valve to maintain at least __ ◦F/ __ ◦C in LOW position and __ ◦F/ __ ◦C in HIGH position ?","a":"40◦F/ 4◦C\n  50◦F/ 10◦C","ref":"FCOM, VOL 2 747-8; 2.10.3"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"What does the Zone System (SYS) Fault  Light indicate?","a":"Temperature zone duct overheat or zone temperature controller fault has occurred.\n Master trim air valve failed closed\nMaster trim air valve closed and pack air continues to flow","ref":"FCOM, VOL 2; 2.10.5"},{"sec":"Air Systems","topic":"ENGINE BLEED AIR SYSTEM","q":"When bleed air pressure is available the Engine Bleed Air Switches control which valves by system logic,?","a":"PRV\n HP Bleed Valve\n Engine Bleed Air Valve","ref":"FCOM, VOL 2; 2.10.26"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re-engage the autothrottles when the pitch mode is ALT, V/S or G/S?","a":"Push the speed switch","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re‐engage the autothrottles when the pitch mode is\nVNAV ___ or FLCH SPD?","a":"Cycle the A/T ARM switch to OFF and back to ARM","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How can you de‐select the approach mode AFTER localizer and glide‐slope captured?","a":"Select TO/GA or Disengage autopilot and position both F/D switches off.","ref":"FCOM, VOL 2; 4.10.16"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"Can the glideslope be captured prior to  Localizer intercept?","a":"No, glideslope capture is inhibited until localizer capture and the intercept angle is within 80 degrees of the localizer course.","ref":"FCOM, VOL 2; 4.10.16; 4.20.11"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"Describe the condition that would cause VNAV ALT to display as the pitch mode.","a":"A conflict occurs between the VNAV profile and \n\tMCP altitude.","ref":"FCOM, VOL 2; 4.20.7"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"On the 744,LCF, -8, NO AUTOLAND displays on PFD if a multichannel approach (MCA) is selected but MCA engage status (LAND 2/3) has not been annunciated by __ feet?","a":"600 feet AGL","ref":"FCOM, VOL 2 4.10.17, LCF; 4.10.15, 747-8; 4.10.16"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"What indicates you are 1/3 of a dot deviation from the Localizer?","a":"The Localizer pointer is just touching the rectangle during  \n      expanded localizer deviation scale.\nAt low radio altitudes, with autopilot or FD engaged, scale turns amber and flashes to indicate excessive LOC deviation","ref":"FCOM, VOL 1; SP.4.7/VOL 2; 10.10.19"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"On the 747-8, how is the airspeed range for acceptable VNAV path indicated on the PFD airspeed display (flaps up or down)?","a":"UP\n240\n260\n220\n200\n180\nVNAV Speed Band","ref":"FCOM, VOL 2 747-8; 10.10.5"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"On the 747-8, what does the Vertical Situation Display (VSD) represent?","a":"A profile view of the airplane and its environment along the current track","ref":"FCOM, VOL 2 747-8; 10.40.2"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What CDU pages are available during Alternate Navigation?","a":"Alternate navigation LEGS\nAlternate navigation PROGRESS\nAlternate navigation RADIO","ref":"FCOM, VOL 2; 11.50.2"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What could happen if you advance the thrust levers  further then TO 1 or TO 2 fixed derate following an engine failure?","a":"Loss of directional control","ref":"FCOM, VOL 2; 11.32.3"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What factor determines “Econ” speed?","a":"Cost index","ref":"FCOM, VOL 2; 11.31.4"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"When armed for takeoff, when does VNAV activate?","a":"400 feet","ref":"FCOM, VOL 2; 11.31.22"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What VNAV FMA would display on the PFD during departure waypoint altitude constraints?","a":"VNAV PTH","ref":"FCOM, VOL 2; 11.31.23"},{"sec":"Flight Controls","topic":"FLAPS","q":"How many groups of leading flaps are provided, and how are they normally powered?","a":"Three groups on each wing: outboard, midspan, and inboard sections.\n  Normally pneumatically powered from the bleed air duct.","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What are the two groups of trailing edge flaps, and how are they powered?","a":"Inboard and outboard\n  Inboard powered by hydraulic system 1\n  Outboard by system 4","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What protection features do FCUs provide  for trailing edge flaps in primary mode?","a":"Asymmetry protection\nFlap load relief\nFlap position information to EICAS and other systems","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"Is there any asymmetry protection in  alternate flap mode?","a":"NO, there is no protection provided by the FCUs in alternate mode.","ref":"FCOM, VOL 2; 9.20.14"},{"sec":"Flight Controls","topic":"FLAPS","q":"How does the Flap Alternate Control mode work?","a":"Bypasses the FCUs \n  Can be manually selected\n  All flaps are extended or retracted by \telectric motors","ref":"FCOM, VOL 2; 9.20.14"},{"sec":"Flight Controls","topic":"FLIGHT CONTROLS","q":"747-8, To improve takeoff performance and reduce noise, outboard ailerons deflected down* at which flap settings? They return to the neutral position at which flap settings? Inboard ailerons droop in which flap settings?","a":"10 or 20\n  25 or 30\n  10 or greater\n*The downward deflection is removed if the\nangle of attack is above the stick shaker","ref":"FCOM, VOL 2; 9.20.11"},{"sec":"Flight Controls","topic":"FLIGHT CONTROLS","q":"What system assists the 747-8 in pitch stability and landing flare?","a":"Pitch augmentation control system (PACS)\n\nAdditional Information\nDuring the landing flare, this system provides a small amount of nose up elevator as the airplane approaches the runway, without moving the control column","ref":"FCOM, VOL 2 747-8; 9.20.3"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What does the BRAKE SOURCE amber light indicate when illuminated?","a":"Active brake hydraulic sources (hydraulic systems 4, 1, and 2) have low pressure","ref":"FCOM, VOL 2; 14.10.5"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What value on the brake \ntemperature monitoring system \ncauses the BRAKE TEMP Advisory \nEICAS message to appear?","a":"5","ref":"FCOM, VOL 2; 14.30.2"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What does an EICAS message LIMITER indicate?","a":"Brake torque limiter failure on more than one wheel per truck\nThe parking brake lever is released and the parking brake valve is not fully open\nBrake system control unit power loss occurs","ref":"FCOM, VOL 2, 14.30.1, 747-8; 14.20.4"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"What are the 4 types of EICAS messages?","a":"Warning Messages\nCaution Messages\nAdvisory Messages\nMemo Messages","ref":"FCOM, VOL 2; 15.20.2"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"List some of the configuration conditions that will cause the CONFIG message to display during takeoff?","a":"Flaps not in a takeoff position\nBody gear not centered\nParking brake set\nSpeedbrake lever not in DN detent\nStabilizer trim not in takeoff range","ref":"FCOM, VOL 2; 15.20.11"},{"sec":"Warning Systems","topic":"FOM","q":"When faced with competing objectives, what must always remain the highest priority?","a":"SAFETY","ref":"FOM, 1.1.2"}]},{"bank":3,"title":"PC Oral Question Bank 3","qs":[{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"What is the wingspan of the 400F / -8?","a":"213 feet (64.9 meters)\n224.5 feet (68.4 meters)","ref":"FCOM, VOL 2; 1.10.2/747-8 1.10.1"},{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"With body gear steering, what is the minimum width of pavement for a 180 degree turn of the 400F / -8?","a":"4 153 feet (46.6 meters)\n8 172 feet (52.4 meters)","ref":"FCOM, VOL 2; 1.10.3/747-8 1.10.2"},{"sec":"AC Gen, Limitations, & Performance","topic":"LIMITATIONS","q":"What are maximum and minimum glideslope angles for ILS autoland?","a":"3.25 degrees (max); 2.5 degrees (min)","ref":"FCOM, VOl 1; L.10.7"},{"sec":"AC Gen, Limitations, & Performance","topic":"LIMITATIONS","q":"Are operations allowed when the reported braking action is NIL?","a":"No","ref":"FCOM, VOl 1; L.10.3"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"What happens when you turn the Continuous (CON)  IGNITION Switch ON?","a":"Selected igniters operate continuously\n  Commands approach idle minimum","ref":"FCOM, VOL 2; 7.13.4"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"With an engine shut down, what does “X‐BLD” indicate when displayed next to the N2 indication?","a":"Crossbleed air is recommended for in-flight start.","ref":"FCOM, VOL 2; 7.11.6"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"What color does the EGT change to if the EGT start or takeoff limit is reached?","a":"Red","ref":"FCOM, VOL 2; 7.10.8"},{"sec":"APU","topic":"APU","q":"Can the APU be operated in flight?","a":"Yes \n When left running for takeoff it can be operated in\n      flight up to 20,000 feet","ref":"FCOM, VOL 2; 7.30.1"},{"sec":"APU","topic":"ELECTRICAL SYSTEM","q":"What are some of the equipment items powered by the Utility busses?","a":"5 fuel pumps\nGalley equipment","ref":"FCOM, VOL 2; 6.20.7"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does the hydraulic system (SYS FAULT) fault light indicate?","a":"Low hydraulic system pressure\n Low hydraulic reservoir quantity\n Excessive hydraulic fluid temperature\n(2 Lows & a High)","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does a hydraulic demand pump low PRESS light indicate?","a":"Demand pump selector positioned to OFF or AUX\n Demand pump operates and output pressure is low","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What degraded or inoperative systems can you expect from a loss of hydraulic system 4?","a":"(Answer is a diagram in the question bank — see reference.)","ref":"QRH 13.17 & FCOM VOL 2 13.20.3"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"How many APU fire bottles are provided?","a":"1","ref":"FCOM, VOL 2; 8.20.4"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"What action discharges the APU fire  extinguisher?","a":"Rotate - discharges APU fire extinguisher into APU compartment.\n\nAdditional information\nOn the ground, the APU extinguisher automatically discharges on N408MC - N418MC, N-PA, N475MC – N477MC, N489MC, N492-N499MC, N850GT-N859GT","ref":"FCOM, VOL 2 400/-8; 8.10.3 & QRH 8.1"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"Is the engine fire/overheat detection system a single loop or dual loop system?","a":"Dual loop  \n\nAdditional information\nA dual loop fire detector is installed in each engine nacelle. In addition, each engine has a dual loop overheat detector. In normal operation, both loops in a detector must detect a fire or overheat condition to cause an engine fire warning or overheat caution unless configured for single loop operation.","ref":"FCOM, VOL 2; 8.20.2"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"Which cross feed valves are controlled by Fuel System Management logic when setting T/O flaps?","a":"Crossfeed valves 2 and 3","ref":"FCOM, VOL 2; 12.20.13"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"What is the impact on the aircraft with excessive fuel imbalance?","a":"Adversely affects CG\n  Aerodynamic drag\n  Fuel economy","ref":"FCOM, VOL 2; 12.20.3"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"During fuel jettison on the LCF, transfer valves open when fuel quantity in tanks 2 or 3 decrease to __ pounds?","a":"20,000 pounds","ref":"FCOM, VOL 2 747-LCF; 12.20.7"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"When do the FSMCs open the reserve transfer valves on the 400, LCF, -8?","a":"400: When main tank 2 or 3 fuel quantity decreases  \n   \t to approximately 18,200 kgs.\n       (Fuel transfers from reserve tanks 2 and 3 to the related main tank.)\nLCF: When main tank 2 or 3 fuel quantity decreases  \n   \t to approximately 40,200 lbs.\n       (Fuel transfers from reserve tanks 2 and 3 to the related main tank.)\n-8: When main tank 1 or 4 fuel quantity decreases  \n   \t to approximately 6100 kgs\n        (Fuel transfers from reserve tanks 1 and 4 to the related main tank.)","ref":"FCOM, VOL 2; 12.20.12, LCF 12.20.7, -8 12.20.8"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"Is wing anti­ice effective with the leading edge flaps extended?","a":"No, wing anti‐ice is ineffective when the LEF are not \n retracted.","ref":"FCOM, VOL 2; 3.10.2"},{"sec":"Air Systems","topic":"ANTI‐ICE/WINDOW HEAT","q":"How many ice detection probes are there, and where are they located?","a":"Two probes are located on the forward fuselage","ref":"FCOM, VOL 2; 3.20.1"},{"sec":"Air Systems","topic":"ANTI‐ICE/WINDOW HEAT","q":"On the -8, what indications are displayed, on primary EICAS, when the nacelle anti‐ice and/or the wing anti‐ice valve is open?","a":"“EAI” for engine nacelle anti‐ice\n  “WAI” for wing anti-­ice","ref":"FCOM, VOL 2; 3.10.4"},{"sec":"Air Systems","topic":"EQUIPMENT COOLING","q":"How can you manually configure the equipment cooling system for flight?","a":"Positioning the Equipment Cooling Selector to STBY.","ref":"FCOM, VOL 2; 2.20.14"},{"sec":"Air Systems","topic":"PRESSURIZATION SYSTEM","q":"How many cabin altitude controllers are provided?","a":"Two controllers A and B\nEach controller controls both outflow valves","ref":"FCOM, VOL 2; 2.30.1"},{"sec":"Air Systems","topic":"ENGINE BLEED AIR SYSTEM","q":"What does a bleed duct isolation (ISLN) VALVE light indicate?","a":"Isolation valve position disagrees with switch position","ref":"FCOM, VOL 2; 2.10.25"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re-engage the autothrottles when the pitch mode is ALT, V/S or G/S?","a":"Push the speed switch","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re‐engage the autothrottles when the pitch mode is\nVNAV ___ or FLCH SPD?","a":"Cycle the A/T ARM switch to OFF and back to ARM","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"What does an amber horizontal line displayed through the affected ACTIVE pitch or roll mode indicate?","a":"A flight mode fault is detected","ref":"FCOM, VOL 2; 4.10.17"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"In flight, when is TO/GA armed?","a":"Flaps out of up or Glideslope captured","ref":"FCOM, VOL 2; 4.20.5"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"On approach, with first push of TO/GA, what active Autothrottle mode would the FMA display with the A/T armed?","a":"THR","ref":"FCOM, VOL 2; 4.20.14"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"With the APP switch selected, what altitude will the electrical busses isolate allowing multiple autopilot engagement for Autoland operations?","a":"Below 1,500 feet radio altitude","ref":"FCOM, VOL 2; 4.10.16/4.20.1"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"During autoland, what action normally disconnects the autothrottles?","a":"A reverse thrust lever is raised to reverse idle","ref":"FCOM, VOL 2; 4.20.12"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"What indicates you are 1/3 of a dot deviation from the Localizer?","a":"The Localizer pointer is just touching the rectangle during  \n      expanded localizer deviation scale.\nAt low radio altitudes, with autopilot or FD engaged, scale turns amber and flashes to indicate excessive LOC deviation","ref":"FCOM, VOL 1; SP.4.7/VOL 2; 10.10.19"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"On the 747-8, what will display if the Integrated Standby Flight Display (ISFD) initialization is not complete within six minutes?","a":"ATT:RST initialization\n     message","ref":"FCOM, VOL 2 747-8; 10.10.62"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What CDU pages are available during Alternate Navigation?","a":"Alternate navigation LEGS\nAlternate navigation PROGRESS\nAlternate navigation RADIO","ref":"FCOM, VOL 2; 11.50.2"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What could happen if you advance the thrust levers  further then TO 1 or TO 2 fixed derate following an engine failure?","a":"Loss of directional control","ref":"FCOM, VOL 2; 11.32.3"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"NG FMC, “on approach” logic occurs under any of the following conditions?","a":"Descent phase flaps out of up\nFirst waypoint sequenced of active nav database\nAircraft less than 12NM from destination airport direct-to or intercept course-to active waypoint and a manually entered end of descent altitude constraint is lower than the destination airport plus 500 feet\nThe runway or missed approach point is the active waypoint and the airplane is within 25NM of the runway","ref":"FCOM, VOL 2 747-8; 11.31.35"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"On the 747-8, What modes of operation are available for the MultiScan weather radar?","a":"Manual mode – operates like traditional radar with full control over tilt and gain settings\n\nAutomatic mode – collects data from multiple scans and merges information into a total weather picture\nVOR R\nADF R\nOFF\nTERR\nPOS\nDATA\nARPT\nWPT\nSTA\nWXR\nOFF\nVOR L\nADF L\nOFF\nOFF\nAPP\nPLN\nR I G H T","ref":"FCOM, VOL 2; 11.31.3"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What is the difference between RNP and ACTUAL? And where is it displayed?","a":"RNP is required navigation performance\n  ACTUAL is Actual Aircraft Navigation Performance \n  Displayed on FMC POS REF page","ref":"FCOM, VOL 2; 11.47.30"},{"sec":"Flight Controls","topic":"FLAPS","q":"How many groups of leading flaps are provided, and how are they normally powered?","a":"Three groups on each wing: outboard, midspan, and inboard sections.\n  Normally pneumatically powered from the bleed air duct.","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What are the two groups of trailing edge flaps, and how are they powered?","a":"Inboard and outboard\n  Inboard powered by hydraulic system 1\n  Outboard by system 4","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What protection features do FCUs provide  for trailing edge flaps in primary mode?","a":"Asymmetry protection\nFlap load relief\nFlap position information to EICAS and other systems","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAP","q":"How long does the flap indication on  primary EICAS remain displayed after all flaps are up?","a":"10 seconds","ref":"FCOM, VOL 2; 9.20.15"},{"sec":"Flight Controls","topic":"FLAPS","q":"What is the maximum extension of the  trailing edge flaps in alternate mode?","a":"Flaps 25","ref":"FCOM, VOL 2; 9.20.15"},{"sec":"Flight Controls","topic":"FLIGHT CONTROLS","q":"What surface component is moved when  stabilizer trim inputs are made?","a":"Leading edge of the movable horizontal stabilizer\n  Stabilizer trim varies the angle of incidence of the\n   horizontal stabilizer","ref":"FCOM, VOL 2; 9.20.3"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What does the BRAKE SOURCE amber light indicate when illuminated?","a":"Active brake hydraulic sources (hydraulic systems 4, 1, and 2) have low pressure","ref":"FCOM, VOL 2; 14.10.5"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What value on the brake \ntemperature monitoring system \ncauses the BRAKE TEMP Advisory \nEICAS message to appear?","a":"5","ref":"FCOM, VOL 2; 14.30.2"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"How does the landing gear extend with the alternate gear extension system?","a":"By pushing the alternate gear extend switches the gear uplocks and door latches are electrically released and the gear free‐falls.\n\nGravity and airloads extend the gear\nSprings pull the downlocks into the locked position","ref":"FCOM VOL 2; 14.20.2"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"Can amber alert messages be canceled or recalled?","a":"Yes, by pushing the CANC switch or the RCL switch.","ref":"FCOM, VOL 2; 15.10.1"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"List some of the configuration conditions that will cause the CONFIG message to display during takeoff?","a":"Flaps not in a takeoff position\nBody gear not centered\nParking brake set\nSpeedbrake lever not in DN detent\nStabilizer trim not in takeoff range","ref":"FCOM, VOL 2; 15.20.11"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"When you receive a TCAS RA, where do you position  the center of the airplane symbol on the PFD?","a":"Outside the red outlined RA pitch regions.","ref":"FCOM, VOL 2; 15.10.13"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"What conditions will cause the CONFIG GEAR EICAS warning message?","a":"Any landing gear not down and locked\n\nWith any of the below conditions\nAny thrust lever is closed and the RA is less than 800 feet  \nFlaps in a landing position (25 or more)","ref":"FCOM, VOL 2; 15.20.10"},{"sec":"Warning Systems","topic":"FOM","q":"When faced with competing objectives, what must always remain the highest priority?","a":"SAFETY","ref":"FOM, 1.1.2"}]},{"bank":4,"title":"PC Oral Question Bank 4","qs":[{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"With body gear steering, what is the minimum width of pavement for a 180 degree turn of the 400F / -8?","a":"4 153 feet (46.6 meters)\n8 172 feet (52.4 meters)","ref":"FCOM, VOL 2; 1.10.3/747-8 1.10.2"},{"sec":"AC Gen, Limitations, & Performance","topic":"LIMITATIONS","q":"What is turbulent air penetration speed -400 and -8?","a":"290 to 310 KIAS/0.82 to 0.85 Mach, whichever is lower.\n310 KTS/0.83 Mach.","ref":"FCOM, VOL 1; L.10.2"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"On the -400, what 3 items will the autostart system protect the engine from during and engine start that also will result in an ENG 1, 2, 3, 4 AUTOSTART EICAS message ?","a":"Hot start\nHung start \nNo EGT rise","ref":"FCOM, VOL 2; 7.20.7 & QRH 7.2"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"How is the engine thrust reverser actuated on the GEnx B747-8?","a":"Hydraulically actuated fan air.","ref":"FCOM, 747-8 VOL 2; 7.20.15"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"GENX2B67 engine EEC’s command ice crystal anti icing when ice crystal icing conditions are detected at altitudes higher than __?","a":"30,000 feet","ref":"FCOM, VOL 2 747-8; 7.20.4"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"Under what condition on the ground will the GEnx EEC shutdown an engine to provide protection against thrust asymmetry due to a control malfunction?","a":"Thrust lever at/near idle and,\nEngine above command N1 speed and not decelerating normally","ref":"FCOM, VOL 2 747-8; 7.20.6"},{"sec":"APU","topic":"APU","q":"How long should you wait before turning the battery switch OFF after the APU selector is rotated to OFF, and why?","a":"2 minutes\n Allows a complete shutdown sequence, with fire detection capability.","ref":"FCOM, VOL 2; 7.30.2"},{"sec":"APU","topic":"ELECTRICAL SYSTEM","q":"What condition would automatically disconnect the IDG if not manually disconnected by the flight crew?","a":"Excessively high drive oil temperature","ref":"FCOM, VOL 2; 6.20.3"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does the hydraulic system (SYS FAULT) fault light indicate?","a":"Low hydraulic system pressure\n Low hydraulic reservoir quantity\n Excessive hydraulic fluid temperature\n(2 Lows & a High)","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does a hydraulic demand pump low PRESS light indicate?","a":"Demand pump selector positioned to OFF or AUX\n Demand pump operates and output pressure is low","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"How many APU fire bottles are provided?","a":"1","ref":"FCOM, VOL 2; 8.20.4"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"What unlocks an engine fire switch?","a":"1.  Fire warning\n2.  FUEL CONTROL switch is in CUTOFF\n3.  Pushing the fire override switch","ref":"FCOM, VOL 2; 8.10.1; 8.20.4"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"Which cross feed valves are controlled by Fuel System Management logic when setting T/O flaps?","a":"Crossfeed valves 2 and 3","ref":"FCOM, VOL 2; 12.20.13"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"What is the impact on the aircraft with excessive fuel imbalance?","a":"Adversely affects CG\n  Aerodynamic drag\n  Fuel economy","ref":"FCOM, VOL 2; 12.20.3"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"How does Center Wing Tank Fuel scavenge in the LCF?","a":"CWT electric pump into M2 tank when\nCWT override/jettison pump has low pressure\nFuel quantity in M2 or M3 tank is below 40200 lbs\n(Pump will operate for approximately two hours or until scavenge pump pressure is low, whichever occurs first)","ref":"FCOM, VOL 2; LCF 12.20.1"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"On the 747-8, at what fuel quantity will the fuel jettison complete jettison operations with the selector in MLW position?","a":"Maximum landing weight plus 3000 kgs","ref":"FCOM, VOL 2 747-8; 12.20.11"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"Describe what happens when nacelle anti‐ice is commanded on?","a":"NAI valve opens\n Selected engine igniters operate continuously\n Engine PRV opens when the NAI valve is open","ref":"FCOM, VOL 2; 3.10.2"},{"sec":"Anti-Ice/Window Heat","topic":"ANTI‐ICE/WINDOW HEAT","q":"On the -400, what indications are displayed, on primary EICAS, when the nacelle anti‐ice and/or the wing anti‐ice valve is open?","a":"“NAI” for nacelle anti‐ice\n  “WAI” for wing anti-­ice","ref":"FCOM, VOL 2; 3.10.4"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"What is the function of the LOWER LOBE  CARGO CONDITIONED AIR FLOW RATE Selector?","a":"Provides forward and aft cargo lobe conditioned air","ref":"FCOM, VOL 2; 2.20.7"},{"sec":"Air Systems","topic":"EQUIPMENT COOLING","q":"When does the equipment cooling system  configure for flight?","a":"One or more engines on each wing is operating.","ref":"FCOM, VOL 2; 2.20.14"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"On the 747-8, what does the alternate ventilation system provide with Pack 1+2+3 shutdown and the airplane depressurized?","a":"outside air to the flight deck","ref":"FCOM, VOL 2 747-8; 2.20.3"},{"sec":"Air Systems","topic":"ENGINE BLEED AIR SYSTEM","q":"How would you isolate a bleed air duct section in the event of a bleed duct leak\nis detected?","a":"Close the respective isolation valve\n  Close the engine bleed air valves.","ref":"FCOM, VOL 2; 2.40.3/QRH 400FC 2.5"},{"sec":"Air Systems","topic":"ENGINE BLEED AIR SYSTEM","q":"With a right duct isolated, how will this affect the hydraulic systems?","a":"The hydraulic demand pump 4 is turned off\nNo hydraulic system 3 and 4 reservoir pressure","ref":"QRH 2.4"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re-engage the autothrottles when the pitch mode is ALT, V/S or G/S?","a":"Push the speed switch","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How can you de‐select the approach mode AFTER localizer and glide‐slope captured?","a":"Select TO/GA or Disengage autopilot and position both F/D switches off.","ref":"FCOM, VOL 2; 4.10.16"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"When does the ROLLOUT mode activate?","a":"Below 5 feet","ref":"FCOM, VOL 2; 4.20.12"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"What autothrottle mode is activated with the second push of the TO/GA switch?","a":"THR REF, at full go‐around thrust","ref":"FCOM, VOL 2; 4.20.14"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"What indicates you are 1/3 of a dot deviation from the Localizer?","a":"The Localizer pointer is just touching the rectangle during  \n      expanded localizer deviation scale.\nAt low radio altitudes, with autopilot or FD engaged, scale turns amber and flashes to indicate excessive LOC deviation","ref":"FCOM, VOL 1; SP.4.7/VOL 2; 10.10.19"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"If the display selector panel fails, how can you select the synoptic displays for the lower EICAS?","a":"Through the respective CDU","ref":"FCOM, VOL 2; 10.10.50"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"On the 747-8, When do the Vertical Anticipation Cues display?","a":"Within 25NM of missed approach point\nWithin 60◦ of Final Approach Course\nTrack within 90◦ of FAC\n<6000 feet above field elevation","ref":"FCOM, VOL 2 747-8; 10.10.13"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"747-8, VSD enroute swath is inhibited on takeoff and approach when the airplane is within __NM of the runway and less than __ ft AFE?","a":"6 NM\n3000 ft","ref":"FCOM, VOL 2 747-8; 10.40.20"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What could happen if you advance the thrust levers  further then TO 1 or TO 2 fixed derate following an engine failure?","a":"Loss of directional control","ref":"FCOM, VOL 2; 11.32.3"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"On a -400F Legacy FMC, when does the approach phase of the FMS start, also know as “on approach logic”?","a":"When the initial fix of an approach sequences\nWhen the runway is the active waypoint and within 25nm","ref":"FCOM, VOL 2; 11.31.2"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"When will the FMC fail to sequence the active waypoint?","a":"When more than 21 nm from the active route and not on an offset route.","ref":"FCOM, VOL 2; 11.31.3"},{"sec":"Flight Controls","topic":"FLAPS","q":"What are the two groups of trailing edge flaps, and how are they powered?","a":"Inboard and outboard\n  Inboard powered by hydraulic system 1\n  Outboard by system 4","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What protection features do FCUs provide  for trailing edge flaps in primary mode?","a":"Asymmetry protection\nFlap load relief\nFlap position information to EICAS and other systems","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"What happens if a primary control failure occurs in either the inboard or midspan  leading edge flap group?","a":"Both groups switch to secondary mode","ref":"FCOM, VOL 2; 9.20.14"},{"sec":"Flight Controls","topic":"FLAP CONTROLS","q":"What is the affect on the flap system during  engine reverse thrust operation?","a":"Inboard and midspan leading edge flaps retract automatically","ref":"FCOM, VOL 2; 9.20.15"},{"sec":"Flight Controls","topic":"FLIGHT CONTROLS","q":"When does the 747-8 takeoff and landing tail strike protection activate?","a":"PACS senses imminent tail strike\nDecreasing elevator deflection\n\nAdditional Information\nActivation of tail strike protection does not move the control column","ref":"FCOM, VOL 2 747-8; 9.20.3"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What does the BRAKE SOURCE amber light indicate when illuminated?","a":"Active brake hydraulic sources (hydraulic systems 4, 1, and 2) have low pressure","ref":"FCOM, VOL 2; 14.10.5"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What value on the brake \ntemperature monitoring system \ncauses the BRAKE TEMP Advisory \nEICAS message to appear?","a":"5","ref":"FCOM, VOL 2; 14.30.2"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"How many degrees can the nose‐wheel steering system turn the nose gear with the tiller, and how many degrees with the rudder pedals?","a":"•   70 degrees in either direction with the tiller \n7 degrees with the rudder pedals","ref":"FCOM, VOL 2; 14.10.2, and 14.10.3"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What does a white, crosshatched,  expanded gear position indication mean?","a":"Related landing gear in transit","ref":"FCOM, VOL 2; 14.10.7"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"What are the 4 types of EICAS messages?","a":"Warning Messages\nCaution Messages\nAdvisory Messages\nMemo Messages","ref":"FCOM, VOL 2; 15.20.2"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"Can amber alert messages be canceled or recalled?","a":"Yes, by pushing the CANC switch or the RCL switch.","ref":"FCOM, VOL 2; 15.10.1"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"List some of the configuration conditions that will cause the CONFIG message to display during takeoff?","a":"Flaps not in a takeoff position\nBody gear not centered\nParking brake set\nSpeedbrake lever not in DN detent\nStabilizer trim not in takeoff range","ref":"FCOM, VOL 2; 15.20.11"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"What does the STATUS Cue mean?","a":"A new status message exists on the (Secondary EICAS) \n\nDisplayed Cyan color","ref":"FCOM, VOL 2; 15.10.2"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"On the 747-8, during takeoff and landing a BANK ANGLE alert sounds for bank angles as small as __?","a":"10°","ref":"FCOM, VOL 2 747-8; 15.20.25"},{"sec":"Warning Systems","topic":"FOM","q":"Safety is best defined as __?","a":"Managed Risk\nThis acknowledges that “zero risk” is an impossibility but striving for it is not","ref":"FOM, 1.1.1"},{"sec":"Warning Systems","topic":"FOM","q":"When faced with competing objectives, what must always remain the highest priority?","a":"SAFETY","ref":"FOM, 1.1.2"}]},{"bank":5,"title":"PC Oral Question Bank 5","qs":[{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"What is the wingspan of the 400F / -8?","a":"213 feet (64.9 meters)\n224.5 feet (68.4 meters)","ref":"FCOM, VOL 2; 1.10.2/747-8 1.10.1"},{"sec":"AC Gen, Limitations, & Performance","topic":"Airplane General","q":"With body gear steering, what is the minimum width of pavement for a 180 degree turn of the 400F / -8?","a":"4 153 feet (46.6 meters)\n8 172 feet (52.4 meters)","ref":"FCOM, VOL 2; 1.10.3/747-8 1.10.2"},{"sec":"AC Gen, Limitations, & Performance","topic":"LIMITATIONS","q":"What is the minimum in-flight fuel temperature for the -8?","a":"-48◦C","ref":"FCOM, VOL 1; L.10.20"},{"sec":"Engines","topic":"EEC","q":"In the normal mode, what does the EEC use as the controlling parameter for the GE engines? For PW engines?","a":"N1\nEPR","ref":"FCOM, VOL 2; 7.20.4 / 7.21.4"},{"sec":"Engines","topic":"EEC","q":"What protection features are provided in the EEC Normal mode?","a":"Thrust limiting\nMaintains constant thrust\nOver-speed protection","ref":"FCOM, VOL 2; 7.20.4/.5"},{"sec":"Engines","topic":"EEC","q":"When does the EEC select approach idle?","a":"Nacelle anti-ice is ON\nFlaps in a landing position\nContinuous ignition switch is ON\nDuring thrust reverser operation","ref":"FCOM, VOL 2, 7.20.5"},{"sec":"Engines","topic":"ENGINE/ENGINE START/IGNITION","q":"What are the PW engine warm up requirements for oil temperature before takeoff?","a":"above the lower amber band","ref":"FCOM, VOL 2; 7.20.8"},{"sec":"APU","topic":"APU","q":"How long should you wait before turning the battery switch OFF after the APU selector is rotated to OFF, and why?","a":"2 minutes\n Allows a complete shutdown sequence, with fire detection capability.","ref":"FCOM, VOL 2; 7.30.2"},{"sec":"APU","topic":"APU","q":"Is electrical power available from the APU in flight?","a":"No","ref":"FCOM, VOL 2; 7.30.1"},{"sec":"Electrical","topic":"ELECTRICAL SYSTEM","q":"What does the “AVAIL” light indicate on the External and APU PWR switches?","a":"The related power source (APU or EXT) is plugged in and available and the power quality is acceptable.","ref":"FCOM, VOL 2; 6.10.4/.5"},{"sec":"Electrical","topic":"ELECTRICAL SYSTEM","q":"What electrical power source provides power for the lower lobe cargo handling, fueling  panel, and AUX 4 hydraulic pump?","a":"EXT PWR 1 or APU GEN 1 is AVAIL or selected ON (powering the Ground Handling bus)","ref":"FCOM, VOL 2; 6.20.5"},{"sec":"Electrical","topic":"ELECTRICAL SYSTEM","q":"How is the electrical system configured during an automatic ILS approach (autoland)?","a":"AC and DC busses 1, 2, and 3 are isolated from the sync bus\n AC bus 4 continues to power the synchronous bus","ref":"FCOM, VOL 2; 6.20.8"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does the hydraulic system (SYS FAULT) fault light indicate?","a":"Low hydraulic system pressure\n Low hydraulic reservoir quantity\n Excessive hydraulic fluid temperature\n(2 Lows & a High)","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"What does a hydraulic demand pump low PRESS light indicate?","a":"Demand pump selector positioned to OFF or AUX\n Demand pump operates and output pressure is low","ref":"FCOM, VOL 2; 13.10.2"},{"sec":"Hydraulics","topic":"HYDRAULICS","q":"When is the engine driven hydraulic pump pressurized?","a":"The engine is running\n  The engine pump switch is ON","ref":"FCOM, VOL 2; 13.20.1"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"What does arming the FWD CARGO fire switch will do on the Passenger aircraft?","a":"Arms cargo fire extinguisher\nConfigures equipment cooling to override mode and turns off airflow and heat to forward compartment\nTurns off PACK 3\nTurns off nitrogen generation system","ref":"FCOM, VOL 2; 8.10.4"},{"sec":"Fire Protection & Detection","topic":"FIRE PROTECTION & DETECTION","q":"How many fire extinguisher bottles are provided for fire fighting in the FWD and AFT cargo compartments of the 747-8 aircraft?","a":"6","ref":"FCOM, VOL 2 747-8; 8.20.4"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"Which cross feed valves are controlled by Fuel System Management logic when setting T/O flaps?","a":"Crossfeed valves 2 and 3","ref":"FCOM, VOL 2; 12.20.13"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"What is the impact on the aircraft with excessive fuel imbalance?","a":"Adversely affects CG\n  Aerodynamic drag\n  Fuel economy","ref":"FCOM, VOL 2; 12.20.3"},{"sec":"Fuel System","topic":"FUEL SYSTEM","q":"Describe how the fuel quantity indication  changes upon termination of fuel jettison:","a":"The fuel to remain quantity indication changes\n   from magenta to white. \n The fuel to remain quantity flashes for 5\n   seconds","ref":"FCOM, VOL 2; 12.20.17"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"What is the function of the LOWER LOBE  CARGO CONDITIONED AIR FLOW RATE Selector?","a":"Provides forward and aft cargo lobe conditioned air","ref":"FCOM, VOL 2; 2.20.7"},{"sec":"Air Systems","topic":"ANTI‐ICE/WINDOW HEAT","q":"How many angle of attack probes are provided, and when are they heated?","a":"2 angle of attack probes\nElectrically heated when any engine is operating.","ref":"FCOM, VOL 2; 3.20.3"},{"sec":"Air Systems","topic":"EQUIPMENT COOLING","q":"Equipment cooling provides cooling air for  what compartment and systems?","a":"Flight deck equipment\nElectrical and equipment racks (E & E)","ref":"FCOM, VOL 2; 2.20.14"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"The 747-8 ECS Left and Right trim air is provided to which temperature zones?","a":"Left trim air system\nflight deck\nupper deck\ncrew rest\naft Main deck\n\nRight trim air system\nforward main deck\nforward lower lobe\naft lower lobe","ref":"FCOM, VOL 2 747-8; 2.20.6"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"ON the 747-8, what position is the LOWER LOBE AFT CARGO HT selectors normally placed in during preflight?","a":"LOW","ref":"FCOM, VOL 2 747-8; 2.20.7"},{"sec":"Air Systems","topic":"AIR CONDITIONING","q":"ON the 747-8, what position are the MAIN DECK FWD and AFT TEMP selectors normally placed in during preflight?","a":"OFF","ref":"FCOM, VOL 2 747-8; 2.20.7"},{"sec":"Air Systems","topic":"ENGINE BLEED AIR SYSTEM","q":"Describe the general function of pressure regulating valve (PRV):","a":"Prevents damage to ducting and equipment downstream by limiting bleed air pressure.","ref":"FCOM, VOL 2; 2.40.1"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How do you re‐engage the autothrottles when the pitch mode is\nVNAV ___ or FLCH SPD?","a":"Cycle the A/T ARM switch to OFF and back to ARM","ref":"FCOM, VOL 2; 4.10.3"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"How can you de‐select the approach mode AFTER localizer and glide‐slope captured?","a":"Select TO/GA or Disengage autopilot and position both F/D switches off.","ref":"FCOM, VOL 2; 4.10.16"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"When is TO/GA mode terminated after  takeoff?","a":"By selecting any other pitch and roll mode, or by \tactivation of LNAV/VNAV modes","ref":"FCOM, VOL 2; 4.20.10"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"What climb rate is achieved during a go-around with one push of the TO/GA switches?","a":"2,000 feet per minute of climb","ref":"FCOM, VOL 2; 4.20.14"},{"sec":"Auto Flt. & Flt Inst.","topic":"AUTOMATIC FLIGHT/MCP","q":"What is the maximum intercept angle that the localizer (LOC) will capture with the Approach (APP) or LOC mode armed?","a":"Less than 120 degrees","ref":"FCOM, VOL 2; 4.20.11"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"What indicates you are 1/3 of a dot deviation from the Localizer?","a":"The Localizer pointer is just touching the rectangle during  \n      expanded localizer deviation scale.\nAt low radio altitudes, with autopilot or FD engaged, scale turns amber and flashes to indicate excessive LOC deviation","ref":"FCOM, VOL 1; SP.4.7/VOL 2; 10.10.19"},{"sec":"Flt Inst.","topic":"FLIGHT INSTRUMENTS & DISPLAYS","q":"747-8, Electronic Checklist Open Loop action items require __?","a":"flight crew to manually \n      confirm completion with \n      Cursor Control\nCURSOR\nCONTROL\nParking brake . . . . . . . . . . . . . . . . . . . . . . . . .  . . Set\nFuel control switches . . . . . . . . . . . . . . . . .  CUTOFF\nNORMAL\nITEM \nOVRD\nCHKL \nOVRD\nCHKL \nRESET","ref":"FCOM, VOL 2 747-8; 10.40.20"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What CDU pages are available during Alternate Navigation?","a":"Alternate navigation LEGS\nAlternate navigation PROGRESS\nAlternate navigation RADIO","ref":"FCOM, VOL 2; 11.50.2"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"What could happen if you advance the thrust levers  further then TO 1 or TO 2 fixed derate following an engine failure?","a":"Loss of directional control","ref":"FCOM, VOL 2; 11.32.3"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"If you are flying an approach with the FMC in “on approach” logic, and the airplane rises more than 150 feet above the path, the  FMA pitch mode will change from VNAV PTH to what pitch mode  display?","a":"VNAV SPD","ref":"FCOM, VOL 2; 11.31.29"},{"sec":"Navigation","topic":"FLIGHT MANAGEMENT SYSTEM (FMS)","q":"On the 747-8, does the MultiScan weather radar provide turbulence detection capability?","a":"Yes – Displays magenta for moderate to severe turbulence when there is sufficient precipitation (Clear air turbulence cannot be sensed by the radar)","ref":"FCOM, VOL 2; 11.31.3"},{"sec":"Flight Controls","topic":"FLAPS","q":"How many groups of leading flaps are provided, and how are they normally powered?","a":"Three groups on each wing: outboard, midspan, and inboard sections.\n  Normally pneumatically powered from the bleed air duct.","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLAPS","q":"How are the trailing edge flaps driven in  primary mode?","a":"Hydraulically","ref":"FCOM, VOL 2; 9.20.13"},{"sec":"Flight Controls","topic":"FLIGHT CONTROLS","q":"Takeoff trim setting is calculated based on__?","a":"FMC calculated:\ngross weight\ncenter of gravity\ntakeoff thrust derate selection\ntakeoff flap selection","ref":"FCOM, VOL 2; 9.20.4, 747-8, 9.20.5"},{"sec":"Flight Controls","topic":"FLAPS","q":"Is there any asymmetry protection in  alternate flap mode?","a":"NO\nThe FCU provide asymmetry protection in normal mode.","ref":"FCOM, VOL 2; 9.20.14"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What does the BRAKE SOURCE amber light indicate when illuminated?","a":"Active brake hydraulic sources (hydraulic systems 4, 1, and 2) have low pressure","ref":"FCOM, VOL 2; 14.10.5"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What conditions must be satisfied in order for the landing gear lever lock to release?","a":"Main gear are tilted\n  Body gear centered","ref":"FCOM, VOL 2; 14.20.2"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"What value on the brake \ntemperature monitoring system \ncauses the BRAKE TEMP Advisory \nEICAS message to appear?","a":"5","ref":"FCOM, VOL 2; 14.30.2"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"Describe the OFF position of the landing gear.","a":"Landing gear hydraulic system is depressurized.","ref":"FCOM, VOL 2; 14.10.1"},{"sec":"Landing Gear","topic":"LANDING GEAR & BRAKES","q":"Why is it necessary to pressurize hydraulic system 4 before pressurizing the other  systems?","a":"Precludes the transfer of hydraulic fluid from system 1 or 2 into system 4. When the parking brake is set, and then released, brake hydraulic return lines dump into system 4.","ref":"FCOM, VOL 2; 14.20.6"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"Can warning messages be canceled by pushing the CANC switch?","a":"No","ref":"FCOM, VOL 2; 15.10.1"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"Can amber alert messages be canceled or recalled?","a":"Yes, by pushing the CANC switch or the RCL switch.","ref":"FCOM, VOL 2; 15.10.1"},{"sec":"Warning Systems","topic":"WARNING SYSTEMS","q":"What is the highest priority alert message?","a":"Warning messages (red)","ref":"FCOM, VOL 2; 15.10.1"},{"sec":"Warning Systems","topic":"FOM","q":"Safety is best defined as __?","a":"Managed Risk\nThis acknowledges that “zero risk” is an impossibility but striving for it is not","ref":"FOM, 1.1.1"},{"sec":"Warning Systems","topic":"FOM","q":"When faced with competing objectives, what must always remain the highest priority?","a":"SAFETY","ref":"FOM, 1.1.2"}]}];
+
+/* ---------- PCWU profile (747 Recurrent PCWU FFSQ-1). x = minutes, y = altitude ×1,000 ft ---------- */
+const PCWU_EVENTS = [
+ {id:"W01",t:"Preflight",x:3,y:0,items:[],ios:["KSFO, parking Superbay, cold and dark","ATIS Alpha: 190/15, ¼ sm FG, OVC001, 06/06, A29.92, RWY 10L, RVR 500/500/500"]},
+ {id:"W02",t:"Engine start",x:9,y:0,items:[],ios:["Normal starts — auto and manual","Non-normal start, choose one: autostart hot / hung / no EGT rise, starter cutout, low oil pressure, no N1, tailpipe fire","Carry the malfunction to its conclusion, then “Consider the malfunction complete”"]},
+ {id:"W03",t:"Takeoff — INST / RNAV 1",s:"Takeoff INST/RNAV1",x:18,y:0,items:[],ios:["Aligned on centerline, ready for takeoff","Practice crosswind directional control, rate of rotation, RNAV / RNP departure, FMA changes","Crosswind gust entered manually — FAA Gust not selected (bulletin)"]},
+ {id:"W04",t:"Departure stall",x:21,y:4,items:[21],crit:1,ios:["Remove gust before the stall","Gear up, Flaps 10 or 20, A/P on, VNAV, climbing departure turn","Instructor disconnects A/T, thrust 60%","Complete only after re-automation"]},
+ {id:"W05",t:"FMS exercises",x:23,y:9,items:[],ios:["In a climb or level","Inbound / outbound radial, re-route, direct-to then re-route, PBD, abeam points, route offset"]},
+ {id:"W06",t:"TCAS RA",x:27,y:14,items:[30],ios:["Straight and level, F/D, A/T, A/P on","Traffic avoidance, re-automation, FMA"]},
+ {id:"W07",t:"Non-normal",x:31,y:14,items:[],ios:["Instructor selects; may occur any time","Preferably with deferred items","Check CAT II/III Required Indications and Equipment when selecting"]},
+ {id:"W08",t:"ILS CAT III",x:42,y:3,items:[15],crit:1,ios:["Low visibility approaches in effect","Category III (fail operational) to full stop","From qualified seat · requires a Check Pilot to grade"]},
+ {id:"W09",t:"Approach windshear",s:"App windshear",x:47,y:1.5,items:[27],ios:["ILS approach","Demonstrate escape A/P on; practice manually flown","Either a departure or approach windshear — instructor selects"]},
+ {id:"W10",t:"Departure windshear",s:"Dep windshear",x:54,y:1,items:[27],ios:["Crosswind takeoff with gust","Windshear during initial climb; escape maneuver, re-automate"]},
+ {id:"W11",t:"CFIT",x:58,y:4,items:[29],ios:["Descending into terrain","Terrain avoidance, re-automation, FMA"]},
+ {id:"W12",t:"Non-ILS VNAV (X-wind, gust)",s:"Non-ILS VNAV",x:63,y:1.5,items:[],ios:["Radar vectors or published transition","Flight freeze for “what if” scenarios (CF / FAF clearances, holds)"]},
+ {id:"W13",t:"RTO (FO as PF)",x:69,y:0,items:[9],crit:1,ios:["Captain PM, First Officer PF","Low-speed RTO triggered by an engine failure (bulletin)"]},
+ {id:"W14",t:"Engine fail (V1–V2)",s:"Eng fail V1–V2",x:74,y:0,items:[],crit:1,ios:["At V1, VR or V2: fail / severe damage / separation","Directional control in crosswind, rate of rotation, rudder trim technique"]},
+ {id:"W15",t:"ILS CAT II OEI → MAP",s:"CAT II OEI → MAP",x:81,y:1.5,items:[14],crit:1,ios:["Category II, no visual cues at minimums → missed approach","From qualified seat · requires a Check Pilot to grade"]},
+ {id:"W16",t:"Engine inop ILS (manual) → REJ",s:"OEI ILS → REJ",x:89,y:1,items:[24],crit:1,ios:["Radar vectors; one engine inop ILS manually flown","Rejected landing and missed approach"]},
+ {id:"W17",t:"Visual approach (50% thrust loss)",s:"Visual 50%",x:99,y:1.5,items:[],ios:["On a 3-engine missed approach: 2nd engine fail / fire","Self-directed visual pattern: no vectors, no G/S, no VASI / PAPI","Approach and landing"]},
+ {id:"W18",t:"Seat specific: CA right seat",s:"CA right seat",x:112,y:0,items:[31],ios:["Engine fail (> V1 < V2) from the right seat","Visual approach and landing (ILS available)"]},
+ {id:"W19",t:"Steep turns",x:0,y:0,opt:1,items:[20],ios:["Level, F/D A/T A/P on","Steep turns, re-automation"]},
+ {id:"W20",t:"Holding",x:0,y:0,opt:1,items:[11],ios:["IAF hold, CF hold, or missed-approach hold"]},
+ {id:"W21",t:"Landing config stall",x:0,y:0,opt:1,items:[21],ios:["ILS coupled ~1,500 AGL, gear down, Flaps 30, A/P and A/T off, thrust 55%","Recovery, go-around, re-automation"]},
+ {id:"W22",t:"Clean stall",x:0,y:0,opt:1,items:[21],ios:["Gear up, flaps up, speedbrake extended, descending to 2,000 (FLCH / VNAV SPD, A/T HOLD)","Pilot levels off before capture without following FD"]},
+ {id:"W23",t:"SPOT 1 — inadvertent TOGA",x:0,y:0,opt:1,items:[],ios:["Flaps out of up: select “Inadvertent TOGA” (SIM #3) or press TOGA","Recovery: A/P off, A/T off, return to ATC instruction, re-automate"]},
+ {id:"W24",t:"SPOT 2 — crosswind landings",x:0,y:0,opt:1,items:[],ios:["Minimum 3 landings, 36 kt x-wind, 200.0 and 302.0 kg","Touchdown in crab, slippery rollout with reverse, bounced landing recovery"]}
+];
+const PCWU_PATH = [[0,0],[19,0],[25,14],[32,14],[37,6],[43,0],[48,0],[50,2],[56,2],[58,4],[61,2],[64,0],[72,0],[75,2],[80,2],[82,0],[84,2],[89,2],[92,0],[95,2],[100,2],[103,0],[110,0],[112,2],[117,2],[119,0],[132,0]];
+
+/* ---------- PC profile (Recurrent / Requal / Upgrade / Special Tracking, PC Guide 6.7.2) ---------- */
+const PC_EVENTS = [
+ {id:"P01",t:"Preflight",x:2,y:0,items:[2]},
+ {id:"P02",t:"Engine start",x:6,y:0,items:[4],ios:["Normal and non-normal starts at SCP discretion"]},
+ {id:"P03",t:"Taxi",x:10,y:0,items:[3],ios:["Low visibility, airport diagram, clearance before crossing or entering runways","Before takeoff checks, FMS runway before hold short"]},
+ {id:"P04",t:"Takeoff — X-wind w/ gust, INST, RNAV 1",s:"Takeoff X-wind/INST/RNAV1",x:16,y:0,items:[5,6,7,10],ios:["RVR 500 for the instrument takeoff","Crosswind ≥ 10 kt with gust, entered manually","At least one RNAV1 / RNP1 departure"]},
+ {id:"P05",t:"FMS exercises",x:21,y:10,items:[37],ios:["LNAV (SCP discretion), VNAV speed and altitude constraints"]},
+ {id:"P06",t:"Steep turns",x:25,y:20,items:[20],ios:["280 kt, 45° bank, ≥ 180° each direction","ALT ± 100, A/S ± 10, bank ± 5°, roll-out ± 10°; re-automate"]},
+ {id:"P07",t:"Non-normal (R)",x:30,y:22,items:[35,36],ios:["At least one system non-normal required","Carry to a logical conclusion"]},
+ {id:"P08",t:"Holding",x:33,y:14,items:[11],ios:["IAF / CF / FAF / PP hold or missed-approach hold","FMC hold entries, speed, leg length, EFC fuel update"]},
+ {id:"P09",t:"Clean stall",x:35,y:11,items:[21],ios:["Gear up, flaps up, speedbrake out, descending to 2,000","Level off before capture; do not follow FD"]},
+ {id:"P10",t:"App to landing stall",s:"Ldg stall",x:38,y:7,items:[21],ios:["ILS coupled ~1,500 AGL, gear down, Flaps 30","A/P off, A/T arm off, thrust 55%; recover to go-around path"]},
+ {id:"P11",t:"ILS CAT I",x:41,y:3,items:[12,22],ios:["All-engine ILS CAT I to minimums","Manual or autoland — mark which"]},
+ {id:"P12",t:"Departure stall",x:55,y:1.5,items:[21],crit:1,ios:["Gear up, Flaps 10 or 20, A/P on, VNAV, climbing turn","SCP disconnects A/T, thrust idle; 15–30° bank"]},
+ {id:"P13",t:"Non-normal (O)",x:61,y:4,items:[35],ios:["Optional second non-normal"]},
+ {id:"P14",t:"Non-ILS (auto)",x:65,y:2.5,items:[16],ios:["VOR / NDB / RNAV / LOC"]},
+ {id:"P15",t:"Missed approach",x:71,y:1,items:[18],ios:["Complete once LNAV captured and holding speed addressed"]},
+ {id:"P16",t:"Non-ILS manual (X-wind, gust)",s:"Non-ILS manual",x:78,y:2,items:[17,23],ios:["Different type from the first non-ILS","A/P and A/T off on base before approach clearance","10–15 kt crosswind plus gust to a full stop"]},
+ {id:"P17",t:"RTO",x:88,y:0,items:[9],crit:1,ios:["RVR 500, max gross weight, TO rated thrust","FO as PF per bulletin when conducted"]},
+ {id:"P18",t:"Engine fail (V1–V2)",s:"Eng fail V1–V2",x:93,y:0,items:[8],crit:1,ios:["CAT I minimums, 10–15 kt crosswind","Failure after V1 and before V2"]},
+ {id:"P19",t:"ILS one engine inop (manual)",s:"ILS OEI manual",x:99,y:2,items:[13],crit:1,ios:["A/P and A/T off on base before approach clearance","Fly to 50 ft TDZE"]},
+ {id:"P20",t:"REJ → MAP, second engine (same side)",s:"REJ → MAP 2nd eng",x:104,y:0.5,items:[24,19],crit:1,ios:["Rejected landing at ~50 ft, one engine inop missed approach","747: loss of second engine on the same side"]},
+ {id:"P21",t:"Visual approach (50% thrust loss)",s:"Visual 50%",x:111,y:3,items:[25,26],crit:1,ios:["CAVOK, no G/S, no PAPI / VASI; LOC at SCP discretion","Both engines failed on the same side; both CA and FO"]},
+ {id:"P22",t:"Evacuation (if required)",s:"Evacuation",x:119,y:1,items:[35],ios:["Emergency carried through; SCP: “Consider the emergency complete”"]},
+ {id:"P23",t:"After landing & shutdown",s:"Shutdown",x:126,y:0,items:[3]},
+ {id:"P24",t:"CAT II ILS OEI → MAP",opt:1,items:[14],ios:["Only if not S on the PCWU by an SCP","From qualified seat; FO in CA/FO pairing: CAT I autoland in lieu of CAT III, CAT II MAP not required"]},
+ {id:"P25",t:"CAT III ILS",opt:1,items:[15],ios:["To a full stop landing"]},
+ {id:"P26",t:"Windshear",opt:1,items:[27]},
+ {id:"P27",t:"CFIT",opt:1,items:[29]},
+ {id:"P28",t:"TCAS",opt:1,items:[30]},
+ {id:"P29",t:"Seat specific (CA right seat)",opt:1,items:[31],ios:["Takeoff engine failure (V1–V2) and visual approach and landing from the right seat"]},
+ {id:"P30",t:"Oral, CRM & general",opt:1,items:[1,34,36,37,38,39],ios:["Graded across the whole check","English proficiency from the oral and from crew / ATC communication"]}
+];
+const PC_PATH = [[0,0],[17,0],[21,10],[25,20],[29,20],[30,22],[31,20],[33,14],[35,11],[38,7],[41,3],[44,0],[53,0],[55,1.5],[60,1.5],[61,4],[64,2.5],[67,1],[71,1],[73,2],[78,2],[81,0],[90,0],[94,2],[99,2],[102,0.5],[105,0.5],[107,2],[111,3],[114,0],[127,0]];
+
+const TSTAT = [{k:"P",l:"Proficient",c:"ok"},{k:"C",l:"Coached",c:"warn"},{k:"N",l:"Not yet",c:"bad"},{k:"D",l:"Demo",c:"info"},{k:"X",l:"Not done",c:"mute"}];
+const TSBY = Object.fromEntries(TSTAT.map(x => [x.k, x]));
+
+/* ============================================================ helpers */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => "S" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase();
+const today = () => new Date().toISOString().slice(0,10);
+const clone = o => JSON.parse(JSON.stringify(o));
+function getPath(o,p){ return p.split("/").reduce((t,k) => t == null ? undefined : t[k], o); }
+function setPath(o,p,v){ const k = p.split("/"); let t = o; for (let i=0;i<k.length-1;i++){ if (t[k[i]] == null || typeof t[k[i]] !== "object") t[k[i]] = {}; t = t[k[i]]; } t[k[k.length-1]] = v; }
+function fmtDur(ms){ const s = Math.max(0, Math.floor(ms/1000)); return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`; }
+function fmtHM(ms){ const m = Math.round(Math.max(0,ms)/60000); return `${Math.floor(m/60)}+${String(m%60).padStart(2,"0")}`; }
+const pname = (s,p) => (s.setup.pilots[p].name || (p===0 ? "Left seat" : "Right seat")).trim();
+const seatLab = p => p===0 ? "L" : "R";
+const EVENTS = s => s.kind === "PCWU" ? PCWU_EVENTS : PC_EVENTS;
+const PATH = s => s.kind === "PCWU" ? PCWU_PATH : PC_PATH;
+
+function blankPilot(duty){ return {name:"",emp:"",duty,certNo:"",cert:"ATP",medDate:"",medClass:"First",acType:"744"}; }
+function newSession(kind){
+  return {schema:SCHEMA, program:"N&O", kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
+    setup:{date:today(), device:"", cat:"REC", failedQual:[false,false], lapsed:[false,false], typeRating:false,
+      conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null]},
+    docs:[{},{}],
+    brief:{checked:{}, notes:"", startedAt:null, elapsed:0, bank:1, oral:[{},{}], walk:[{},{}], open:{}},
+    run:{startedAt:null, elapsed:0, ev:{}},
+    g:[{},{}], counts:[{to:"",ldg:""},{to:"",ldg:""}], log:[[],[]],
+    debrief:{p:[{result:"",remarks:"",study:""},{result:"",remarks:"",study:""}], crew:"", signedBy:"", signedAt:"", faa:""}};
+}
+function migrate(s){ // fill fields added after a record was created
+  const n = newSession(s.kind || "PC");
+  for (const k of Object.keys(n)) if (s[k] === undefined) s[k] = n[k];
+  for (const k of Object.keys(n.setup)) if (s.setup[k] === undefined) s.setup[k] = n.setup[k];
+  for (const k of Object.keys(n.brief)) if (s.brief[k] === undefined) s.brief[k] = n.brief[k];
+  return s;
+}
+
+/* ============================================================ grading engine */
+function waiverLock(s,p){
+  const c = CAT(s.setup.cat);
+  if (c.noW) return `${c.noW} — waivers not permitted`;
+  if (s.setup.failedQual[p]) return "Following failure of a qualification event — waivers not permitted";
+  if (s.setup.lapsed[p]) return "Recurrent PC interval expired (lapsed) — waivers not permitted";
+  return "";
+}
+function stallNeed(code){ return code === "R" ? ["to","ldg","clean"] : ["to"]; }
+function pcwuOf(s,p){ return s.kind === "PC" ? s.setup.link[p] : null; }
+
+/* requirement + credit for one PC item */
+function req(s,p,n){
+  const it = IT(n), duty = s.setup.pilots[p].duty;
+  if (n === 31 && duty !== "CA") return {code:"/", na:true, why:"Captain seat-specific item; not applicable to an FO"};
+  let code = baseCode(n, s.setup.cat), lock = "", why = CODE_LABEL[code];
+  const L = waiverLock(s,p);
+  if (L && (code === "W" || code === "T")) { lock = L; code = "R"; why = L; }
+  const link = pcwuOf(s,p);
+  let credited = false, cwhy = "";
+  if (link && (it.cred || it.naf)) {
+    const pw = (link.items||{})[n] || {};
+    if (it.naf && pw.st === "C") { credited = true; cwhy = `Completed (C) on PCWU ${link.date}`; }
+    else if (it.cred && pw.st === "S" && link.role === "SCP") {
+      if (n === 21) { const need = stallNeed(code); const have = pw.subs || {}; if (need.every(k => have[k])) { credited = true; cwhy = `Stall credited — S on PCWU ${link.date} by SCP`; } else cwhy = `PCWU stalls don’t cover ${need.filter(k=>!have[k]).map(k=>({to:"T/O",ldg:"LDG",clean:"Clean"})[k]).join(", ")} — grade on PC`; }
+      else { credited = true; cwhy = `S on PCWU ${link.date} by SCP ${link.conductor||""}`.trim(); }
+    } else if (it.cred && link.role !== "SCP") cwhy = "PCWU given by an instructor — not creditable (Check Airman only)";
+  }
+  return {code, lock, why, credited, cwhy, waivable: code === "W" || code === "T"};
+}
+/* allowed PC status entries */
+function allowed(s,p,n){
+  const it = IT(n), r = req(s,p,n);
+  if (r.na) return ["/"];
+  const slash = r.credited || r.code === "/";
+  if (it.naf) return slash ? ["C","I","/"] : ["C","I"];
+  const a = ["S","U"];
+  if (r.code === "W") a.push("W");
+  if (slash) a.push("/");
+  return a;
+}
+/* effective status: explicit entry, else auto "/" when credited or not required */
+function eff(s,p,n){
+  const g = (s.g[p]||{})[n] || {};
+  if (s.kind === "PCWU") return g.st || "";
+  if (g.st) return g.st;
+  const r = req(s,p,n);
+  if (r.na || r.credited || r.code === "/") return "/";
+  return "";
+}
+function isAuto(s,p,n){ const g = (s.g[p]||{})[n] || {}; return !g.st && !!eff(s,p,n); }
+
+/* PCWU column rules */
+function pcwuCell(s,p,n){ // returns {shaded, val, auto}
+  const it = IT(n);
+  if (!(it.cred || it.naf)) return {shaded:true, val:""};
+  const g = (s.g[p]||{})[n] || {};
+  if (n === 31 && s.setup.pilots[p].duty !== "CA") return {val:"/", auto:true, why:"FO — not applicable"};
+  if (it.cred && s.setup.conductor.role !== "SCP") return {val:"/", auto:true, why:"Instructor PCWU — diagonal line; credit requires a Check Airman"};
+  return {val:g.st || "", why:""};
+}
+function pcwuAllowed(s,p,n){ const it = IT(n); if (it.naf) return ["C","/"]; return ["S"]; }
+
+/* problems that block submission */
+function problems(s,p){
+  const out = [], P = s.setup.pilots[p], who = pname(s,p);
+  const add = (n,msg,warn) => out.push({n,msg,warn:!!warn});
+  if (!P.name.trim() || !P.emp.trim()) add(0,"Pilot name and employee number");
+  if (!s.setup.conductor.name.trim()) add(0, s.kind==="PC" ? "PC Check Airman name" : "PCWU instructor / Check Airman name");
+  if (!s.setup.device.trim()) add(0,"Simulator FAA ID");
+  if (s.kind === "PC") {
+    const D = s.docs[p] || {}; const miss = DOCS.filter(d => !D[d[0]]);
+    if (miss.length) add(0,`Documents not verified: ${miss.map(d=>d[1].split(" —")[0].split(" (")[0]).join("; ")}`);
+    const res = s.debrief.p[p].result;
+    if (!res) add(0,"Result not selected");
+    const inc = res === "INC";
+    if (!s.setup.link[p] && ["REC","RQF","RQ12"].includes(s.setup.cat)) add(0,"No PCWU linked — creditable and CAT II/III / Non-App F items will all be required on the PC", true);
+    let anyU = false;
+    ITEMS.forEach(it => {
+      const n = it.n, r = req(s,p,n), v = eff(s,p,n), g = (s.g[p]||{})[n] || {};
+      if (!v) { if (!inc) add(n, `${it.t}: no status entered — ${r.why}`); return; }
+      if (v === "U" || v === "I") anyU = true;
+      if (v === "/" && !r.na && !r.credited && r.code !== "/") add(n, `${it.t}: “/” not allowed — ${r.code==="*"||r.code==="N" ? "not credited from a PCWU" : "item is required"}`);
+      if (v === "W" && r.code !== "W") add(n, `${it.t}: cannot be waived — ${r.lock || "no waiver authority for this item"}`);
+      if (v === "W" && n === 9 && (P.duty === "FO" || s.setup.pilots[1-p].duty === "FO")) add(n, "RTO waived for an FO / FO pairing — confirm judgment standard applied (not automatic)", true);
+      if (g.rep && !(g.note||"").trim() && !(s.debrief.p[p].remarks||"").trim()) add(n, `${it.t}: repeat code ${g.rep} needs a remark`);
+      if ((v === "U" || v === "I") && !(g.note||"").trim() && !(s.debrief.p[p].remarks||"").trim()) add(n, `${it.t}: ${v} needs a remark${n===35?" naming the procedure":""}`);
+      if (v === "S" && it.subs) {
+        const sb = g.subs || {};
+        if (n === 10 && !sb.dep && !sb.arr) add(n, "RNAV1: mark departure or arrival flown");
+        if (n === 12 && !sb.man && !sb.auto) add(n, "Normal ILS: mark manual or autoland");
+        if ((n === 14 || n === 15) && !sb.nrm && !sb.oei) add(n, `${n===14?"CAT II":"CAT III"}: mark normal or one engine inop`);
+        if (n === 16 || n === 17) { if (!["VOR","NDB","LOC","ASR","RNAV"].some(k => sb[k])) add(n, `${it.t}: mark the approach type`); }
+        if (n === 21) { const need = stallNeed(r.code); const miss = need.filter(k => !sb[k]); if (miss.length) add(n, `Approach to stall: ${miss.map(k=>({to:"T/O in turn",ldg:"LDG",clean:"Clean"})[k]).join(", ")} required for this PC`); }
+      }
+    });
+    const a = ((s.g[p]||{})[16]||{}).subs||{}, b = ((s.g[p]||{})[17]||{}).subs||{};
+    if (eff(s,p,16)==="S" && eff(s,p,17)==="S") {
+      const ta = ["VOR","NDB","LOC","ASR","RNAV"].filter(k=>a[k]), tb = ["VOR","NDB","LOC","ASR","RNAV"].filter(k=>b[k]);
+      if (ta.length && tb.length && ta.every(k => tb.includes(k)) && tb.every(k => ta.includes(k))) add(17, "Second non-precision must be a different type from the first");
+      if (!a.man && !b.man) add(16, "One non-precision approach must be manually flown");
+    }
+    const c = s.counts[p]; if (!inc && (+c.to < 3 || +c.ldg < 3)) add(0,"TO / LDG count — 3 minimum each (3 manually flown landings)");
+    if (res === "SAT" && anyU) add(0,"Result is Satisfactory but an item is graded U / I");
+    if (res === "UNSAT" && !anyU) add(0,"Result is Unsat but no item is graded U / I", true);
+  } else {
+    const st = ((s.g[p]||{})[21]||{}); if (st.st === "S" && !(st.subs||{}).to) add(21,"Stall credited S without the T/O config stall in turn");
+  }
+  return out;
+}
+const blocking = (s,p) => problems(s,p).filter(x => !x.warn);
+function seatRestricted(s,p){ return s.kind === "PC" && ITEMS.some(it => ["U","I"].includes(eff(s,p,it.n)) && !IT(it.n).naf); }
+
+/* per-pilot status for a stick-diagram event */
+function evState(s,e,p){
+  if (s.kind === "PCWU") {
+    const r = (((s.run.ev[e.id]||{}).p)||[])[p] || {};
+    return r.st ? TSBY[r.st].c : (e.items.some(n => pcwuCell(s,p,n).val && !pcwuCell(s,p,n).auto) ? "ok" : "none");
+  }
+  const vs = e.items.map(n => ({v:eff(s,p,n), auto:isAuto(s,p,n), r:req(s,p,n)}));
+  if (vs.some(x => x.v === "U" || x.v === "I")) return "bad";
+  if (vs.every(x => x.v)) return vs.every(x => x.auto || x.v === "W") ? "mute" : "ok";
+  if (vs.some(x => x.v && !x.auto)) return "warn";
+  return "none";
+}
+function evNeeded(s,e){ // PC: does any linked item still need a grade?
+  return [0,1].some(p => e.items.some(n => !eff(s,p,n)));
+}
+
+/* ============================================================ store */
+const LOCAL_KEY = "ATLAS_NO_PC_SESSIONS_v1";
+const store = {db:null, dl:null};
+let sessions = {}, demo = null;
+const ui = {view:"home", cur:null, ev:null, p:0, sel:null, del:null, oralTopic:"", linkFor:null};
+try { Object.assign(sessions, JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}")); Object.values(sessions).forEach(migrate); } catch(e){}
+const synced = new Set((() => { try { return JSON.parse(localStorage.getItem(LOCAL_KEY+"_synced") || "[]"); } catch(e){ return []; } })());
+function saveSynced(){ try { localStorage.setItem(LOCAL_KEY+"_synced", JSON.stringify([...synced])); } catch(e){} }
+function cur(){ return ui.cur === "DEMO" ? demo : sessions[ui.cur]; }
+function writeLocal(){ try { localStorage.setItem(LOCAL_KEY, JSON.stringify(sessions)); } catch(e){} }
+const pending = {};
+function touch(s){
+  if (!s || s.demo) { renderStatus(); return; }
+  s.updatedAt = Date.now(); writeLocal();
+  clearTimeout(pending[s.id]); pending[s.id] = setTimeout(() => pushOne(s.id), 700);
+  renderStatus("saving");
+}
+async function pushOne(id){
+  const s = sessions[id]; if (!s) return;
+  if (!store.db) { renderStatus(); return; }
+  try { await store.db.doc("sessions/"+id).set(clone(s)); synced.add(id); saveSynced(); delete pending[id]; renderStatus(); }
+  catch(e){
+    if (e && e.code === "unavailable") setTimeout(() => pushOne(id), 1500 + Math.random()*1000);
+    else { toast(e && e.code === "quota_exceeded" ? "The PC data store is full. Export and delete old sessions." : "Couldn't save to the PC data store. Kept on this device."); renderStatus("err"); }
+  }
+}
+async function connectStore(){
+  if (!window.claude || !claude.use) return;
+  try { store.dl = await claude.use("downloads"); } catch(e){}
+  let db = null; try { db = await claude.use("db"); } catch(e){}
+  if (!db) { renderStatus(); return; }
+  store.db = db; let first = true;
+  db.collection("sessions").orderBy("updatedAt","desc").limit(500).onSnapshot(snap => {
+    const seen = {};
+    snap.docs.forEach(d => { const r = d.data(); if (!r || r.schema !== SCHEMA) return; seen[d.id] = r;
+      const l = sessions[d.id]; if (!l || (r.updatedAt||0) > (l.updatedAt||0)) sessions[d.id] = migrate(clone(r)); });
+    if (first && !snap.metadata.fromCache) { first = false;
+      Object.keys(sessions).forEach(id => { if (seen[id]) { if (sessions[id].updatedAt > (seen[id].updatedAt||0)) pushOne(id); } else if (synced.has(id)) delete sessions[id]; else pushOne(id); }); }
+    snap.docChanges().forEach(c => { if (c.type === "removed" && !pending[c.doc.id]) delete sessions[c.doc.id]; });
+    writeLocal();
+    if (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { renderStatus(); return; }
+    rerender();
+  }, () => renderStatus("err"));
+  rerender();
+}
+async function deleteSession(id){
+  delete sessions[id]; writeLocal(); clearTimeout(pending[id]); delete pending[id];
+  if (store.db) { try { await store.db.doc("sessions/"+id).delete(); } catch(e){ toast("Removed here; the data store could not be reached."); } }
+}
+
+/* PCWU lookup for a PC pilot */
+function pcwuCandidates(s,p){
+  const P = s.setup.pilots[p], emp = (P.emp||"").trim(), nm = (P.name||"").trim().toLowerCase();
+  const out = [];
+  Object.values(sessions).forEach(w => { if (w.kind !== "PCWU" || w.demo) return;
+    w.setup.pilots.forEach((wp,i) => { const e = (wp.emp||"").trim(); const n = (wp.name||"").trim().toLowerCase();
+      if ((emp && e === emp) || (!emp && nm && n === nm)) out.push({w, i}); }); });
+  return out.sort((a,b) => (b.w.setup.date||"").localeCompare(a.w.setup.date||"") || b.w.updatedAt - a.w.updatedAt);
+}
+function snapPCWU(w,i){
+  const items = {};
+  ITEMS.forEach(it => { if (it.cred || it.naf) { const c = pcwuCell(w,i,it.n); const g = (w.g[i]||{})[it.n] || {}; items[it.n] = {st:c.val, subs:g.subs||{}}; } });
+  return {sid:w.id, date:w.setup.date, device:w.setup.device, conductor:w.setup.conductor.name, condEmp:w.setup.conductor.emp, role:w.setup.conductor.role,
+    pilot:w.setup.pilots[i].name, emp:w.setup.pilots[i].emp, idx:i, status:w.status, time:fmtHM(w.run.elapsed + (w.run.startedAt ? Date.now()-w.run.startedAt : 0)), items};
+}
+
+/* ============================================================ sample data (marked as sample) */
+function sampleSessions(){
+  const w = newSession("PCWU"); w.id = "DEMO-W"; w.demo = true;
+  Object.assign(w.setup, {date:"2026-10-21", device:"FFS 747-400 #2 (FAA 584)", cat:"REC"});
+  w.setup.conductor = {name:"Sample SCP", emp:"00000", role:"SCP"};
+  w.setup.pilots = [{...blankPilot("CA"), name:"Sample Captain", emp:"10001"}, {...blankPilot("FO"), name:"Sample First Officer", emp:"10002"}];
+  [[9,"S"],[11,"S"],[14,"S"],[15,"S"],[20,"S"],[21,"S"],[24,"S"],[27,"C"],[29,"C"],[30,"C"],[31,"C"]].forEach(([n,v]) => { w.g[0][n] = {st:v}; });
+  w.g[0][21].subs = {to:1}; w.g[0][14].subs = {oei:1}; w.g[0][15].subs = {nrm:1};
+  [[9,"S"],[11,"S"],[20,"S"],[21,"S"],[27,"C"],[29,"C"],[30,"C"]].forEach(([n,v]) => { w.g[1][n] = {st:v}; });
+  w.g[1][21].subs = {to:1,ldg:1}; w.g[1][24] = {st:"", note:"Sample: late go-around decision; train again on the PC."};
+  w.status = "submitted"; w.run.elapsed = 4*3600*1000;
+  const s = newSession("PC"); s.id = "DEMO"; s.demo = true;
+  Object.assign(s.setup, {date:"2026-10-22", device:"FFS 747-400 #2 (FAA 584)", cat:"REC"});
+  s.setup.conductor = {name:"Sample SCP", emp:"00000", role:"SCP"};
+  s.setup.pilots = clone(w.setup.pilots);
+  s.setup.link = [snapPCWU(w,0), snapPCWU(w,1)];
+  s.docs[0] = Object.fromEntries(DOCS.map(d => [d[0],1]));
+  [[1,"S"],[2,"S"],[3,"S"],[4,"S"],[5,"S"],[6,"S"],[7,"S"],[10,"S"],[37,"S"]].forEach(([n,v]) => { s.g[0][n] = {st:v}; s.g[1][n] = {st:v}; });
+  s.g[0][10].subs = {dep:1}; s.g[1][10].subs = {dep:1};
+  s.g[0][8] = {st:"S", rep:"B", note:"Sample: first attempt heading drifted 12° right; trained rudder and trim; repeat within ± 5°."};
+  s.log[0].push({t:"0:52", m:"Item 8 unsatisfactory — recorded before training (B)"});
+  s.counts = [{to:"2",ldg:"1"},{to:"2",ldg:"1"}];
+  s.run.elapsed = 58*60*1000;
+  return {w, s};
+}
+
+/* ============================================================ render: header + nav */
+const VIEWS = s => [["home","Sessions"],["setup","Setup"],["brief","Brief"],["run","Run"],["sheet","Grade sheet"],["debrief", s && s.kind==="PC" ? "Debrief & submit" : "Debrief & submit"]];
+function renderStatus(state){
+  const el = $("storeState"); if (!el) return;
+  const s = cur();
+  if (s && s.demo) { el.className = "pill demo"; el.textContent = "Sample — not saved"; return; }
+  if (state === "err") { el.className = "pill warn"; el.textContent = "Store unreachable — saved on this device"; return; }
+  if (store.db) { el.className = "pill ok"; el.textContent = state === "saving" ? "Saving…" : "N&O PC store"; return; }
+  el.className = "pill"; el.textContent = "Saved on this device";
+}
+function renderHeader(){
+  const s = cur();
+  $("hdr").innerHTML = `<div class="brandrow"><span class="stamp">N&amp;O</span>
+    <div class="ttl"><span class="eyebrow">Atlas Air · 747 Non-AQP</span><h1>PCWU · PC Run-and-Grade</h1></div>
+    ${s ? `<span class="kchip ${s.kind==="PC"?"pc":""}">${s.kind}</span>` : ""}
+    <span class="grow"></span>
+    ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(CAT(s.setup.cat).label)} · ${esc(s.setup.date)}</span></div>` : ""}
+    <span class="pill" id="storeState"></span>
+    <button class="ghost" data-act="theme" aria-label="Toggle light or dark">◐</button></div>`;
+  const nb = s ? [0,1].reduce((t,p) => t + blocking(s,p).length, 0) : 0;
+  $("nav").innerHTML = VIEWS(s).map(([k,l]) => `<button class="${ui.view===k?"on":""}" data-act="view" data-v="${k}" ${!s && k!=="home" ? "disabled" : ""}>${l}${k==="debrief" && s && s.kind==="PC" && nb ? `<b>${nb}</b>` : ""}</button>`).join("");
+  renderStatus();
+}
+
+/* ============================================================ HOME */
+function renderHome(){
+  const list = Object.values(sessions).sort((a,b) => b.updatedAt - a.updatedAt);
+  const row = s => `<div class="srow"><span class="scode"><span class="chip ${s.kind==="PC"?"pc":"pcwu"}">${s.kind}</span></span>
+     <div class="smain"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span class="muted small">${esc(CAT(s.setup.cat).label)} · ${esc(s.setup.date)} · ${esc(s.setup.conductor.name || "—")} (${esc(s.setup.conductor.role)})</span></div>
+     <span class="chip ${s.status==="submitted"?"ok":"info"}">${s.status==="submitted"?"Submitted":"In progress"}</span>
+     <div class="sact"><button class="btn small" data-act="open" data-v="${s.id}">Open</button>
+     <button class="btn small danger" data-act="del" data-v="${s.id}">${ui.del===s.id?"Tap again to delete":"Delete"}</button></div></div>`;
+  return `<div class="intro"><div><span class="eyebrow">747 Proficiency Check Warm-Up and Proficiency Check</span><h2>Brief, run, grade and submit</h2>
+    <p class="lede">The PCWU is usually flown the day before the PC. Items an SCP finds proficient on the PCWU (✈ on the grade sheet) and Non-Appendix F maneuvers completed there carry to the PC automatically. Grading follows the Pilot Training / Check Grade Sheet (TC_PC_RFT_REC) and the PC Guide 6.7.2 progressive summary. No PF / PM split: each pilot is graded on their own PF duties, in any order the SCP chooses.</p></div>
+    <div class="row"><button class="btn" data-act="sample">Open sample PC</button><button class="btn" data-act="import">Import record (.json)</button></div></div>
+    <h3>Start an event</h3>
+    <div class="starts">
+      <div class="start pcwu"><span class="chip pcwu" style="align-self:flex-start">PCWU</span><h4>Proficiency Check Warm-Up</h4><p class="muted small">FFSQ-1 profile · 2:00 brief · 4:30 sim (incl. 0:30 SPOTs) · 1:00 debrief. Records the PCWU column: S for creditable items (SCP only), C for Non-Appendix F.</p><button class="btn primary" data-act="start" data-v="PCWU">New PCWU</button></div>
+      <div class="start pc"><span class="chip pc" style="align-self:flex-start">PC</span><h4>Proficiency Check</h4><p class="muted small">Standardized PC briefing, oral bank, walk-around, profile by PC type. Pulls the pilot’s PCWU record and blocks submission until every status block is filled correctly.</p><button class="btn pcb" data-act="start" data-v="PC">New PC</button></div>
+    </div>
+    <h3>Sessions</h3>
+    ${list.length ? `<div class="slist">${list.map(row).join("")}</div>` : `<div class="empty">No sessions yet. Start a PCWU or a PC above${store.db ? "" : "; sessions are kept on this device"}. A PC finds the pilot’s PCWU by employee number from the shared store, this device, or an imported .json file.</div>`}
+    <p class="muted small" style="margin-top:18px">Sources: ${Object.values(SRC).map(esc).join(" · ")}</p>`;
+}
+
+/* ============================================================ SETUP */
+function inp(k,v,ph,type){ return `<input id="f_${k.replace(/\W/g,"_")}" data-k="${k}" value="${esc(v)}" placeholder="${esc(ph||"")}" ${type?`type="${type}"`:""}>`; }
+function renderSetup(s){
+  const isPC = s.kind === "PC", c = CAT(s.setup.cat);
+  const pil = p => { const P = s.setup.pilots[p];
+    return `<div class="card"><h4>${p===0?"Left seat":"Right seat"}</h4><div class="g2">
+      <label class="f">Name (last, first, mi)${inp(`setup/pilots/${p}/name`,P.name)}</label>
+      <label class="f">Employee no.${inp(`setup/pilots/${p}/emp`,P.emp)}</label>
+      <label class="f">Duty<select id="f_duty${p}" data-k="setup/pilots/${p}/duty"><option ${P.duty==="CA"?"selected":""}>CA</option><option ${P.duty==="FO"?"selected":""}>FO</option></select></label>
+      <label class="f">A/C type<select id="f_ac${p}" data-k="setup/pilots/${p}/acType">${["744","-8"].map(x=>`<option ${P.acType===x?"selected":""}>${x}</option>`).join("")}</select></label>
+      ${isPC ? `<label class="f">Airman certificate no.${inp(`setup/pilots/${p}/certNo`,P.certNo)}</label>
+      <label class="f">Medical date${inp(`setup/pilots/${p}/medDate`,P.medDate,"","date")}</label>` : ""}
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="cb ${s.setup.failedQual[p]?"on":""}" style="width:auto" data-act="flag" data-v="failedQual" data-p="${p}"><span class="box"></span><span>Failed a qualification event</span></button>
+      <button class="cb ${s.setup.lapsed[p]?"on":""}" style="width:auto" data-act="flag" data-v="lapsed" data-p="${p}"><span class="box"></span><span>PC interval expired (lapsed)</span></button>
+    </div>
+    ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
+    ${isPC ? linkBox(s,p) : ""}</div>`; };
+  return `<span class="eyebrow">${s.kind} setup</span><h2>${isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2>
+  <div class="cols">
+   <div class="card"><h4>Event</h4><div class="g2">
+     <label class="f">Date${inp("setup/date",s.setup.date,"","date")}</label>
+     <label class="f">Simulator FAA ID${inp("setup/device",s.setup.device,"e.g. 584")}</label>
+     <label class="f wide" style="grid-column:1/-1">PC type (drives what is required and waivable)<select id="f_cat" data-k="setup/cat">${CATS.map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
+   </div>
+   ${c.note ? `<p class="why" style="margin:8px 0 0">${esc(c.note)}</p>` : ""}
+   ${isPC ? `<div class="row" style="margin-top:10px"><button class="cb ${s.setup.typeRating?"on":""}" style="width:auto" data-act="tr"><span class="box"></span><span>Type rating (form EVENT box)</span></button></div>` : ""}
+   </div>
+   <div class="card"><h4>${isPC ? "PC Check Airman / APD" : "PCWU conducted by"}</h4><div class="g2">
+     <label class="f">Name (last, first)${inp("setup/conductor/name",s.setup.conductor.name)}</label>
+     <label class="f">Employee no.${inp("setup/conductor/emp",s.setup.conductor.emp)}</label></div>
+     ${isPC ? "" : `<div style="margin-top:10px"><span class="eyebrow">Role</span><div class="seg">${[["SCP","Simulator Check Pilot"],["INSTR","Instructor"]].map(([k,l])=>`<button class="${s.setup.conductor.role===k?"on":""}" data-act="role" data-v="${k}">${l}</button>`).join("")}</div>
+     <p class="why" style="margin:6px 0 0">${s.setup.conductor.role==="SCP" ? "✈ items found proficient are credited toward the PC." : "Instructor PCWU: ✈ boxes get a diagonal line — no PC credit. Non-Appendix F maneuvers can still be recorded C."}</p></div>`}
+   </div>
+  </div>
+  <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
+  <div class="row end"><button class="btn primary" data-act="view" data-v="brief">Go to brief →</button></div>`;
+}
+function linkBox(s,p){
+  const L = s.setup.link[p], cands = pcwuCandidates(s,p);
+  const cnt = L ? Object.entries(L.items).filter(([n,x]) => x.st && x.st !== "/").length : 0;
+  return `<div class="ios" style="margin-top:12px"><span class="eyebrow">PCWU record</span>
+   ${L ? `<p style="margin:4px 0"><b>Linked:</b> PCWU ${esc(L.date)} · ${esc(L.device||"")} · ${esc(L.conductor||"—")} (${L.role==="SCP"?"SCP":"Instructor"}) · ${cnt} item${cnt===1?"":"s"} credited</p>
+     <div class="carry">${carryChips(s,p)}</div>
+     <div class="row" style="margin-top:8px"><button class="btn small" data-act="unlink" data-p="${p}">Unlink</button>${cands.some(x=>x.w.id===L.sid && x.w.updatedAt) ? `<button class="btn small" data-act="relink" data-p="${p}">Refresh from PCWU</button>` : ""}</div>`
+   : cands.length ? `<p style="margin:4px 0">Found ${cands.length} PCWU record${cands.length>1?"s":""} for this pilot:</p>${cands.slice(0,4).map(x => `<div class="row" style="margin-top:6px"><span class="grow small">${esc(x.w.setup.date)} · ${esc(x.w.setup.conductor.name||"—")} (${x.w.setup.conductor.role}) · ${x.w.status==="submitted"?"submitted":"in progress"}</span><button class="btn small primary" data-act="link" data-p="${p}" data-v="${x.w.id}" data-i="${x.i}">Link</button></div>`).join("")}`
+   : `<p class="muted small" style="margin:4px 0">${(s.setup.pilots[p].emp||"").trim() ? "No PCWU found for this employee number in the store or on this device." : "Enter the employee number to find this pilot’s PCWU."} Import a PCWU .json file if it was done on another device.</p>`}
+   <div class="row" style="margin-top:6px"><button class="btn small" data-act="import" data-p="${p}">Import PCWU file</button></div></div>`;
+}
+function carryChips(s,p){
+  return ITEMS.filter(it => it.cred || it.naf).map(it => { const r = req(s,p,it.n);
+    if (r.na) return "";
+    if (r.credited) return `<span class="chip ok" title="${esc(r.cwhy)}">${it.n} ✓</span>`;
+    if (r.code === "/") return "";
+    return `<span class="chip bad" title="${esc(r.cwhy||r.why)}">${it.n} do on PC</span>`; }).join(" ");
+}
+
+/* ============================================================ BRIEF */
+function checklist(s, groups, pre){
+  return groups.map((g,gi) => { const done = g.items.filter((_,ii) => s.brief.checked[`${pre}${gi}:${ii}`]).length;
+    return `<div class="card"><h4>${esc(g.h)} <span class="cnt">${done}/${g.items.length}</span></h4><ul class="chk">${g.items.map((t,ii) => { const k = `${pre}${gi}:${ii}`;
+      return `<li><button class="cb ${s.brief.checked[k]?"on":""}" data-act="bchk" data-v="${k}"><span class="box"></span><span>${esc(t)}</span></button></li>`; }).join("")}</ul></div>`; }).join("");
+}
+function flightData(){
+  return `<details class="ref"><summary>Flight data — OFP, ATIS, clearance, TLR (KGS 19 DEC 25)</summary><div>
+   <div class="ofps"><div class="ofp"><div class="ofp-h">${esc(OFP.route)}</div><dl>${OFP.rows.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
+   <div class="ofp"><div class="ofp-h">ATIS & clearance</div><p class="small" style="margin:0">${esc(OFP.wx)}</p><p class="small">${esc(OFP.clr)}</p><pre class="mono">${esc(OFP.eo)}</pre></div></div>
+   <h5>TLR — runway 10L / 10R</h5><div class="tlr">${OFP.tlr.map(([h,b])=>`<div><b class="small">${esc(h)}</b><pre>${esc(b)}</pre></div>`).join("")}</div>
+   <h5>PCWU LLWS use only — 28R</h5><div class="tlr">${OFP.llws.map(([h,b])=>`<div><b class="small">${esc(h)}</b><pre>${esc(b)}</pre></div>`).join("")}</div><p class="small muted">${esc(OFP.llwsNote)}</p></div></details>`;
+}
+function refs(){
+  return `<details class="ref"><summary>IOS weather setup (PC)</summary><div class="scroll"><table class="tbl"><thead><tr><th>Task</th><th>Crosswind</th><th>Visibility / RVR</th><th>Ceiling</th><th>Temp</th></tr></thead><tbody>${WX_SETUP.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table><p class="small muted">Altimeter 29.92 throughout. ATIS verbalized with proper ATC phraseology.</p></div></details>
+  <details class="ref"><summary>Performance tolerances (AQS Appendix E · 8900.1)</summary><div class="scroll"><table class="tbl"><tbody>${TOL.map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table><p class="small muted">Momentary deviation outside these values is not, by itself, unsatisfactory.</p></div></details>
+  <details class="ref"><summary>Waiver authority</summary><div><ul><li>Items with waiver authority (★): Rejected takeoff · RNAV1 departure or arrival (one always required) · Holding · Steep turns · Approach to stall (two of three may be waived; one in a 15–30° turn, T/O config, always required).</li><li><b>Not permitted:</b> PIC upgrade PC · any requalification PC (per your direction; the Standardized Briefing lists failed-PC and past-due-up-to-12-months requals) · following failure of a qualification event · initial PC.</li><li>Eligibility: currently qualified, or completed an approved curriculum for the type and position within the preceding six calendar months. A pilot whose recurrent PC interval expired is lapsed.</li><li>Judgment standard: high performance = liberal use of waivers; minimum acceptable = no items waived. RTO for an FO or FO/FO pairing is not automatically waived.</li></ul></div></details>
+  ${BULLETINS.map(b => `<details class="ref"><summary>Bulletin — ${esc(b.h)}</summary><div><ul>${b.b.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></details>`).join("")}`;
+}
+function docsCard(s){
+  return `<h3>Documents</h3><div class="cols">${[0,1].map(p => `<div class="card"><h4>${esc(pname(s,p))} <span class="muted small">${esc(s.setup.pilots[p].duty)}</span></h4><ul class="chk">${DOCS.map(([k,l]) => `<li><button class="cb ${(s.docs[p]||{})[k]?"on":""}" data-act="doc" data-p="${p}" data-v="${k}"><span class="box"></span><span>${esc(l)}</span></button></li>`).join("")}</ul></div>`).join("")}</div>`;
+}
+function oralCard(s){
+  const bank = ORAL.find(b => b.bank === +s.brief.bank) || ORAL[0];
+  if (!bank) return "";
+  const topics = [...new Set(bank.qs.map(q => q.sec))];
+  const qs = bank.qs.map((q,i) => ({q,i})).filter(x => !ui.oralTopic || x.q.sec === ui.oralTopic);
+  const tally = p => { const a = s.brief.oral[p] || {}; const v = Object.entries(a).filter(([k]) => k.startsWith(bank.bank+":")).map(([,x])=>x); return {c:v.filter(x=>x==="c").length, x:v.filter(x=>x==="x").length}; };
+  return `<h3>Equipment examination (oral) — item 1</h3><div class="card">
+   <div class="row"><span class="eyebrow">Question bank</span><div class="seg">${ORAL.map(b=>`<button class="${b.bank===bank.bank?"on":""}" data-act="bank" data-v="${b.bank}">${b.bank}</button>`).join("")}</div>
+   <select class="in" style="width:auto" id="f_topic" data-act-change="topic"><option value="">All topics (${bank.qs.length})</option>${topics.map(t=>`<option ${ui.oralTopic===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
+   <span class="grow"></span>${[0,1].map(p => { const t = tally(p); return `<span class="chip ${t.x?"warn":"ok"}">${esc(pname(s,p))}: ${t.c} ✓ · ${t.x} ✗</span>`; }).join(" ")}</div>
+   ${tvBar("oral"+bank.bank, "Present this bank on the TV", qs.map(x=>x.i))}
+   <div style="margin-top:8px">${qs.map(({q,i}) => { const k = `${bank.bank}:${i}`;
+     return `<div class="qa"><div><span class="eyebrow">${esc(q.topic)}</span><span class="q">${esc(q.q)}</span></div>
+      <div class="row"><button class="tv" data-act="present" data-v="oral${bank.bank}" data-i="${i}" data-list="${qs.map(x=>x.i).join(",")}" title="Show this question on the TV" aria-label="Show on TV">📺</button>${[0,1].map(p => { const v = (s.brief.oral[p]||{})[k]; return `<span class="mk" title="${esc(pname(s,p))}"><b class="small muted" style="align-self:center">${seatLab(p)}</b><button class="${v==="c"?"on ok":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="c" aria-label="${esc(pname(s,p))} correct">✓</button><button class="${v==="x"?"on bad":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="x" aria-label="${esc(pname(s,p))} incorrect">✗</button></span>`; }).join("")}</div>
+      <details class="a" data-open="q${k}" ${s.brief.open["q"+k]?"open":""}><summary class="small">Answer</summary>${esc(q.a)}${q.ref?`<small>${esc(q.ref)}</small>`:""}</details></div>`; }).join("")}</div></div>`;
+}
+function walkCard(s){
+  return `<h3>Visual inspection (walk-around) — done individually</h3>${tvBar("walk","Present the walk-around on the TV",null)}<div class="cols">${[0,1].map(p => { const w = s.brief.walk[p] || {}; const id = WALK_FLAT.filter(x => w[x.k]==="c").length, ms = WALK_FLAT.filter(x => w[x.k]==="x").length;
+   return `<div class="card"><h4>${esc(pname(s,p))} <span class="cnt">${id} found · ${ms} missed / ${WALK_FLAT.length}</span></h4>${WALK.map((g,gi) => `<h5>${esc(g.a)}</h5>${g.f.map((f,fi) => { const k = gi+"."+fi, v = w[k];
+     return `<div class="row" style="justify-content:space-between;padding:2px 0"><span class="small">${esc(f)}</span><span class="mk"><button class="${v==="c"?"on ok":""}" data-act="walk" data-p="${p}" data-k="${k}" data-v="c">Found</button><button class="${v==="x"?"on bad":""}" data-act="walk" data-p="${p}" data-k="${k}" data-v="x">Missed</button></span></div>`; }).join("")}`).join("")}</div>`; }).join("")}</div>
+   <p class="small muted">Answer key from the 747-400F Virtual Walk-Around Exam: the pilot describes what they look for at each station; these are the planted abnormal conditions.</p>`;
+}
+function renderBrief(s){
+  const isPC = s.kind === "PC", target = isPC ? 90 : 120;
+  const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0);
+  return `<div class="bhead"><div><span class="eyebrow">${s.kind} brief</span><h2>${isPC ? "Standardized Proficiency Check Briefing" : "PCWU briefing summary"}</h2>
+    <p class="lede">${isPC ? "Brief from the Atlas Standardized PC Briefing, then the oral and the walk-around for each pilot. Results here feed items 1 and 2 on the grade sheet." : "Review the profile and briefing script for each maneuver, brief directly from the manuals, then the emphasis items. 4.5 hr FFS: 4.0 maneuvers + 0.5 SPOTs. 1 hr debrief."}</p></div>
+   <div class="card clock"><span class="eyebrow">Brief timer · ${target/60|0}:${String(target%60).padStart(2,"0")}</span><div class="big" id="briefClock">${fmtDur(el)}</div><div class="bar"><span id="briefBar" style="width:${Math.min(100, el/(target*600))}%"></span></div>
+   <button class="btn ${s.brief.startedAt?"":"primary"}" data-act="btimer">${s.brief.startedAt?"Pause":"Start brief"}</button></div></div>
+   ${isPC ? docsCard(s) : ""}
+   <h3>Briefing items</h3><div class="bgrid">${checklist(s, isPC ? BRIEF_PC : BRIEF_PCWU, isPC ? "c" : "w")}</div>
+   <h3>References</h3>${flightData()}${refs()}
+   ${isPC ? oralCard(s) + walkCard(s) : docsCardPCWU(s)}
+   <h3>Brief notes</h3><textarea class="in" id="f_bnotes" data-k="brief/notes" rows="3" placeholder="What was covered, items to watch">${esc(s.brief.notes)}</textarea>
+   <div class="row end"><button class="btn primary" data-act="view" data-v="run">Go to the sim →</button></div>`;
+}
+function docsCardPCWU(s){ return `<h3>Documents to be checked</h3><p class="muted small" style="margin-top:0">Pilot certificate / license, valid medical, FCC radio operator’s permit, government ID, FTSP photo if required. Recorded on the PC; check them now to catch problems a day early.</p>${docsCard(s).replace("<h3>Documents</h3>","")}`; }
+
+/* ============================================================ RUN */
+function halfDisc(cx, cy, r, c0, c1){
+  return `<path d="M${cx} ${cy-r} A${r} ${r} 0 0 0 ${cx} ${cy+r} Z" class="h-${c0}"/><path d="M${cx} ${cy-r} A${r} ${r} 0 0 1 ${cx} ${cy+r} Z" class="h-${c1}"/><circle cx="${cx}" cy="${cy}" r="${r}" class="sk-ring"/><line x1="${cx}" y1="${cy-r}" x2="${cx}" y2="${cy+r}" stroke="var(--panel)" stroke-width="1.5"/>`;
+}
+function stick(s){
+  const evs = EVENTS(s).filter(e => !e.opt), path = PATH(s);
+  const maxX = Math.max(...path.map(p=>p[0])) + 4, maxY = s.kind==="PCWU" ? 16 : 24;
+  const W = 1240, H = 350, L = 40, R = 20, T = 120, B = 34;
+  const X = t => L + (t/maxX)*(W-L-R), Y = a => H - B - (a/maxY)*(H-T-B);
+  const pts = path.map(([t,a]) => `${X(t).toFixed(1)},${Y(a).toFixed(1)}`).join(" ");
+  const ticks = []; for (let t=0; t<=maxX; t+=15) ticks.push(t);
+  const NL = 5, last = Array(NL).fill(-999);
+  const marks = evs.map((e,i) => {
+    const cx = X(e.x), cy = Y(e.y), lab = e.s || e.t, hw = lab.length*3.4 + 6;
+    let lane = last.findIndex(r => cx - hw > r); if (lane < 0) lane = i % NL;
+    last[lane] = cx + hw;
+    const ly = 18 + lane*20;
+    const c0 = evState(s,e,0), c1 = evState(s,e,1);
+    return `<g class="sk-ev ${ui.ev===e.id?"on":""} ${e.crit?"crit":""}" data-act="ev" data-v="${e.id}" tabindex="0" role="button" aria-label="${esc(e.t)}">
+      <line class="sk-stem" x1="${cx}" y1="${ly+4}" x2="${cx}" y2="${cy-12}"/>
+      <text class="sk-lab" x="${Math.min(Math.max(cx, L+hw-6), W-R-hw+6)}" y="${ly}" text-anchor="middle">${esc(lab)}</text>
+      ${halfDisc(cx,cy,11,c0,c1)}</g>`; }).join("");
+  return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : esc(CAT(s.setup.cat).label)+" profile"}</span><span class="eyebrow">Tap an event · left half ${esc(pname(s,0))} · right half ${esc(pname(s,1))}</span></div>
+   <svg class="stick" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Flight profile">
+    <line class="sk-axis" x1="${L}" y1="${Y(0)}" x2="${W-R}" y2="${Y(0)}"/>
+    ${ticks.map(t => `<line class="sk-axis" x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(0)+5}"/><text class="sk-time" x="${X(t)}" y="${Y(0)+20}" text-anchor="middle">${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}</text>`).join("")}
+    <polyline class="sk-line" points="${pts}"/>${marks}</svg>
+   <div class="sk-key">${s.kind==="PCWU" ? TSTAT.map(x=>`<span><i class="h-${x.c}" style="background:var(--${x.c})"></i>${x.l}</span>`).join("") : `<span><i style="background:var(--ok)"></i>Graded S / C</span><span><i style="background:var(--warn)"></i>Partly graded</span><span><i style="background:var(--bad)"></i>U / I</span><span><i style="background:var(--mute)"></i>Credited / waived / not required</span><span><i style="background:var(--panel2);border:1px solid var(--line)"></i>Not yet</span>`}<span style="color:var(--bad)">Red label = critical maneuver</span></div></div>`;
+}
+function xchips(s){
+  const opt = EVENTS(s).filter(e => e.opt);
+  const lab = s.kind==="PCWU" ? "Optional maneuvers & SPOTs" : "Only if not credited on the PCWU · general items";
+  return `<div class="xchips"><span class="eyebrow">${lab}</span>${opt.map(e => { const need = s.kind==="PC" && evNeeded(s,e);
+    return `<button class="xchip ${ui.ev===e.id?"on":""}" data-act="ev" data-v="${e.id}"><svg width="22" height="22" viewBox="0 0 22 22">${halfDisc(11,11,9,evState(s,e,0),evState(s,e,1))}</svg>${esc(e.t)}${s.kind==="PC" ? (need ? ` <span class="chip bad">needed</span>` : ` <span class="chip mute">done / not needed</span>`) : ""}</button>`; }).join("")}</div>`;
+}
+function gradeWidget(s,p,n){
+  const it = IT(n), g = (s.g[p]||{})[n] || {};
+  if (s.kind === "PCWU") {
+    const c = pcwuCell(s,p,n);
+    if (c.shaded) return "";
+    const subs = it.subs && (n===21||n===14||n===15) ? `<div class="gsub">${it.subs.map(([k,l]) => `<button class="sb ${(g.subs||{})[k]?"on":""}" data-act="sub" data-p="${p}" data-n="${n}" data-v="${k}">${esc(l)}</button>`).join("")}</div>` : "";
+    return `<div class="gi ${c.val?"done":""}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.cred?`<span class="sym">✈ creditable</span>`:""}${it.naf?`<span class="sym">Non-App F</span>`:""}</div>
+      ${c.auto ? `<p class="why">“/” — ${esc(c.why)}</p>` : `<div class="gv">${pcwuAllowed(s,p,n).map(v => `<button class="gb v-${v==="/"?"sl":v} ${g.st===v?"on":""}" data-act="g" data-p="${p}" data-n="${n}" data-v="${v}">${v}</button>`).join("")}<span class="why">${it.naf ? "C complete · / not observed · blank = not proficient (do on PC)" : "S = proficient, credit toward PC · blank = do on PC"}</span></div>`}
+      ${(n===14||n===15) && s.setup.conductor.role!=="SCP" ? `<p class="why bad">CAT II/III certification requires a Check Pilot to grade.</p>` : ""}
+      ${subs}${NAF_NOTE[n]?`<p class="why">${esc(NAF_NOTE[n])}</p>`:""}</div>`;
+  }
+  const r = req(s,p,n), v = eff(s,p,n), auto = isAuto(s,p,n), A = allowed(s,p,n);
+  const need = !v;
+  const subs = it.subs ? `<div class="gsub">${it.subs.map(([k,l]) => `<button class="sb ${(g.subs||{})[k]?"on":""}" data-act="sub" data-p="${p}" data-n="${n}" data-v="${k}">${esc(l)}</button>`).join("")}</div>` : "";
+  const reqTag = r.na ? `<span class="req">N/A</span>` : r.credited ? `<span class="req C">PCWU credit</span>` : `<span class="req ${r.code==="W"||r.code==="T"?"W":r.code==="/"?"":"R"}" title="${esc(CODE_LABEL[r.code]||"")}">${r.code==="R"?"Required":r.code==="W"?"Waivable":r.code==="T"?"T/O stall req":r.code==="/"?"Not required":"Required"}</span>`;
+  return `<div class="gi ${need?"need":"done"}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.wv?`<span class="sym" title="Waiver authority">★</span>`:""}${it.cred?`<span class="sym" title="Creditable during PCWU">✈</span>`:""}${reqTag}</div>
+   <div class="gv">${A.map(x => `<button class="gb v-${x==="/"?"sl":x} ${v===x?"on":""} ${v===x&&auto?"auto":""}" data-act="g" data-p="${p}" data-n="${n}" data-v="${x}" ${r.na?"disabled":""}>${g.rep && x==="S" ? "S · repeat passed" : g.rep && x==="U" ? "U · repeat failed" : x}</button>`).join("")}</div>
+    ${!it.naf && !r.na ? `<div class="gv"><span class="why">${g.rep ? "Repeated — first attempt failed for:" : "First attempt failed? Repeat reason:"}</span>${[["A","Systems knowledge"],["B","Control tech / execution"],["C","Procedural error"]].map(([x,l]) => `<button class="sb ${g.rep===x?"on":""}" data-act="rep" data-p="${p}" data-n="${n}" data-v="${x}">${x} · ${l}</button>`).join("")}</div>` : ""}
+   ${r.credited ? `<p class="why cr">✓ ${esc(r.cwhy)}${g.st?" — re-evaluated on PC":""}</p>` : r.cwhy ? `<p class="why bad">${esc(r.cwhy)}</p>` : ""}
+   ${r.lock && it.wv ? `<p class="why bad">🔒 ${esc(r.lock)}</p>` : ""}
+   ${n===21 ? `<p class="why">${r.code==="R" ? "T/O (in turn), LDG and Clean all required." : "T/O config stall in a 15–30° turn required; LDG and Clean may be waived."}</p>` : ""}
+   ${n===9 && v==="W" && (s.setup.pilots[p].duty==="FO") ? `<p class="why bad">FO RTO — judgment standard; not automatically waived.</p>` : ""}
+   ${g.rep ? `<p class="why">Repeat recorded (code ${g.rep}). Train first, then repeat once: grade S if the repeat passes, U if it fails.</p>` : ""}
+   ${subs}
+   <input class="note" id="note_${p}_${n}" data-k="g/${p}/${n}/note" value="${esc(g.note||"")}" placeholder="${v==="U"||v==="I"||g.rep ? "Remark required — brief and specific (e.g. deviation exceeded one dot)" : "Note"}"></div>`;
+}
+function renderRun(s){
+  const E = EVENTS(s); if (!ui.ev || !E.find(e => e.id === ui.ev)) ui.ev = E[0].id;
+  const e = E.find(x => x.id === ui.ev), i = E.indexOf(e);
+  const el = s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0);
+  const er = s.run.ev[e.id] || {};
+  const pcard = p => {
+    const r = ((er.p||[])[p]) || {};
+    const train = s.kind === "PCWU" ? `<div class="sts">${TSTAT.map(x => `<button class="st ${x.c} ${r.st===x.k?"on":""}" data-act="tst" data-p="${p}" data-v="${x.k}">${x.l}</button>`).join("")}</div>
+       <div class="reps"><span class="small muted">Repeats</span><button class="btn small" data-act="treps" data-p="${p}" data-v="-1">−</button><b>${r.reps||0}</b><button class="btn small" data-act="treps" data-p="${p}" data-v="1">+</button></div>` : "";
+    const restricted = seatRestricted(s,p);
+    return `<div class="pcard p${p}"><div class="ph"><span class="seat">${seatLab(p)}</span><b>${esc(pname(s,p))}</b><span class="muted small">${esc(s.setup.pilots[p].duty)} · as PF</span></div>
+      ${restricted ? `<p class="banner bad" style="margin:0">Unsatisfactory item recorded. This pilot may not occupy any crew seat or give seat support for the rest of the session.</p>` : ""}
+      ${train}
+      ${e.items.map(n => gradeWidget(s,p,n)).join("")}
+      ${s.kind==="PCWU" ? `<input class="note" id="enote_${e.id}_${p}" data-k="run/ev/${e.id}/p/${p}/note" value="${esc(r.note||"")}" placeholder="Training note">` : ""}</div>`;
+  };
+  return `<div class="runbar"><div class="simclock"><span class="eyebrow">Sim</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${s.run.startedAt?"":"primary"}" data-act="rtimer">${s.run.startedAt?"Pause":"Start"}</button></div>
+    ${s.kind==="PC" ? [0,1].map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">PCWU target 4:30 · ${s.setup.conductor.role==="SCP"?"SCP — ✈ credit available":"Instructor — no ✈ credit"}</span>`}
+    <span class="grow"></span><span class="muted small">Order of events is SCP discretion — grade whatever was flown.</span></div>
+   ${stick(s)}${xchips(s)}
+   <div class="evcard"><div><span class="eyebrow">${e.opt ? (s.kind==="PCWU" ? "Optional" : "As required") : `Event ${i+1}`}${e.crit?" · critical":""}</span><h2>${esc(e.t)}</h2></div>
+    ${e.ios && e.ios.length ? `<div class="ios"><span class="eyebrow">Script / IOS</span><ul>${e.ios.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+    ${!e.items.length && s.kind==="PC" ? "" : ""}
+    <div class="pilots">${pcard(0)}${pcard(1)}</div>
+    ${s.kind==="PC" ? logBox(s) : ""}
+    <div class="row" style="justify-content:space-between"><button class="btn" data-act="step" data-v="-1" ${i===0?"disabled":""}>← Previous</button><button class="btn primary" data-act="step" data-v="1" ${i===E.length-1?"disabled":""}>Next →</button></div></div>`;
+}
+function logBox(s){
+  const any = s.log[0].length || s.log[1].length;
+  return `<details class="ref" ${any?"open":""}><summary>Training / re-check log</summary><div><p class="small muted" style="margin-top:0">Training and checking cannot run together. Record the failure before training, announce when training starts and when checking resumes. A failed item may not be deferred into another crewmember’s PC.</p>
+   <div class="cols">${[0,1].map(p => `<div><b>${esc(pname(s,p))}</b><ul class="small">${s.log[p].map(x=>`<li><span class="mono">${esc(x.t)}</span> ${esc(x.m)}</li>`).join("") || "<li class='muted'>No entries</li>"}</ul>
+   <div class="row"><button class="btn small" data-act="log" data-p="${p}" data-v="Training started">Training started</button><button class="btn small" data-act="log" data-p="${p}" data-v="Checking resumed">Checking resumed</button></div></div>`).join("")}</div></div></details>`;
+}
+
+/* ============================================================ GRADE SHEET */
+function sheetCell(s,p,n,col){
+  const it = IT(n);
+  if (col === "pcwu") {
+    if (s.kind === "PCWU") { const c = pcwuCell(s,p,n); if (c.shaded) return `<td class="c sh"></td>`; return `<td class="c ${c.auto?"auto":""} ro">${c.val||""}</td>`; }
+    const L = pcwuOf(s,p); if (!(it.cred||it.naf)) return `<td class="c sh"></td>`;
+    return `<td class="c ro auto">${L ? ((L.items[n]||{}).st || "") : ""}</td>`;
+  }
+  if (col === "rep") { if (s.kind === "PCWU" || it.naf) return `<td class="c sh"></td>`; const g = (s.g[p]||{})[n]||{}; return `<td class="c ro">${g.rep||""}</td>`; }
+  if (s.kind === "PCWU") return `<td class="c sh"></td>`;
+  const v = eff(s,p,n), auto = isAuto(s,p,n);
+  return `<td class="c ${!v?"miss":""} ${auto?"auto":""} v-${v==="/"?"sl":v}" data-act="sel" data-v="${n}" title="${esc(req(s,p,n).why||"")}">${v || "?"}</td>`;
+}
+function subLine(s,p,n){
+  const it = IT(n), g = (s.g[p]||{})[n] || {}; if (!it.subs) return "";
+  const on = it.subs.filter(([k]) => (g.subs||{})[k]).map(([,l]) => l);
+  return on.length ? `<span class="det">☒ ${esc(on.join(" · "))}</span>` : "";
+}
+function renderSheet(s){
+  const p = ui.p, P = s.setup.pilots[p], c = CAT(s.setup.cat), isPC = s.kind === "PC", L = pcwuOf(s,p);
+  const res = s.debrief.p[p].result;
+  const rows = ns => ns.map(n => { const it = IT(n); const sec = SECS[n] ? `<tr><td class="sec" colspan="5">${esc(SECS[n].toUpperCase())}</td></tr>` : "";
+    return `${sec}<tr class="${ui.sel===n?"sel":""}"><td class="n">${n}.</td><td>${esc(it.t)} ${it.wv?"★":""}${it.cred?"✈":""}${subLine(s,p,n)}</td>${sheetCell(s,p,n,"rep")}${sheetCell(s,p,n,"pc")}${sheetCell(s,p,n,"pcwu")}</tr>`; }).join("");
+  const head = `<thead><tr><th></th><th></th><th>Repeat</th><th>PC/RFT Status</th><th>PCWU Status</th></tr></thead>`;
+  const left = Array.from({length:21},(_,i)=>i+1), right = Array.from({length:18},(_,i)=>i+22);
+  const pcTime = fmtHM(s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0));
+  const box = (on,l) => `<span class="${on?"x":""}">${l}</span>`;
+  return `<span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2>
+   <div class="pilottabs" style="margin-top:10px">${[0,1].map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
+   ${isPC && !L && ["REC","RQF","RQ12"].includes(s.setup.cat) ? `<div class="banner warn">No PCWU linked for this pilot — every ✈ item, CAT II/III and Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
+   ${seatRestricted(s,p) ? `<div class="banner bad">Unsatisfactory item recorded — seat restriction applies for the remainder of the session.</div>` : ""}
+   <div class="formhdr">
+    <div><div class="k">Name of airman · Employee no.</div><div class="v">${esc(P.name||"—")} · ${esc(P.emp||"—")}</div></div>
+    <div><div class="k">CA / FO · A/C type</div><div class="v">${esc(P.duty)} · ${esc(P.acType)}</div></div>
+    ${isPC ? `<div><div class="k">Certificate · Airman cert no.</div><div class="v">${esc(P.cert)} · ${esc(P.certNo||"—")}</div><div class="boxes">${box((s.docs[p]||{}).eng,"English Proficient")}</div></div>
+    <div><div class="k">Medical date · class</div><div class="v">${esc(P.medDate||"—")} · First</div><div class="boxes">${box((s.docs[p]||{}).fcc,"FCC Permit")}${box((s.docs[p]||{}).photo,"Photo ID")}</div></div>` : ""}
+    <div><div class="k">Simulator ID # (PCWU / PC)</div><div class="v">${isPC ? `${esc(L?L.device:"—")} / ${esc(s.setup.device||"—")}` : esc(s.setup.device||"—")}</div></div>
+    <div><div class="k">TO / LDGs (3 min) · Times</div><div class="v">${isPC ? `<span class="row"><input class="in" style="width:70px;min-height:34px" id="to_${p}" data-k="counts/${p}/to" value="${esc(s.counts[p].to)}" inputmode="numeric" aria-label="Takeoffs"> / <input class="in" style="width:70px;min-height:34px" id="ldg_${p}" data-k="counts/${p}/ldg" value="${esc(s.counts[p].ldg)}" inputmode="numeric" aria-label="Landings"></span>` : ""}PCWU ${isPC ? esc(L?L.time:"—") : pcTime} · ${isPC?`PC ${pcTime}`:""}</div></div>
+    <div><div class="k">Event</div><div class="boxes">${box(isPC && P.duty==="CA","CA PIC PC")}${box(isPC && P.duty==="FO","FO PIC PC")}${box(s.setup.typeRating,"TYPE RATING")}${box(false,"RFT")}</div></div>
+    <div><div class="k">Category of event</div><div class="boxes">${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x => box(c.form===x,x)).join("")}</div></div>
+    <div><div class="k">${isPC?"PC Check Airman":"PCWU Instructor / Ck Amn"}</div><div class="v">${esc(s.setup.conductor.name||"—")} · ${esc(s.setup.conductor.emp||"")}</div>${isPC && L ? `<div class="small muted">PCWU: ${esc(L.conductor||"—")} ${esc(L.condEmp||"")} · ${esc(L.date)}</div>` : ""}</div>
+    ${isPC ? `<div><div class="k">Result</div><div class="boxes">${box(res==="SAT","SATISFACTORY / COMPLETE")}${box(res==="UNSAT","UNSAT / INCOMPLETE – REMOVED FROM FLIGHT STATUS")}${box(res==="INC","INCOMPLETE – SIM MALFUNCTION OR ILLNESS")}</div></div>` : ""}
+   </div>
+   <div class="legend"><span>S Satisfactory · U Unsatisfactory · C Complete · I Incomplete · W Waived · / Not observed</span><span>★ waiver authority (PC) · ✈ creditable during PCWU</span><span>Repeat column = reason the first attempt failed: A systems knowledge · B control tech / execution · C procedural error. Repeat result goes in Status (S passed / U failed).</span>${isPC?`<span>Grey “/” = filled automatically (credited or not required) · red “?” = must be graded</span>`:""}</div>
+   <div class="sheet"><div class="scroll"><table class="rft">${head}<tbody>${rows(left)}</tbody></table></div><div class="scroll"><table class="rft">${head}<tbody>${rows(right)}</tbody></table></div></div>
+   ${ui.sel ? `<div class="card" style="margin-top:14px;position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 6px 24px rgba(0,0,0,.18)"><div class="row" style="justify-content:space-between"><span class="eyebrow">Grade item ${ui.sel}</span><button class="btn small" data-act="sel" data-v="">Close</button></div>${gradeWidget(s,p,ui.sel)}</div>` : ""}
+   ${isPC ? "" : `<h3>PCWU column — ${esc(pname(s,p))}</h3><div class="cols">${ITEMS.filter(it=>it.cred||it.naf).map(it => gradeWidget(s,p,it.n)).join("")}</div>`}
+   <p class="small muted">${isPC ? "Tap any PC/RFT status block to grade it. Every block must hold S, U, C, I, W or “/”." : "Shaded blocks are not marked on a PCWU. Creditable items not found proficient are left blank and must be completed on the PC."}</p>`;
+}
+
+/* ============================================================ DEBRIEF */
+function renderDebrief(s){
+  const isPC = s.kind === "PC";
+  const pcol = p => { const pr = problems(s,p), bl = pr.filter(x=>!x.warn), d = s.debrief.p[p];
+    const runs = EVENTS(s).map(e => ({e, r:(((s.run.ev[e.id]||{}).p)||[])[p]||{}})).filter(x => x.r.st || x.r.note);
+    return `<div class="card"><div class="ph"><span class="seat" style="background:${p?"var(--info)":"var(--brand2)"};color:#fff">${seatLab(p)}</span><h4 style="margin:0">${esc(pname(s,p))}</h4><span class="muted small">${esc(s.setup.pilots[p].duty)} · emp ${esc(s.setup.pilots[p].emp||"—")}</span></div>
+     ${seatRestricted(s,p) ? `<div class="banner bad" style="margin-top:10px">Unsatisfactory — no crew seat or seat support for the rest of the session. Complete the failure documentation and notify company personnel per the FOTM.</div>` : ""}
+     <h5>${isPC ? (bl.length ? `${bl.length} item${bl.length>1?"s":""} block submission` : "All status blocks complete") : "Record check"}</h5>
+     ${pr.length ? `<ul class="probs">${pr.map(x => `<li class="${x.warn?"w":""}" ${x.n?`data-act="goto" data-p="${p}" data-v="${x.n}"`:""}>${x.n?`<b>${x.n}</b> `:""}${esc(x.msg)}</li>`).join("")}</ul>` : `<p class="banner ok" style="margin:0">${isPC ? "Ready to submit." : "PCWU column entries are valid."}</p>`}
+     ${!isPC ? `<h5>What the PC must still cover (${esc(CAT(s.setup.cat).label)})</h5><div class="carry">${carryPreview(s,p)}</div>` : ""}
+     ${runs.length ? `<h5>Training notes</h5><ul class="small">${runs.map(x => `<li><b>${esc(x.e.t)}</b>${x.r.st?` — ${TSBY[x.r.st].l}`:""}${x.r.reps?` (${x.r.reps} repeats)`:""}${x.r.note?`: ${esc(x.r.note)}`:""}</li>`).join("")}</ul>` : ""}
+     ${isPC ? `<h5>Result</h5><div class="seg">${[["SAT","Satisfactory / complete"],["UNSAT","Unsat — removed from flight status"],["INC","Incomplete — sim or illness"]].map(([k,l]) => `<button class="${d.result===k?"on":""}" data-act="result" data-p="${p}" data-v="${k}">${l}</button>`).join("")}</div>` : ""}
+     <label class="f" style="margin-top:12px">Remarks (reverse of form)<textarea id="rem_${p}" data-k="debrief/p/${p}/remarks" rows="3" placeholder="Brief and specific — required for U, I and repeated items; name any Emergency / Abnormal procedure graded U or I">${esc(d.remarks)}</textarea></label>
+     <label class="f" style="margin-top:8px">${isPC?"Debrief / study items":"What to review before the PC"}<textarea id="study_${p}" data-k="debrief/p/${p}/study" rows="2">${esc(d.study)}</textarea></label></div>`; };
+  const okAll = isPC ? [0,1].every(p => !blocking(s,p).length) : true;
+  return `<span class="eyebrow">${s.kind} debrief</span><h2>Debrief & submit</h2>
+   <div class="cols" style="margin-top:14px">${pcol(0)}${pcol(1)}</div>
+   <div class="card" style="margin-top:16px"><h4>Sign-off</h4><div class="g2">
+    <label class="f">${isPC?"PC Check Airman / APD":"Instructor / Check Airman"}<input id="f_sign" data-k="debrief/signedBy" value="${esc(s.debrief.signedBy || s.setup.conductor.name)}"></label>
+    <label class="f">Date<input id="f_signd" type="date" data-k="debrief/signedAt" value="${esc(s.debrief.signedAt || s.setup.date)}"></label>
+    ${isPC?`<label class="f">FAA observation (inspector, FSDO)<input id="f_faa" data-k="debrief/faa" value="${esc(s.debrief.faa)}"></label>`:""}</div>
+    <label class="f" style="margin-top:10px">Crew debrief<textarea id="f_crew" data-k="debrief/crew" rows="2">${esc(s.debrief.crew)}</textarea></label>
+    <div class="row end">${s.status==="submitted" ? `<span class="chip ok">Submitted ${esc(s.debrief.signedAt||"")}</span><button class="btn" data-act="reopen">Reopen</button>` :
+      `<button class="btn ${isPC?"pcb":"primary"}" data-act="submit" ${okAll?"":"disabled"}>${isPC ? "Submit PC to data store" : "Submit PCWU to data store"}</button>`}</div>
+    ${!okAll ? `<p class="why bad" style="text-align:right">Fix the items listed above to submit. Nothing is skipped: every PC status block needs S, U, C, I, W or a valid “/”.</p>` : ""}
+    ${!isPC ? `<p class="why" style="text-align:right">Submitting makes this PCWU findable by employee number when the PC is set up.${store.db ? "" : " On this device only — export the record (.json) to move it to another device."}</p>` : ""}
+   </div>
+   <div class="card" style="margin-top:16px"><h4>Exports</h4><div class="row"><button class="btn" data-act="exp" data-v="html">Grade sheet (.html)</button><button class="btn" data-act="exp" data-v="csv">Item grades (.csv)</button><button class="btn" data-act="exp" data-v="json">${isPC?"Full record":"PCWU record for the PC"} (.json)</button></div>
+   <p class="small muted">The .json record carries program “N&amp;O”, kind ${s.kind}, item numbers matching TC_PC_RFT_REC, and every source revision. ${isPC?"":"Import it on the PC device if the shared store isn’t available."}</p></div>`;
+}
+function carryPreview(s,p){ // as if this PCWU were linked to a PC of the session's category
+  const fake = clone(s); fake.kind = "PC"; fake.setup.link = [null,null]; fake.setup.link[p] = snapPCWU(s,p);
+  return ITEMS.filter(it => it.cred || it.naf).map(it => { const r = req(fake,p,it.n); if (r.na || r.code === "/") return "";
+    return r.credited ? `<span class="chip ok">${it.n} ${esc(it.t.split(" (")[0].split(" —")[0])} ✓</span>` : `<span class="chip bad">${it.n} ${esc(it.t.split(" (")[0].split(" —")[0])} — on PC</span>`; }).join(" ") || `<span class="muted small">Nothing carries for this PC type.</span>`;
+}
+
+/* ============================================================ exports */
+function exportCSV(s){
+  const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+  const out = [["program","kind","session","date","pc_type","pilot","emp","duty","item","item_name","requirement","repeat","pc_status","pcwu_status","credited","subs","note"].join(",")];
+  [0,1].forEach(p => ITEMS.forEach(it => { const n = it.n, g = (s.g[p]||{})[n] || {};
+    const r = s.kind === "PC" ? req(s,p,n) : {};
+    const pcw = s.kind === "PCWU" ? pcwuCell(s,p,n).val : (pcwuOf(s,p) ? ((pcwuOf(s,p).items[n]||{}).st||"") : "");
+    out.push(["N&O", s.kind, s.id, s.setup.date, s.setup.cat, pname(s,p), s.setup.pilots[p].emp, s.setup.pilots[p].duty, n, it.t, s.kind==="PC"?r.code:"", g.rep||"", s.kind==="PC"?eff(s,p,n):"", pcw, r.credited?"Y":"", Object.keys(g.subs||{}).filter(k=>g.subs[k]).join("/"), g.note||""].map(q).join(","));
+  }));
+  return out.join("\n");
+}
+function exportHTML(s){
+  const isPC = s.kind === "PC", c = CAT(s.setup.cat);
+  const sheet = p => { const P = s.setup.pilots[p], L = pcwuOf(s,p), res = s.debrief.p[p].result;
+    const cell = (n,col) => { const it = IT(n);
+      if (col==="rep") return (s.kind==="PCWU"||it.naf) ? `<td class="sh"></td>` : `<td>${((s.g[p]||{})[n]||{}).rep||""}</td>`;
+      if (col==="pc") return s.kind==="PCWU" ? `<td class="sh"></td>` : `<td>${eff(s,p,n)}</td>`;
+      if (!(it.cred||it.naf)) return `<td class="sh"></td>`;
+      return `<td>${s.kind==="PCWU" ? pcwuCell(s,p,n).val : (L ? ((L.items[n]||{}).st||"") : "")}</td>`; };
+    const tb = ns => ns.map(n => `${SECS[n]?`<tr><td colspan="5" class="sec">${esc(SECS[n].toUpperCase())}</td></tr>`:""}<tr><td>${n}.</td><td>${esc(IT(n).t)} ${IT(n).wv?"★":""}${IT(n).cred?"✈":""}${subLine(s,p,n).replace(/<[^>]+>/g," ")}</td>${cell(n,"rep")}${cell(n,"pc")}${cell(n,"pcwu")}</tr>`).join("");
+    const th = `<tr><th></th><th></th><th>Repeat</th><th>PC/RFT</th><th>PCWU</th></tr>`;
+    const X = b => b ? "☒" : "☐";
+    return `<section><div class="hdr"><div><b>PILOT TRAINING / CHECK GRADE SHEET</b><br><small>TC_PC_RFT_REC · generated by N&amp;O PC Run-and-Grade</small></div><div><span class="tag">N&amp;O ${s.kind}</span></div></div>
+     <table class="h"><tr><td>Name of airman<br><b>${esc(P.name)}</b></td><td>Employee no.<br><b>${esc(P.emp)}</b></td><td>${X(P.duty==="CA")} CA ${X(P.duty==="FO")} FO · A/C ${esc(P.acType)}</td><td>EVENT: ${X(isPC&&P.duty==="CA")} CA PIC PC ${X(isPC&&P.duty==="FO")} FO PIC PC ${X(s.setup.typeRating)} TYPE RATING</td></tr>
+     <tr><td>Certificate ${esc(P.cert)} · ${esc(P.certNo)}<br>${X((s.docs[p]||{}).eng)} English Proficient</td><td>Medical ${esc(P.medDate)} ☒ First<br>${X((s.docs[p]||{}).fcc)} FCC Permit ${X((s.docs[p]||{}).photo)} Photo ID</td><td>Sim ID ${isPC?`${esc(L?L.device:"")} / ${esc(s.setup.device)}`:esc(s.setup.device)}<br>TO/LDGs ${esc(s.counts[p].to)}/${esc(s.counts[p].ldg)}</td><td>CATEGORY: ${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x=>`${X(c.form===x)} ${x}`).join(" ")}<br><small>${esc(c.label)}</small></td></tr>
+     <tr><td colspan="2">PCWU instructor / Ck Amn: <b>${esc(isPC ? (L?L.conductor:"") : s.setup.conductor.name)}</b> ${esc(isPC ? (L?L.condEmp:"") : s.setup.conductor.emp)} · ${esc(isPC ? (L?L.date:"") : s.setup.date)} · PCWU time ${esc(isPC ? (L?L.time:"") : fmtHM(s.run.elapsed))}</td><td colspan="2">${isPC?`PC Check Airman: <b>${esc(s.debrief.signedBy||s.setup.conductor.name)}</b> ${esc(s.setup.conductor.emp)} · ${esc(s.debrief.signedAt||s.setup.date)} · PC time ${fmtHM(s.run.elapsed)}<br>RESULT: ${X(res==="SAT")} SATISFACTORY / COMPLETE ${X(res==="UNSAT")} UNSAT / INCOMPLETE – REMOVED ${X(res==="INC")} INCOMPLETE – SIM / ILLNESS`:""}</td></tr></table>
+     <div class="two"><table>${th}${tb(Array.from({length:21},(_,i)=>i+1))}</table><table>${th}${tb(Array.from({length:18},(_,i)=>i+22))}</table></div>
+     <p><b>Remarks:</b> ${esc(s.debrief.p[p].remarks||"—")}${s.setup.cat==="ST"?" · Special Tracking PC.":""}</p>
+     ${ITEMS.filter(it => ((s.g[p]||{})[it.n]||{}).note).map(it => `<p class="sm">${it.n}. ${esc(it.t)}: ${esc(s.g[p][it.n].note)}</p>`).join("")}
+     ${s.log[p].length?`<p class="sm"><b>Training / re-check log:</b> ${s.log[p].map(x=>`${esc(x.t)} ${esc(x.m)}`).join(" · ")}</p>`:""}
+     ${isPC && L ? `<p class="sm">PCWU record ${esc(L.sid)} · ${esc(L.role==="SCP"?"Simulator Check Pilot":"Instructor")}.</p>` : ""}</section>`; };
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${s.kind} ${esc(s.setup.date)} ${esc(pname(s,0))}</title>
+<style>body{font:12px/1.35 Arial,sans-serif;color:#111;margin:18px}section{page-break-after:always;margin-bottom:28px}.hdr{display:flex;justify-content:space-between;border-bottom:3px solid #e07a1f;padding-bottom:6px;margin-bottom:8px}.tag{background:#0d4a4f;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:3px 5px;vertical-align:top}table.h td{width:25%}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.two td:nth-child(n+3),.two th{width:46px;text-align:center;font-weight:700}.sec{background:#cfcfcf;text-align:center;font-weight:700}.sh{background:#cfcfcf}.sm{font-size:11px;margin:2px 0}small{color:#555}</style></head><body>
+${sheet(0)}${sheet(1)}<p><small>Session ${esc(s.id)} · ${esc(s.status)} · Sources: ${Object.values(SRC).map(esc).join(" · ")} · generated ${new Date().toLocaleString()}</small></p></body></html>`;
+}
+async function doExport(kind){
+  const s = cur();
+  const base = `NO_${s.kind}_${s.setup.date}_${pname(s,0).replace(/\W+/g,"")}_${pname(s,1).replace(/\W+/g,"")}`;
+  const files = {json:[base+".json", JSON.stringify(s,null,2), "application/json"], csv:[base+".csv", exportCSV(s), "text/csv"], html:[base+"_gradesheet.html", exportHTML(s), "text/html"]};
+  const f = files[kind];
+  if (!store.dl) {
+    if (!window.claude) { const url = URL.createObjectURL(new Blob([f[1]], {type:f[2]})); const a = document.createElement("a"); a.href = url; a.download = f[0]; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast("Exported"); return; }
+    toast("File export isn't available in this view."); return; }
+  try { await store.dl.save({filename:f[0], data:f[1]}); toast("Exported"); }
+  catch(e){ if (e && e.code !== "declined") toast("Export failed: " + (e.message || e.code)); }
+}
+function importFile(file, p){
+  const rd = new FileReader();
+  rd.onload = () => {
+    let r; try { r = JSON.parse(rd.result); } catch(e){ toast("That file isn't a valid .json record."); return; }
+    if (!r || r.schema !== SCHEMA || !r.id) { toast("Not an N&O PC / PCWU record."); return; }
+    migrate(r); delete r.demo;
+    if (!sessions[r.id] || (r.updatedAt||0) > (sessions[r.id].updatedAt||0)) { sessions[r.id] = r; touch(r); }
+    const s = cur();
+    if (p != null && s && s.kind === "PC" && r.kind === "PCWU") {
+      const P = s.setup.pilots[p]; let i = r.setup.pilots.findIndex(x => (x.emp||"").trim() && x.emp.trim() === (P.emp||"").trim());
+      if (i < 0) i = p;
+      s.setup.link[p] = snapPCWU(r,i); touch(s); toast(`Linked PCWU ${r.setup.date} for ${pname(s,p)}`);
+    } else toast(`Imported ${r.kind} ${r.setup.date}`);
+    rerender();
+  };
+  rd.readAsText(file);
+}
+
+/* ============================================================ presenter (AirPlay to Apple TV) */
+function tvBar(deck, label, list){
+  return `<div class="tvbar"><span>📺</span><span class="grow">Mirror this iPad to the Apple TV (Control Center → Screen Mirroring), then present. The TV shows only the slide; answers stay hidden until you tap Reveal.</span><button class="btn small primary" data-act="present" data-v="${deck}" data-i="" data-list="${list ? list.join(",") : ""}">${esc(label)}</button></div>`;
+}
+const deckCache = {};
+const pres = {on:false, deck:null, list:[], pos:0, reveal:false, data:null, hideT:null, lock:null};
+async function loadDeck(deck){
+  if (deckCache[deck]) return deckCache[deck];
+  const r = await fetch(`decks/${deck}.json`); if (!r.ok) throw new Error("HTTP " + r.status);
+  return deckCache[deck] = await r.json();
+}
+async function openPresent(deck, startIdx, list){
+  pres.on = true; pres.deck = deck; pres.reveal = false; pres.data = null;
+  const el = $("pres"); el.hidden = false; el.innerHTML = `<div class="msg">Loading slides…</div>`;
+  try { const fs = el.requestFullscreen || el.webkitRequestFullscreen; if (fs) fs.call(el).catch?.(() => {}); } catch(e){}
+  try { if (navigator.wakeLock) pres.lock = await navigator.wakeLock.request("screen"); } catch(e){}
+  try { pres.data = await loadDeck(deck); }
+  catch(e){ el.innerHTML = `<div class="msg">The slide images aren’t available in this copy.<br><small>They load from the decks folder published with the app (Claude copy or GitHub Pages).</small><br><br><button class="btn" data-pact="exit">Close</button></div>`; return; }
+  const all = pres.data.slides.map((x,i) => i);
+  if (deck.startsWith("oral") && list && list.length) { pres.list = pres.data.slides.map((x,i) => ({x,i})).filter(o => list.includes(o.x.qi)).map(o => o.i); }
+  else pres.list = all;
+  pres.pos = 0;
+  if (startIdx !== "" && startIdx != null && deck.startsWith("oral")) { const j = pres.list.findIndex(i => pres.data.slides[i].qi === +startIdx); if (j >= 0) pres.pos = j; }
+  drawPresent(); pokeBar();
+}
+function drawPresent(){
+  const el = $("pres"); if (!pres.on || !pres.data) return;
+  const sl = pres.data.slides[pres.list[pres.pos]], hasA = !!sl.a;
+  const src = pres.data.img[pres.reveal && hasA ? sl.a : sl.q];
+  el.innerHTML = `<img src="${src}" alt=""><div class="tapL" data-pact="prev"></div><div class="tapR" data-pact="next"></div>
+   <div class="pbar" id="pbar"><button data-pact="prev" ${pres.pos===0?"disabled":""} aria-label="Previous">‹</button><span class="ct">${pres.pos+1} / ${pres.list.length}</span>
+   ${hasA ? `<button class="${pres.reveal?"":"rev"}" data-pact="reveal">${pres.reveal ? "Hide answer" : (pres.deck==="walk" ? "Reveal finding" : "Reveal answer")}</button>` : ""}
+   <button data-pact="next" ${pres.pos===pres.list.length-1?"disabled":""} aria-label="Next">›</button><button data-pact="exit">Exit</button></div>`;
+  const nx = pres.data.slides[pres.list[pres.pos+1]]; if (nx) { const i = new Image(); i.src = pres.data.img[nx.q]; }
+}
+function pokeBar(){ const b = $("pbar"); if (!b) return; b.classList.remove("hide"); clearTimeout(pres.hideT); pres.hideT = setTimeout(() => { const x = $("pbar"); if (x) x.classList.add("hide"); }, 3500); }
+function presAct(a){
+  if (a === "exit") { pres.on = false; const el = $("pres"); el.hidden = true; el.innerHTML = ""; try { if (document.fullscreenElement) document.exitFullscreen(); } catch(e){} try { pres.lock && pres.lock.release(); } catch(e){} pres.lock = null; return; }
+  if (!pres.data) return;
+  if (a === "next" && pres.pos < pres.list.length-1) { pres.pos++; pres.reveal = false; }
+  else if (a === "prev" && pres.pos > 0) { pres.pos--; pres.reveal = false; }
+  else if (a === "reveal") pres.reveal = !pres.reveal;
+  drawPresent(); pokeBar();
+}
+$("pres").addEventListener("click", ev => { const t = ev.target.closest("[data-pact]"); if (t && !t.disabled) { ev.stopPropagation(); presAct(t.dataset.pact); } else pokeBar(); });
+let swX = null;
+$("pres").addEventListener("touchstart", ev => { swX = ev.touches[0].clientX; }, {passive:true});
+$("pres").addEventListener("touchend", ev => { if (swX == null) return; const dx = ev.changedTouches[0].clientX - swX; swX = null; if (Math.abs(dx) > 60) presAct(dx < 0 ? "next" : "prev"); }, {passive:true});
+document.addEventListener("keydown", ev => { if (!pres.on) return;
+  if (["ArrowRight","PageDown"," "].includes(ev.key)) { ev.preventDefault(); presAct("next"); }
+  else if (["ArrowLeft","PageUp"].includes(ev.key)) { ev.preventDefault(); presAct("prev"); }
+  else if (ev.key === "a" || ev.key === "Enter") presAct("reveal"); else if (ev.key === "Escape") presAct("exit"); });
+
+/* ============================================================ render + events */
+function render(){
+  const s = cur(); if (!s && ui.view !== "home") ui.view = "home";
+  renderHeader();
+  const m = $("main");
+  if (ui.view === "home") m.innerHTML = renderHome();
+  else if (ui.view === "setup") m.innerHTML = renderSetup(s);
+  else if (ui.view === "brief") m.innerHTML = renderBrief(s);
+  else if (ui.view === "run") m.innerHTML = renderRun(s);
+  else if (ui.view === "sheet") m.innerHTML = renderSheet(s);
+  else m.innerHTML = renderDebrief(s);
+}
+function rerender(){ const y = window.scrollY; render(); window.scrollTo({top:y}); }
+function tick(){
+  const s = cur(); if (!s) return;
+  if ($("briefClock")) { const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0); $("briefClock").textContent = fmtDur(el); $("briefBar").style.width = Math.min(100, el/((s.kind==="PC"?90:120)*600)) + "%"; }
+  if ($("simClock")) $("simClock").textContent = fmtDur(s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0));
+}
+setInterval(tick, 1000);
+function toggleTimer(o){ if (o.startedAt) { o.elapsed += Date.now() - o.startedAt; o.startedAt = null; } else o.startedAt = Date.now(); }
+function simNow(s){ return fmtDur(s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0)).replace(/^0:/,"0:"); }
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2800); }
+function applyTheme(t){ if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
+try { applyTheme(localStorage.getItem("NO_PC_THEME")); } catch(e){}
+function gRec(s,p,n){ s.g[p] = s.g[p] || {}; return s.g[p][n] = s.g[p][n] || {}; }
+
+document.addEventListener("input", ev => {
+  const t = ev.target, k = t.dataset.k; if (!k || t.tagName === "SELECT") return;
+  const s = cur(); if (!s) return; setPath(s, k, t.value); touch(s);
+  if (/^setup\/pilots\/\d\/(name|emp)$|^setup\/conductor/.test(k)) renderHeader();
+});
+document.addEventListener("change", ev => {
+  const t = ev.target;
+  if (t.id === "importFile") { const f = t.files && t.files[0]; if (f) importFile(f, ui.linkFor); t.value = ""; ui.linkFor = null; return; }
+  if (t.dataset.actChange === "topic") { ui.oralTopic = t.value; rerender(); return; }
+  const k = t.dataset.k; if (!k) return; const s = cur(); if (!s) return;
+  if (t.tagName === "SELECT") { setPath(s, k, t.value); touch(s); rerender(); return; }
+  if (/^setup\/pilots\/\d\/emp$/.test(k) && s.kind === "PC" && ui.view === "setup") rerender();
+});
+document.addEventListener("keydown", ev => { const g = ev.target.closest && ev.target.closest(".sk-ev"); if (g && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); g.dispatchEvent(new MouseEvent("click", {bubbles:true})); } });
+document.addEventListener("toggle", ev => { const d = ev.target, s = cur(); if (s && d.dataset && d.dataset.open) { s.brief.open[d.dataset.open] = d.open ? 1 : 0; } }, true);
+
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-act]"); if (!b || b.disabled) return;
+  const a = b.dataset.act, v = b.dataset.v, p = b.dataset.p != null ? +b.dataset.p : null, n = b.dataset.n != null ? +b.dataset.n : null, s = cur();
+  if (a !== "del") ui.del = null;
+  switch (a) {
+    case "theme": { const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      const t = dark ? "light" : "dark"; applyTheme(t); try { localStorage.setItem("NO_PC_THEME", t); } catch(e){} return; }
+    case "view": ui.view = v; ui.sel = null; window.scrollTo({top:0}); render(); return;
+    case "start": { const x = newSession(v); sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
+    case "sample": { const d = sampleSessions(); demo = d.s; ui.cur = "DEMO"; ui.view = "run"; ui.ev = "P17"; ui.p = 0; window.scrollTo({top:0}); break; }
+    case "open": ui.cur = v; ui.view = sessions[v].status === "submitted" ? "debrief" : "run"; ui.ev = null; ui.p = 0; ui.sel = null; window.scrollTo({top:0}); break;
+    case "del": if (ui.del === v) { deleteSession(v); ui.del = null; if (ui.cur === v) ui.cur = null; toast("Session deleted"); } else { ui.del = v; setTimeout(() => { if (ui.del === v) { ui.del = null; rerender(); } }, 3500); } break;
+    case "import": ui.linkFor = p; $("importFile").click(); return;
+    case "flag": s.setup[v][p] = !s.setup[v][p]; touch(s); break;
+    case "tr": s.setup.typeRating = !s.setup.typeRating; touch(s); break;
+    case "role": s.setup.conductor.role = v; touch(s); break;
+    case "link": { const w = sessions[v]; if (w) { s.setup.link[p] = snapPCWU(w, +b.dataset.i); touch(s); toast(`Linked PCWU ${w.setup.date}`); } break; }
+    case "relink": { const L = s.setup.link[p], w = L && sessions[L.sid]; if (w) { s.setup.link[p] = snapPCWU(w, L.idx); touch(s); toast("PCWU refreshed"); } break; }
+    case "unlink": s.setup.link[p] = null; touch(s); break;
+    case "bchk": s.brief.checked[v] = s.brief.checked[v] ? 0 : 1; touch(s); break;
+    case "btimer": toggleTimer(s.brief); touch(s); break;
+    case "rtimer": toggleTimer(s.run); touch(s); break;
+    case "doc": s.docs[p] = s.docs[p] || {}; s.docs[p][v] = s.docs[p][v] ? 0 : 1; touch(s); break;
+    case "bank": s.brief.bank = +v; ui.oralTopic = ""; touch(s); break;
+    case "oral": { const o = s.brief.oral[p] = s.brief.oral[p] || {}; const k = b.dataset.k; o[k] = o[k] === v ? "" : v; touch(s); break; }
+    case "walk": { const o = s.brief.walk[p] = s.brief.walk[p] || {}; const k = b.dataset.k; o[k] = o[k] === v ? "" : v; touch(s); break; }
+    case "ev": ui.ev = v; if (matchMedia("(max-width: 860px)").matches) { render(); const c = document.querySelector(".evcard"); if (c) c.scrollIntoView({block:"start"}); return; } break;
+    case "step": { const E = EVENTS(s); const i = E.findIndex(e => e.id === ui.ev) + +v; if (E[i]) ui.ev = E[i].id; render(); const c = document.querySelector(".evcard"); if (c) c.scrollIntoView({block:"start", behavior:"smooth"}); return; }
+    case "tst": { const er = s.run.ev[ui.ev] = s.run.ev[ui.ev] || {}; er.p = er.p || [{},{}]; er.p[p] = er.p[p] || {}; er.p[p].st = er.p[p].st === v ? "" : v; touch(s); break; }
+    case "treps": { const er = s.run.ev[ui.ev] = s.run.ev[ui.ev] || {}; er.p = er.p || [{},{}]; er.p[p] = er.p[p] || {}; er.p[p].reps = Math.max(0,(er.p[p].reps||0) + +v); touch(s); break; }
+    case "g": { const g = gRec(s,p,n); const cur0 = s.kind === "PC" ? (g.st || "") : g.st;
+      if (cur0 === v) g.st = ""; else g.st = v;
+      if (s.kind === "PC" && g.st === "U" && !g.rep) s.log[p].push({t:simNow(s), m:`Item ${n} ${IT(n).t} — unsatisfactory recorded`});
+      touch(s); break; }
+    case "rep": { const g = gRec(s,p,n); if (g.rep === v) g.rep = ""; else { g.rep = v; s.log[p].push({t:simNow(s), m:`Item ${n} ${IT(n).t} — first attempt unsat (${v}); recorded before training`}); } touch(s); break; }
+    case "sub": { const g = gRec(s,p,n); g.subs = g.subs || {}; g.subs[v] = g.subs[v] ? 0 : 1;
+      if (n === 10 || n === 12 || n === 14 || n === 15) {} if ((n===16||n===17) && v !== "man" && g.subs[v]) ["VOR","NDB","LOC","ASR","RNAV"].forEach(k => { if (k !== v) g.subs[k] = 0; });
+      touch(s); break; }
+    case "log": s.log[p].push({t:simNow(s), m:v}); touch(s); break;
+    case "pilot": ui.p = +v; ui.sel = null; break;
+    case "sel": ui.sel = v ? +v : null; break;
+    case "goto": ui.p = p; ui.sel = +v; ui.view = "sheet"; render(); window.scrollTo({top:0}); return;
+    case "result": s.debrief.p[p].result = s.debrief.p[p].result === v ? "" : v; touch(s); break;
+    case "submit": if (s.demo) { toast("Sample sessions aren't submitted."); return; }
+      s.status = "submitted"; if (!s.debrief.signedBy) s.debrief.signedBy = s.setup.conductor.name; if (!s.debrief.signedAt) s.debrief.signedAt = s.setup.date;
+      if (s.run.startedAt) toggleTimer(s.run); touch(s); toast(store.db ? `${s.kind} submitted to the data store` : `${s.kind} submitted — saved on this device`); break;
+    case "reopen": s.status = "open"; touch(s); break;
+    case "exp": doExport(v); return;
+    case "present": openPresent(v, b.dataset.i, (b.dataset.list||"").split(",").filter(x=>x!=="").map(Number)); return;
+    default: return;
+  }
+  rerender();
+});
+render();
+connectStore();
+</script>
+</body></html>
