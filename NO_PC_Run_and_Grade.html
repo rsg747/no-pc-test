@@ -536,12 +536,22 @@ function getPath(o,p){ return p.split("/").reduce((t,k) => t == null ? undefined
 function setPath(o,p,v){ const k = p.split("/"); let t = o; for (let i=0;i<k.length-1;i++){ if (t[k[i]] == null || typeof t[k[i]] !== "object") t[k[i]] = {}; t = t[k[i]]; } t[k[k.length-1]] = v; }
 function fmtDur(ms){ const s = Math.max(0, Math.floor(ms/1000)); return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`; }
 function fmtHM(ms){ const m = Math.round(Math.max(0,ms)/60000); return `${Math.floor(m/60)}+${String(m%60).padStart(2,"0")}`; }
-const pname = (s,p) => (s.setup.pilots[p].name || (p===0 ? "Left seat" : "Right seat")).trim();
+const pname = (s,p) => (s.setup.pilots[p].name || (p===0 ? "Left seat" : "Right seat")).trim() + (s.setup.pilots[p].ssi ? " (SSI)" : "");
+const isSSI = (s,p) => !!s.setup.pilots[p].ssi;
+const GP = s => [0,1].filter(p => !isSSI(s,p));
+/* device time per PC Guide 6.7.2 schedule: PC crew 4:30; trainee plus seat support 3:00; PC concurrent with type rating 3:00 (brief 1:00 / debrief 1:00) */
+function simTarget(s){
+  if (s.kind === "PCWU") return {m:270, why:"PCWU 4:30 (4:00 maneuvers + 0:30 SPOTs)"};
+  if (s.setup.pilots.some(x => x.ssi)) return {m:180, why:"PC 3:00 — trainee plus seat support"};
+  if (s.setup.typeRating) return {m:180, why:"PC 3:00 — concurrent with type rating"};
+  return {m:270, why:"PC 4:30 — two applicants"};
+}
+const briefTarget = s => s.kind === "PCWU" ? 120 : (s.setup.typeRating ? 60 : 90);   // graded pilots — a seat-support (SSI) seat is never graded
 const seatLab = p => p===0 ? "L" : "R";
 const EVENTS = s => s.kind === "PCWU" ? PCWU_EVENTS : PC_EVENTS;
 const PATH = s => s.kind === "PCWU" ? PCWU_PATH : PC_PATH;
 
-function blankPilot(duty){ return {name:"",emp:"",duty,certNo:"",cert:"ATP",medDate:"",medClass:"First",acType:"744"}; }
+function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",ssi:false}; }
 function newSession(kind){
   return {schema:SCHEMA, program:"N&O", kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
     setup:{date:today(), device:"", cat:"REC", failedQual:[false,false], lapsed:[false,false], typeRating:false,
@@ -625,6 +635,7 @@ function pcwuAllowed(s,p,n){ const it = IT(n); if (it.naf) return ["C","/"]; ret
 
 /* problems that block submission */
 function problems(s,p){
+  if (isSSI(s,p)) return [];
   const out = [], P = s.setup.pilots[p], who = pname(s,p);
   const add = (n,msg,warn) => out.push({n,msg,warn:!!warn});
   if (!P.name.trim() || !P.emp.trim()) add(0,"Pilot name and employee number");
@@ -675,6 +686,7 @@ function seatRestricted(s,p){ return s.kind === "PC" && ITEMS.some(it => ["U","I
 
 /* per-pilot status for a stick-diagram event */
 function evState(s,e,p){
+  if (isSSI(s,p)) return isSSI(s,1-p) ? "none" : evState(s,e,1-p);
   if (s.kind === "PCWU") {
     const r = (((s.run.ev[e.id]||{}).p)||[])[p] || {};
     return r.st ? TSBY[r.st].c : (e.items.some(n => pcwuCell(s,p,n).val && !pcwuCell(s,p,n).auto) ? "ok" : "none");
@@ -686,7 +698,7 @@ function evState(s,e,p){
   return "none";
 }
 function evNeeded(s,e){ // PC: does any linked item still need a grade?
-  return [0,1].some(p => e.items.some(n => !eff(s,p,n)));
+  return GP(s).some(p => e.items.some(n => !eff(s,p,n)));
 }
 
 /* ============================================================ store */
@@ -800,7 +812,7 @@ function renderHeader(){
     ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(CAT(s.setup.cat).label)} · ${esc(s.setup.date)}</span></div>` : ""}
     <span class="pill" id="storeState"></span>
     <button class="ghost" data-act="theme" aria-label="Toggle light or dark">◐</button></div>`;
-  const nb = s ? [0,1].reduce((t,p) => t + blocking(s,p).length, 0) : 0;
+  const nb = s ? GP(s).reduce((t,p) => t + blocking(s,p).length, 0) : 0;
   $("nav").innerHTML = VIEWS(s).map(([k,l]) => `<button class="${ui.view===k?"on":""}" data-act="view" data-v="${k}" ${!s && k!=="home" ? "disabled" : ""}>${l}${k==="debrief" && s && s.kind==="PC" && nb ? `<b>${nb}</b>` : ""}</button>`).join("");
   renderStatus();
 }
@@ -836,15 +848,15 @@ function renderSetup(s){
       <label class="f">Employee no.${inp(`setup/pilots/${p}/emp`,P.emp)}</label>
       <label class="f">Duty<select id="f_duty${p}" data-k="setup/pilots/${p}/duty"><option ${P.duty==="CA"?"selected":""}>CA</option><option ${P.duty==="FO"?"selected":""}>FO</option></select></label>
       <label class="f">A/C type<select id="f_ac${p}" data-k="setup/pilots/${p}/acType">${["744","-8"].map(x=>`<option ${P.acType===x?"selected":""}>${x}</option>`).join("")}</select></label>
-      ${isPC ? `<label class="f">Airman certificate no.${inp(`setup/pilots/${p}/certNo`,P.certNo)}</label>
-      <label class="f">Medical date${inp(`setup/pilots/${p}/medDate`,P.medDate,"","date")}</label>` : ""}
     </div>
+    <div class="row" style="margin-top:10px"><button class="cb ${P.ssi?"on":""}" style="width:auto" data-act="ssi" data-p="${p}"><span class="box"></span><span>Seat support (SSI) — not graded</span></button></div>
+    ${P.ssi ? `<p class="why" style="margin:6px 0 0">This seat is seat support only. It has no grade sheet, no oral or walk-around marks, and is left out of every check.${isPC ? " PC device time becomes 3:00." : ""}</p></div>` : `
     <div class="row" style="margin-top:10px">
       <button class="cb ${s.setup.failedQual[p]?"on":""}" style="width:auto" data-act="flag" data-v="failedQual" data-p="${p}"><span class="box"></span><span>Failed a qualification event</span></button>
       <button class="cb ${s.setup.lapsed[p]?"on":""}" style="width:auto" data-act="flag" data-v="lapsed" data-p="${p}"><span class="box"></span><span>PC interval expired (lapsed)</span></button>
     </div>
     ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
-    ${isPC ? linkBox(s,p) : ""}</div>`; };
+    ${isPC ? linkBox(s,p) : ""}</div>`}`; };
   return `<span class="eyebrow">${s.kind} setup</span><h2>${isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2>
   <div class="cols">
    <div class="card"><h4>Event</h4><div class="g2">
@@ -904,7 +916,7 @@ function refs(){
   ${BULLETINS.map(b => `<details class="ref"><summary>Bulletin — ${esc(b.h)}</summary><div><ul>${b.b.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></details>`).join("")}`;
 }
 function docsCard(s){
-  return `<h3>Documents</h3><div class="cols">${[0,1].map(p => `<div class="card"><h4>${esc(pname(s,p))} <span class="muted small">${esc(s.setup.pilots[p].duty)}</span></h4><ul class="chk">${DOCS.map(([k,l]) => `<li><button class="cb ${(s.docs[p]||{})[k]?"on":""}" data-act="doc" data-p="${p}" data-v="${k}"><span class="box"></span><span>${esc(l)}</span></button></li>`).join("")}</ul></div>`).join("")}</div>`;
+  return `<h3>Documents</h3><p class="muted small" style="margin-top:0">Check each document was reviewed — no certificate numbers or dates are recorded.</p><div class="cols">${GP(s).map(p => `<div class="card"><h4>${esc(pname(s,p))} <span class="muted small">${esc(s.setup.pilots[p].duty)}</span></h4><ul class="chk">${DOCS.map(([k,l]) => `<li><button class="cb ${(s.docs[p]||{})[k]?"on":""}" data-act="doc" data-p="${p}" data-v="${k}"><span class="box"></span><span>${esc(l)}</span></button></li>`).join("")}</ul></div>`).join("")}</div>`;
 }
 function oralCard(s){
   const bank = ORAL.find(b => b.bank === +s.brief.bank) || ORAL[0];
@@ -915,21 +927,21 @@ function oralCard(s){
   return `<h3>Equipment examination (oral) — item 1</h3><div class="card">
    <div class="row"><span class="eyebrow">Question bank</span><div class="seg">${ORAL.map(b=>`<button class="${b.bank===bank.bank?"on":""}" data-act="bank" data-v="${b.bank}">${b.bank}</button>`).join("")}</div>
    <select class="in" style="width:auto" id="f_topic" data-act-change="topic"><option value="">All topics (${bank.qs.length})</option>${topics.map(t=>`<option ${ui.oralTopic===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
-   <span class="grow"></span>${[0,1].map(p => { const t = tally(p); return `<span class="chip ${t.x?"warn":"ok"}">${esc(pname(s,p))}: ${t.c} ✓ · ${t.x} ✗</span>`; }).join(" ")}</div>
+   <span class="grow"></span>${GP(s).map(p => { const t = tally(p); return `<span class="chip ${t.x?"warn":"ok"}">${esc(pname(s,p))}: ${t.c} ✓ · ${t.x} ✗</span>`; }).join(" ")}</div>
    ${tvBar("oral"+bank.bank, "Present this bank on the TV", qs.map(x=>x.i))}
    <div style="margin-top:8px">${qs.map(({q,i}) => { const k = `${bank.bank}:${i}`;
      return `<div class="qa"><div><span class="eyebrow">${esc(q.topic)}</span><span class="q">${esc(q.q)}</span></div>
-      <div class="row"><button class="tv" data-act="present" data-v="oral${bank.bank}" data-i="${i}" data-list="${qs.map(x=>x.i).join(",")}" title="Show this question on the TV" aria-label="Show on TV">📺</button>${[0,1].map(p => { const v = (s.brief.oral[p]||{})[k]; return `<span class="mk" title="${esc(pname(s,p))}"><b class="small muted" style="align-self:center">${seatLab(p)}</b><button class="${v==="c"?"on ok":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="c" aria-label="${esc(pname(s,p))} correct">✓</button><button class="${v==="x"?"on bad":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="x" aria-label="${esc(pname(s,p))} incorrect">✗</button></span>`; }).join("")}</div>
+      <div class="row"><button class="tv" data-act="present" data-v="oral${bank.bank}" data-i="${i}" data-list="${qs.map(x=>x.i).join(",")}" title="Show this question on the TV" aria-label="Show on TV">📺</button>${GP(s).map(p => { const v = (s.brief.oral[p]||{})[k]; return `<span class="mk" title="${esc(pname(s,p))}"><b class="small muted" style="align-self:center">${seatLab(p)}</b><button class="${v==="c"?"on ok":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="c" aria-label="${esc(pname(s,p))} correct">✓</button><button class="${v==="x"?"on bad":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="x" aria-label="${esc(pname(s,p))} incorrect">✗</button></span>`; }).join("")}</div>
       <details class="a" data-open="q${k}" ${s.brief.open["q"+k]?"open":""}><summary class="small">Answer</summary>${esc(q.a)}${q.ref?`<small>${esc(q.ref)}</small>`:""}</details></div>`; }).join("")}</div></div>`;
 }
 function walkCard(s){
-  return `<h3>Visual inspection (walk-around) — done individually</h3>${tvBar("walk","Present the walk-around on the TV",null)}<div class="cols">${[0,1].map(p => { const w = s.brief.walk[p] || {}; const id = WALK_FLAT.filter(x => w[x.k]==="c").length, ms = WALK_FLAT.filter(x => w[x.k]==="x").length;
+  return `<h3>Visual inspection (walk-around) — done individually</h3>${tvBar("walk","Present the walk-around on the TV",null)}<div class="cols">${GP(s).map(p => { const w = s.brief.walk[p] || {}; const id = WALK_FLAT.filter(x => w[x.k]==="c").length, ms = WALK_FLAT.filter(x => w[x.k]==="x").length;
    return `<div class="card"><h4>${esc(pname(s,p))} <span class="cnt">${id} found · ${ms} missed / ${WALK_FLAT.length}</span></h4>${WALK.map((g,gi) => `<h5>${esc(g.a)}</h5>${g.f.map((f,fi) => { const k = gi+"."+fi, v = w[k];
      return `<div class="row" style="justify-content:space-between;padding:2px 0"><span class="small">${esc(f)}</span><span class="mk"><button class="${v==="c"?"on ok":""}" data-act="walk" data-p="${p}" data-k="${k}" data-v="c">Found</button><button class="${v==="x"?"on bad":""}" data-act="walk" data-p="${p}" data-k="${k}" data-v="x">Missed</button></span></div>`; }).join("")}`).join("")}</div>`; }).join("")}</div>
    <p class="small muted">Answer key from the 747-400F Virtual Walk-Around Exam: the pilot describes what they look for at each station; these are the planted abnormal conditions.</p>`;
 }
 function renderBrief(s){
-  const isPC = s.kind === "PC", target = isPC ? 90 : 120;
+  const isPC = s.kind === "PC", target = briefTarget(s);
   const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0);
   return `<div class="bhead"><div><span class="eyebrow">${s.kind} brief</span><h2>${isPC ? "Standardized Proficiency Check Briefing" : "PCWU briefing summary"}</h2>
     <p class="lede">${isPC ? "Brief from the Atlas Standardized PC Briefing, then the oral and the walk-around for each pilot. Results here feed items 1 and 2 on the grade sheet." : "Review the profile and briefing script for each maneuver, brief directly from the manuals, then the emphasis items. 4.5 hr FFS: 4.0 maneuvers + 0.5 SPOTs. 1 hr debrief."}</p></div>
@@ -966,7 +978,7 @@ function stick(s){
       <line class="sk-stem" x1="${cx}" y1="${ly+4}" x2="${cx}" y2="${cy-12}"/>
       <text class="sk-lab" x="${Math.min(Math.max(cx, L+hw-6), W-R-hw+6)}" y="${ly}" text-anchor="middle">${esc(lab)}</text>
       ${halfDisc(cx,cy,11,c0,c1)}</g>`; }).join("");
-  return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : esc(CAT(s.setup.cat).label)+" profile"}</span><span class="eyebrow">Tap an event · left half ${esc(pname(s,0))} · right half ${esc(pname(s,1))}</span></div>
+  return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : esc(CAT(s.setup.cat).label)+" profile"}</span><span class="eyebrow">${GP(s).length === 2 ? `Tap an event · left half ${esc(pname(s,0))} · right half ${esc(pname(s,1))}` : `Tap an event · markers show ${esc(pname(s,GP(s)[0]))}`}</span></div>
    <svg class="stick" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Flight profile">
     <line class="sk-axis" x1="${L}" y1="${Y(0)}" x2="${W-R}" y2="${Y(0)}"/>
     ${ticks.map(t => `<line class="sk-axis" x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(0)+5}"/><text class="sk-time" x="${X(t)}" y="${Y(0)+20}" text-anchor="middle">${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}</text>`).join("")}
@@ -1011,6 +1023,7 @@ function renderRun(s){
   const el = s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0);
   const er = s.run.ev[e.id] || {};
   const pcard = p => {
+    if (isSSI(s,p)) return `<div class="pcard p${p}"><div class="ph"><span class="seat">${seatLab(p)}</span><b>${esc(pname(s,p))}</b></div><p class="why" style="margin:0">Seat support — not graded.</p></div>`;
     const r = ((er.p||[])[p]) || {};
     const train = s.kind === "PCWU" ? `<div class="sts">${TSTAT.map(x => `<button class="st ${x.c} ${r.st===x.k?"on":""}" data-act="tst" data-p="${p}" data-v="${x.k}">${x.l}</button>`).join("")}</div>
        <div class="reps"><span class="small muted">Repeats</span><button class="btn small" data-act="treps" data-p="${p}" data-v="-1">−</button><b>${r.reps||0}</b><button class="btn small" data-act="treps" data-p="${p}" data-v="1">+</button></div>` : "";
@@ -1022,7 +1035,8 @@ function renderRun(s){
       ${s.kind==="PCWU" ? `<input class="note" id="enote_${e.id}_${p}" data-k="run/ev/${e.id}/p/${p}/note" value="${esc(r.note||"")}" placeholder="Training note">` : ""}</div>`;
   };
   return `<div class="runbar"><div class="simclock"><span class="eyebrow">Sim</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${s.run.startedAt?"":"primary"}" data-act="rtimer">${s.run.startedAt?"Pause":"Start"}</button></div>
-    ${s.kind==="PC" ? [0,1].map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">PCWU target 4:30 · ${s.setup.conductor.role==="SCP"?"SCP — ✈ credit available":"Instructor — no ✈ credit"}</span>`}
+    <span class="chip ${el > simTarget(s).m*60000 ? "bad" : "info"}" id="simTgt">Target ${Math.floor(simTarget(s).m/60)}:${String(simTarget(s).m%60).padStart(2,"0")} · ${esc(simTarget(s).why.split(" — ")[1] || simTarget(s).why.replace(/^PCWU 4:30 /,""))}</span>
+    ${s.kind==="PC" ? GP(s).map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">${s.setup.conductor.role==="SCP"?"SCP — ✈ credit available":"Instructor — no ✈ credit"}</span>`}
     <span class="grow"></span><span class="muted small">Order of events is SCP discretion — grade whatever was flown.</span></div>
    ${stick(s)}${xchips(s)}
    <div class="evcard"><div><span class="eyebrow">${e.opt ? (s.kind==="PCWU" ? "Optional" : "As required") : `Event ${i+1}`}${e.crit?" · critical":""}</span><h2>${esc(e.t)}</h2></div>
@@ -1035,7 +1049,7 @@ function renderRun(s){
 function logBox(s){
   const any = s.log[0].length || s.log[1].length;
   return `<details class="ref" ${any?"open":""}><summary>Training / re-check log</summary><div><p class="small muted" style="margin-top:0">Training and checking cannot run together. Record the failure before training, announce when training starts and when checking resumes. A failed item may not be deferred into another crewmember’s PC.</p>
-   <div class="cols">${[0,1].map(p => `<div><b>${esc(pname(s,p))}</b><ul class="small">${s.log[p].map(x=>`<li><span class="mono">${esc(x.t)}</span> ${esc(x.m)}</li>`).join("") || "<li class='muted'>No entries</li>"}</ul>
+   <div class="cols">${GP(s).map(p => `<div><b>${esc(pname(s,p))}</b><ul class="small">${s.log[p].map(x=>`<li><span class="mono">${esc(x.t)}</span> ${esc(x.m)}</li>`).join("") || "<li class='muted'>No entries</li>"}</ul>
    <div class="row"><button class="btn small" data-act="log" data-p="${p}" data-v="Training started">Training started</button><button class="btn small" data-act="log" data-p="${p}" data-v="Checking resumed">Checking resumed</button></div></div>`).join("")}</div></div></details>`;
 }
 
@@ -1058,6 +1072,7 @@ function subLine(s,p,n){
   return on.length ? `<span class="det">☒ ${esc(on.join(" · "))}</span>` : "";
 }
 function renderSheet(s){
+  if (!GP(s).includes(ui.p)) ui.p = GP(s)[0] ?? 0;
   const p = ui.p, P = s.setup.pilots[p], c = CAT(s.setup.cat), isPC = s.kind === "PC", L = pcwuOf(s,p);
   const res = s.debrief.p[p].result;
   const rows = ns => ns.map(n => { const it = IT(n); const sec = SECS[n] ? `<tr><td class="sec" colspan="5">${esc(SECS[n].toUpperCase())}</td></tr>` : "";
@@ -1067,14 +1082,13 @@ function renderSheet(s){
   const pcTime = fmtHM(s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0));
   const box = (on,l) => `<span class="${on?"x":""}">${l}</span>`;
   return `<span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2>
-   <div class="pilottabs" style="margin-top:10px">${[0,1].map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
+   <div class="pilottabs" style="margin-top:10px">${GP(s).map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
    ${isPC && !L && ["REC","RQF","RQ12"].includes(s.setup.cat) ? `<div class="banner warn">No PCWU linked for this pilot — every ✈ item, CAT II/III and Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
    ${seatRestricted(s,p) ? `<div class="banner bad">Unsatisfactory item recorded — seat restriction applies for the remainder of the session.</div>` : ""}
    <div class="formhdr">
     <div><div class="k">Name of airman · Employee no.</div><div class="v">${esc(P.name||"—")} · ${esc(P.emp||"—")}</div></div>
     <div><div class="k">CA / FO · A/C type</div><div class="v">${esc(P.duty)} · ${esc(P.acType)}</div></div>
-    ${isPC ? `<div><div class="k">Certificate · Airman cert no.</div><div class="v">${esc(P.cert)} · ${esc(P.certNo||"—")}</div><div class="boxes">${box((s.docs[p]||{}).eng,"English Proficient")}</div></div>
-    <div><div class="k">Medical date · class</div><div class="v">${esc(P.medDate||"—")} · First</div><div class="boxes">${box((s.docs[p]||{}).fcc,"FCC Permit")}${box((s.docs[p]||{}).photo,"Photo ID")}</div></div>` : ""}
+    ${isPC ? `<div style="flex-basis:100%"><div class="k">Documents checked</div><div class="boxes">${box((s.docs[p]||{}).atp,"ATP · B-747-4")}${box((s.docs[p]||{}).lim,"Limitations OK")}${box((s.docs[p]||{}).eng,"English Proficient")}${box((s.docs[p]||{}).med,"Medical — First")}${box((s.docs[p]||{}).fcc,"FCC Permit")}${box((s.docs[p]||{}).photo,"Photo ID")}${box((s.docs[p]||{}).crew,"Crew ID")}${box((s.docs[p]||{}).ftsp,"FTSP")}</div></div>` : ""}
     <div><div class="k">Simulator ID # (PCWU / PC)</div><div class="v">${isPC ? `${esc(L?L.device:"—")} / ${esc(s.setup.device||"—")}` : esc(s.setup.device||"—")}</div></div>
     <div><div class="k">TO / LDGs (3 min) · Times</div><div class="v">${isPC ? `<span class="row"><input class="in" style="width:70px;min-height:34px" id="to_${p}" data-k="counts/${p}/to" value="${esc(s.counts[p].to)}" inputmode="numeric" aria-label="Takeoffs"> / <input class="in" style="width:70px;min-height:34px" id="ldg_${p}" data-k="counts/${p}/ldg" value="${esc(s.counts[p].ldg)}" inputmode="numeric" aria-label="Landings"></span>` : ""}PCWU ${isPC ? esc(L?L.time:"—") : pcTime} · ${isPC?`PC ${pcTime}`:""}</div></div>
     <div><div class="k">Event</div><div class="boxes">${box(isPC && P.duty==="CA","CA PIC PC")}${box(isPC && P.duty==="FO","FO PIC PC")}${box(s.setup.typeRating,"TYPE RATING")}${box(false,"RFT")}</div></div>
@@ -1092,7 +1106,8 @@ function renderSheet(s){
 /* ============================================================ DEBRIEF */
 function renderDebrief(s){
   const isPC = s.kind === "PC";
-  const pcol = p => { const pr = problems(s,p), bl = pr.filter(x=>!x.warn), d = s.debrief.p[p];
+  const pcol = p => { if (isSSI(s,p)) return `<div class="card"><div class="ph"><span class="seat" style="background:${p?"var(--info)":"var(--brand2)"};color:#fff">${seatLab(p)}</span><h4 style="margin:0">${esc(pname(s,p))}</h4></div><p class="why" style="margin:8px 0 0">Seat support — not graded and not part of this record’s checks.</p></div>`;
+    const pr = problems(s,p), bl = pr.filter(x=>!x.warn), d = s.debrief.p[p];
     const runs = EVENTS(s).map(e => ({e, r:(((s.run.ev[e.id]||{}).p)||[])[p]||{}})).filter(x => x.r.st || x.r.note);
     return `<div class="card"><div class="ph"><span class="seat" style="background:${p?"var(--info)":"var(--brand2)"};color:#fff">${seatLab(p)}</span><h4 style="margin:0">${esc(pname(s,p))}</h4><span class="muted small">${esc(s.setup.pilots[p].duty)} · emp ${esc(s.setup.pilots[p].emp||"—")}</span></div>
      ${seatRestricted(s,p) ? `<div class="banner bad" style="margin-top:10px">Unsatisfactory — no crew seat or seat support for the rest of the session. Complete the failure documentation and notify company personnel per the FOTM.</div>` : ""}
@@ -1103,7 +1118,7 @@ function renderDebrief(s){
      ${isPC ? `<h5>Result</h5><div class="seg">${[["SAT","Satisfactory / complete"],["UNSAT","Unsat — removed from flight status"],["INC","Incomplete — sim or illness"]].map(([k,l]) => `<button class="${d.result===k?"on":""}" data-act="result" data-p="${p}" data-v="${k}">${l}</button>`).join("")}</div>` : ""}
      <label class="f" style="margin-top:12px">Remarks (reverse of form)<textarea id="rem_${p}" data-k="debrief/p/${p}/remarks" rows="3" placeholder="Brief and specific — required for U, I and repeated items; name any Emergency / Abnormal procedure graded U or I">${esc(d.remarks)}</textarea></label>
      <label class="f" style="margin-top:8px">${isPC?"Debrief / study items":"What to review before the PC"}<textarea id="study_${p}" data-k="debrief/p/${p}/study" rows="2">${esc(d.study)}</textarea></label></div>`; };
-  const okAll = isPC ? [0,1].every(p => !blocking(s,p).length) : true;
+  const okAll = isPC ? GP(s).length > 0 && GP(s).every(p => !blocking(s,p).length) : true;
   return `<span class="eyebrow">${s.kind} debrief</span><h2>Debrief & submit</h2>
    <div class="cols" style="margin-top:14px">${pcol(0)}${pcol(1)}</div>
    <div class="card" style="margin-top:16px"><h4>Sign-off</h4><div class="g2">
@@ -1129,7 +1144,7 @@ function carryPreview(s,p){ // as if this PCWU were linked to a PC of the sessio
 function exportCSV(s){
   const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
   const out = [["program","kind","session","date","pc_type","pilot","emp","duty","item","item_name","requirement","repeat","pc_status","pcwu_status","credited","subs","note"].join(",")];
-  [0,1].forEach(p => ITEMS.forEach(it => { const n = it.n, g = (s.g[p]||{})[n] || {};
+  GP(s).forEach(p => ITEMS.forEach(it => { const n = it.n, g = (s.g[p]||{})[n] || {};
     const r = s.kind === "PC" ? req(s,p,n) : {};
     const pcw = s.kind === "PCWU" ? pcwuCell(s,p,n).val : (pcwuOf(s,p) ? ((pcwuOf(s,p).items[n]||{}).st||"") : "");
     out.push(["N&O", s.kind, s.id, s.setup.date, s.setup.cat, pname(s,p), s.setup.pilots[p].emp, s.setup.pilots[p].duty, n, it.t, s.kind==="PC"?r.code:"", g.rep||"", s.kind==="PC"?eff(s,p,n):"", pcw, r.credited?"Y":"", Object.keys(g.subs||{}).filter(k=>g.subs[k]).join("/"), g.note||""].map(q).join(","));
@@ -1149,7 +1164,7 @@ function exportHTML(s){
     const X = b => b ? "☒" : "☐";
     return `<section><div class="hdr"><div><b>PILOT TRAINING / CHECK GRADE SHEET</b><br><small>TC_PC_RFT_REC · generated by N&amp;O PC Run-and-Grade</small></div><div><span class="tag">N&amp;O ${s.kind}</span></div></div>
      <table class="h"><tr><td>Name of airman<br><b>${esc(P.name)}</b></td><td>Employee no.<br><b>${esc(P.emp)}</b></td><td>${X(P.duty==="CA")} CA ${X(P.duty==="FO")} FO · A/C ${esc(P.acType)}</td><td>EVENT: ${X(isPC&&P.duty==="CA")} CA PIC PC ${X(isPC&&P.duty==="FO")} FO PIC PC ${X(s.setup.typeRating)} TYPE RATING</td></tr>
-     <tr><td>Certificate ${esc(P.cert)} · ${esc(P.certNo)}<br>${X((s.docs[p]||{}).eng)} English Proficient</td><td>Medical ${esc(P.medDate)} ☒ First<br>${X((s.docs[p]||{}).fcc)} FCC Permit ${X((s.docs[p]||{}).photo)} Photo ID</td><td>Sim ID ${isPC?`${esc(L?L.device:"")} / ${esc(s.setup.device)}`:esc(s.setup.device)}<br>TO/LDGs ${esc(s.counts[p].to)}/${esc(s.counts[p].ldg)}</td><td>CATEGORY: ${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x=>`${X(c.form===x)} ${x}`).join(" ")}<br><small>${esc(c.label)}</small></td></tr>
+     <tr><td>Certificate ${X((s.docs[p]||{}).atp)} ATP checked<br>${X((s.docs[p]||{}).eng)} English Proficient</td><td>${X((s.docs[p]||{}).med)} Medical — First checked<br>${X((s.docs[p]||{}).fcc)} FCC Permit ${X((s.docs[p]||{}).photo)} Photo ID</td><td>Sim ID ${isPC?`${esc(L?L.device:"")} / ${esc(s.setup.device)}`:esc(s.setup.device)}<br>TO/LDGs ${esc(s.counts[p].to)}/${esc(s.counts[p].ldg)}</td><td>CATEGORY: ${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x=>`${X(c.form===x)} ${x}`).join(" ")}<br><small>${esc(c.label)}</small></td></tr>
      <tr><td colspan="2">PCWU instructor / Ck Amn: <b>${esc(isPC ? (L?L.conductor:"") : s.setup.conductor.name)}</b> ${esc(isPC ? (L?L.condEmp:"") : s.setup.conductor.emp)} · ${esc(isPC ? (L?L.date:"") : s.setup.date)} · PCWU time ${esc(isPC ? (L?L.time:"") : fmtHM(s.run.elapsed))}</td><td colspan="2">${isPC?`PC Check Airman: <b>${esc(s.debrief.signedBy||s.setup.conductor.name)}</b> ${esc(s.setup.conductor.emp)} · ${esc(s.debrief.signedAt||s.setup.date)} · PC time ${fmtHM(s.run.elapsed)}<br>RESULT: ${X(res==="SAT")} SATISFACTORY / COMPLETE ${X(res==="UNSAT")} UNSAT / INCOMPLETE – REMOVED ${X(res==="INC")} INCOMPLETE – SIM / ILLNESS`:""}</td></tr></table>
      <div class="two"><table>${th}${tb(Array.from({length:21},(_,i)=>i+1))}</table><table>${th}${tb(Array.from({length:18},(_,i)=>i+22))}</table></div>
      <p><b>Remarks:</b> ${esc(s.debrief.p[p].remarks||"—")}${s.setup.cat==="ST"?" · Special Tracking PC.":""}</p>
@@ -1158,7 +1173,7 @@ function exportHTML(s){
      ${isPC && L ? `<p class="sm">PCWU record ${esc(L.sid)} · ${esc(L.role==="SCP"?"Simulator Check Pilot":"Instructor")}.</p>` : ""}</section>`; };
   return `<!doctype html><html><head><meta charset="utf-8"><title>${s.kind} ${esc(s.setup.date)} ${esc(pname(s,0))}</title>
 <style>body{font:12px/1.35 Arial,sans-serif;color:#111;margin:18px}section{page-break-after:always;margin-bottom:28px}.hdr{display:flex;justify-content:space-between;border-bottom:3px solid #e07a1f;padding-bottom:6px;margin-bottom:8px}.tag{background:#0d4a4f;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:3px 5px;vertical-align:top}table.h td{width:25%}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.two td:nth-child(n+3),.two th{width:46px;text-align:center;font-weight:700}.sec{background:#cfcfcf;text-align:center;font-weight:700}.sh{background:#cfcfcf}.sm{font-size:11px;margin:2px 0}small{color:#555}</style></head><body>
-${sheet(0)}${sheet(1)}<p><small>Session ${esc(s.id)} · ${esc(s.status)} · Sources: ${Object.values(SRC).map(esc).join(" · ")} · generated ${new Date().toLocaleString()}</small></p></body></html>`;
+${GP(s).map(sheet).join("")}${[0,1].filter(p=>isSSI(s,p)).map(p=>`<p><small>${esc(pname(s,p))}: seat support, not graded.</small></p>`).join("")}<p><small>Session ${esc(s.id)} · ${esc(s.status)} · Sources: ${Object.values(SRC).map(esc).join(" · ")} · generated ${new Date().toLocaleString()}</small></p></body></html>`;
 }
 async function doExport(kind){
   const s = cur();
@@ -1257,8 +1272,8 @@ function render(){
 function rerender(){ const y = window.scrollY; render(); window.scrollTo({top:y}); }
 function tick(){
   const s = cur(); if (!s) return;
-  if ($("briefClock")) { const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0); $("briefClock").textContent = fmtDur(el); $("briefBar").style.width = Math.min(100, el/((s.kind==="PC"?90:120)*600)) + "%"; }
-  if ($("simClock")) $("simClock").textContent = fmtDur(s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0));
+  if ($("briefClock")) { const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0); $("briefClock").textContent = fmtDur(el); $("briefBar").style.width = Math.min(100, el/(briefTarget(s)*600)) + "%"; }
+  if ($("simClock")) { const el = s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0); $("simClock").textContent = fmtDur(el); const t = $("simTgt"); if (t) t.className = "chip " + (el > simTarget(s).m*60000 ? "bad" : "info"); }
 }
 setInterval(tick, 1000);
 function toggleTimer(o){ if (o.startedAt) { o.elapsed += Date.now() - o.startedAt; o.startedAt = null; } else o.startedAt = Date.now(); }
@@ -1298,6 +1313,8 @@ document.addEventListener("click", ev => {
     case "del": if (ui.del === v) { deleteSession(v); ui.del = null; if (ui.cur === v) ui.cur = null; toast("Session deleted"); } else { ui.del = v; setTimeout(() => { if (ui.del === v) { ui.del = null; rerender(); } }, 3500); } break;
     case "import": ui.linkFor = p; $("importFile").click(); return;
     case "flag": s.setup[v][p] = !s.setup[v][p]; touch(s); break;
+    case "ssi": { const P = s.setup.pilots[p]; if (!P.ssi && isSSI(s,1-p)) { toast("Only one seat can be seat support — at least one pilot must be graded."); return; }
+      P.ssi = !P.ssi; if (P.ssi) s.setup.link[p] = null; touch(s); break; }
     case "tr": s.setup.typeRating = !s.setup.typeRating; touch(s); break;
     case "role": s.setup.conductor.role = v; touch(s); break;
     case "link": { const w = sessions[v]; if (w) { s.setup.link[p] = snapPCWU(w, +b.dataset.i); touch(s); toast(`Linked PCWU ${w.setup.date}`); } break; }
