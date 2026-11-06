@@ -554,8 +554,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.22";
+const APP_VERSION = "2026.11.06.23";
 const REVISIONS = [
+ {v:"2026.11.06.23", d:"6 Nov 2026", n:["Printed form: remarks on the back only when an item is unsatisfactory / incomplete or repeated (Remarks Y); otherwise Remarks N and the back stays blank."]},
  {v:"2026.11.06.22", d:"6 Nov 2026", n:["CAT II / III qualification sim: PRM is required (C / I) along with PAR/ASR."]},
  {v:"2026.11.06.21", d:"6 Nov 2026", n:["CAT II / III qualification sim as its own event (long-course requal, new hire): Sessions → New CAT II/III. Grades CAT II and CAT III (S / U), PAR/ASR and Seat Specific if CA (C / I), PRM if conducted; every other block prints “/”. The form checks EVENT “CAT II / III”, records TO / LDGs and the time in Other Training Time."]},
  {v:"2026.11.06.20", d:"6 Nov 2026", n:["Special Tracking PCWU: CAT II/III and Non-App F fill “/” automatically (not required — grade only if done). The ST PC already treated them as not required.","PC Setup shows the PCWU link only for Recurrent and short Requal PCs; Initial, Transition / type rating, Upgrade, long-course Requal and ST show “no PCWU” instead. The separate-oral box shows for the course PCs (Initial, Transition, Upgrade, long Requal)."]},
@@ -1686,16 +1687,16 @@ function formValues(s,p){ // → {text:{field:value}, check:[field...], remarks:
     let subs = g.subs || {}; if (isPC && (n===14||n===15) && !g.st && L) subs = (L.items[n]||{}).subs || {};
     if (!isPC && !(n===14||n===15)) subs = {};
     if (FF_SUB[n]) Object.entries(FF_SUB[n]).forEach(([k,f]) => { if (subs[k]) C.push(f); }); });
-  const rem = []; const d = s.debrief.p[p];
-  if (pcat(s,p) === "ST" && !oral && !catq) rem.push("Special Tracking PC.");
-  if (oral) rem.push("Equipment examination (oral) given as a separate event — item 1 only.");
-  if (catq) rem.push("CAT II / III qualification conducted independently of the PC / type rating.");
-  if (!oral && isPC && oralDone(s,p)) { const o = oralDone(s,p); rem.push(`1. Oral completed separately${o.date ? " " + mdy(o.date) : ""}${o.by ? " by " + o.by : ""} — “/” on this PC.`); }
-  if ((d.remarks||"").trim()) rem.push(d.remarks.trim());
-  ITEMS.forEach(it => { const g = (s.g[p]||{})[it.n] || {}; if ((g.note||"").trim()) rem.push(`${it.n}. ${it.t}${g.rep?" (repeated)":""}: ${g.note.trim()}`); });
-  if (isPC && (s.g[p]||{})[10] && ((s.g[p][10].subs||{}).dep || (s.g[p][10].subs||{}).arr)) rem.push(`10. RNAV1 flown: ${[s.g[p][10].subs.dep?"departure":"",s.g[p][10].subs.arr?"arrival":""].filter(Boolean).join(" and ")}.`);
+  /* Remarks on the back only for unsatisfactory / incomplete or repeated items (Atlas practice) */
+  const rem = [], d = s.debrief.p[p];
+  const flagged = ITEMS.filter(it => { const g = (s.g[p]||{})[it.n] || {}, v = isPC ? eff(s,p,it.n) : pcwuCell(s,p,it.n).val; return g.rep || v === "U" || v === "I"; });
+  if (flagged.length) {
+    flagged.forEach(it => { const g = (s.g[p]||{})[it.n] || {}, v = isPC ? eff(s,p,it.n) : pcwuCell(s,p,it.n).val;
+      rem.push(`${it.n}. ${it.t} (${[g.rep ? "repeated" : "", v === "U" || v === "I" ? v : ""].filter(Boolean).join(", ")})${(g.note||"").trim() ? ": " + g.note.trim() : ""}`); });
+    if ((d.remarks||"").trim()) rem.push(d.remarks.trim());
+  }
   const lines = wrapLines(rem.join("\n"), 138);
-  if (lines.length) C.push("Y"); else if (isPC) C.push("N");
+  C.push(lines.length ? "Y" : "N");
   return {T, C, lines};
 }
 async function buildFormPDF(s){
