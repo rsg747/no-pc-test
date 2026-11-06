@@ -553,8 +553,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.19";
+const APP_VERSION = "2026.11.06.20";
 const REVISIONS = [
+ {v:"2026.11.06.20", d:"6 Nov 2026", n:["Special Tracking PCWU: CAT II/III and Non-App F fill “/” automatically (not required — grade only if done). The ST PC already treated them as not required.","PC Setup shows the PCWU link only for Recurrent and short Requal PCs; Initial, Transition / type rating, Upgrade, long-course Requal and ST show “no PCWU” instead. The separate-oral box shows for the course PCs (Initial, Transition, Upgrade, long Requal)."]},
  {v:"2026.11.06.19", d:"6 Nov 2026", n:["Oral exam as its own event (new hire, transition / type rating, requal long course): Sessions → New oral. Only item 1 is graded and printed on the form.","On the PC, each pilot’s Setup has “Oral already done as a separate event” — found automatically by employee number (or tick it and enter the date). Item 1 becomes “/”, the oral is skipped on the Brief page, and the remark is added to the printed form."]},
  {v:"2026.11.06.18", d:"6 Nov 2026", n:["⤓ Load crew (AIMS) on Sessions and Setup — same flow as the AQP Run-and-Grade: sign in, pick today’s PCWU / PC event, and the date, simulator, PC type, type rating, both pilots (CA/FO or seat support), Special Tracking and check airman fill in; a PC links each pilot’s PCWU by employee number. Demo with sample crews until the AIMS connection is live."]},
  {v:"2026.11.06.17", d:"6 Nov 2026", n:["Atlas Air logo bar across the top (same logo as the AQP Run-and-Grade). “N&O · 747 Non-AQP” under it is now white instead of black."]},
@@ -835,6 +836,7 @@ function pcwuCell(s,p,n){ // returns {shaded, val, auto}
   if (!(it.cred || it.naf)) return {shaded:true, val:""};
   const g = (s.g[p]||{})[n] || {};
   if (n === 31 && s.setup.pilots[p].duty !== "CA") return {val:"/", auto:true, why:"FO — not applicable"};
+  if (pcat(s,p) === "ST" && !g.st) return {val:"/", auto:true, why:"Special Tracking — CAT II/III and Non-App F not required (extra PC between base months; doesn’t reset the clock). Grade only if done."};
   if (it.cred && s.setup.conductor.role !== "SCP") return {val:"/", auto:true, why:"CAT II/III certification must be graded by a SCP — it will be graded on the PC"};
   if ((n === 32 || n === 33) && !g.st) return {val:"/", auto:true, why:"Not required — PRM and PAR/ASR are trained in Initial CAT II/III qualification. Record C / I only if conducted."};
   return {val:g.st || "", why:""};
@@ -1148,7 +1150,7 @@ function renderSetup(s){
       <button class="cb ${s.setup.lapsed[p]?"on":""}" style="width:auto" data-act="flag" data-v="lapsed" data-p="${p}"><span class="box"></span><span>PC interval expired (lapsed)</span></button>
     </div>
     ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
-    ${isPC && !isOral(s) ? oralBox(s,p) + linkBox(s,p) : ""}</div>`}`; };
+    ${isPC && !isOral(s) ? (PCWU_CATS.includes(pcat(s,p)) && !oralDone(s,p) ? "" : oralBox(s,p)) + (PCWU_CATS.includes(pcat(s,p)) ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">${pcat(s,p)==="ST" ? "Special Tracking: CAT II/III and Non-Appendix F are not required, so there is no PCWU to link." : "No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course."}</p>`) : ""}</div>`}`; };
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div>${s.status==="submitted" ? "" : aimsBtn()}</div>
   ${isOral(s) ? `<div class="banner info" style="margin-bottom:10px">Oral given as its own event (new hire, transition / type rating, requal long course). Only item 1 is graded; when this pilot’s PC is set up, it finds this oral by employee number and item 1 becomes “/”.</div>` : ""}
   ${s.aims ? `<div class="banner info" style="margin-bottom:10px">Loaded from AIMS: <b>${esc(s.aims.id)}</b> ${esc(s.aims.time||"")}${s.aims.demo ? " · sample data" : ""}</div>` : ""}
@@ -1193,6 +1195,7 @@ function runPlan(s){
    <ol style="margin:10px 0 0;padding-left:20px">${RS.map((x,r) => `<li><b>Run ${r+1}:</b> ${esc(pname(s,x.a))} (${esc(s.setup.pilots[x.a].duty)}) PF from the ${seatName(x.seat)}; ${esc(pname(s,x.o))} in the ${seatName(x.seat==="L"?"R":"L")}${isSSI(s,x.o)?" (seat support)":""}.</li>`).join("")}</ol>
    <p class="why" style="margin:8px 0 0">${RS.length === 1 ? "One applicant — one run." : swapNeeded(s) ? `${s.setup.pilots[0].duty}/${s.setup.pilots[1].duty} crew: seat swap between runs so each applicant flies from his own seat.` : "CA/FO crew: no seat swap — each pilot stays in his own seat for both runs."} Device time ${hm(simTarget(s).m)}.</p></div>`;
 }
+const PCWU_CATS = ["REC","RQF","RQ12"];   // PC types that have a PCWU the day before
 function oralBox(s,p){
   const o = oralDone(s,p), cands = oralCandidates(s,p);
   return `<div class="ios" style="margin-top:12px"><span class="eyebrow">Oral exam (item 1)</span>
