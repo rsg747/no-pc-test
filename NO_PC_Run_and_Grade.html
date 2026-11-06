@@ -106,6 +106,10 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:70
 label.f input,label.f select,label.f textarea,input.in,select.in,textarea.in{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--panel);font-weight:400;font-size:16px;color:var(--ink);width:100%;min-height:42px}
 textarea{resize:vertical}
 .g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.g2>*{min-width:0}
+label.f input,label.f select{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+input[type="date"]{-webkit-appearance:none;appearance:none;min-height:44px;display:block;text-align:left}
+input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;align-items:start}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel);flex-wrap:wrap}
 .seg button{border:0;background:none;padding:9px 14px;cursor:pointer;font-weight:600;min-height:42px}
@@ -533,8 +537,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.7";
+const APP_VERSION = "2026.11.06.8";
 const REVISIONS = [
+ {v:"2026.11.06.8", d:"6 Nov 2026", n:["Setup: the Date box no longer runs over the Simulator box on the iPad.","Swap crewmembers is now only on the Run tab, next to Run 1 / Run 2 (removed from Setup)."]},
  {v:"2026.11.06.7", d:"6 Nov 2026", n:["High contrast: grey panels (Print setup bar, Script / IOS boxes, flight data, oral answers, grade-sheet section rows and headers) now use white lettering on dark slate instead of dark text on grey."]},
  {v:"2026.11.06.6", d:"6 Nov 2026", n:["Print setup material and Print grade sheet now open inside the app with ✕ Close, 🖨 Print / Share and Save PDF. On the iPad, Print / Share opens the share sheet — tap Print (or AirDrop / Files / Mail)."]},
  {v:"2026.11.06.5", d:"6 Nov 2026", n:["Colours: new High contrast display (default) — black text on white, darker greys and status colours, heavier type. ◐ button at the top cycles High contrast → Standard → Dark; A+ makes all text larger. Your choice is remembered on this device.","Item 1 (Equipment / Oral examination / Briefing) is now graded at the bottom of the Brief page, after the briefing, oral and walk-around. Same entry as item 1 on the grade sheet and printed form."]},
@@ -1036,7 +1041,7 @@ function renderSetup(s){
      <p class="why" style="margin:6px 0 0">${s.setup.conductor.role==="SCP" ? "CAT II/III certified S here is credited toward the PC." : "Not a SCP: CAT II/III gets a diagonal line and is graded on the PC. Non-Appendix F maneuvers can still be recorded C / I."}</p></div>`}
    </div>
   </div>
-  <div class="row" style="justify-content:space-between;align-items:center"><h3>Crew</h3>${swapBtn(s)}</div><div class="cols">${pil(0)}${pil(1)}</div>
+  <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
   ${runPlan(s)}
   <div class="row end"><button class="btn primary" data-act="view" data-v="brief">Go to brief →</button></div>`;
 }
