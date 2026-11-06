@@ -963,13 +963,28 @@ function renderSetup(s){
      <p class="why" style="margin:6px 0 0">${s.setup.conductor.role==="SCP" ? "CAT II/III certified S here is credited toward the PC." : "Not a SCP: CAT II/III gets a diagonal line and is graded on the PC. Non-Appendix F maneuvers can still be recorded C / I."}</p></div>`}
    </div>
   </div>
-  <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
+  <div class="row" style="justify-content:space-between;align-items:center"><h3>Crew</h3>${swapBtn(s)}</div><div class="cols">${pil(0)}${pil(1)}</div>
   ${runPlan(s)}
   <div class="row end"><button class="btn primary" data-act="view" data-v="brief">Go to brief →</button></div>`;
 }
+/* ⇅ Swap crewmembers: trade who flies Run 1 and Run 2 (PF 1st / PF 2nd). Everything stays with the person — grades, documents, PCWU link, notes and each run's timer. */
+function swapBtn(s){ if (GP(s).length !== 2) return "";
+  return `<button class="btn small swapcrew" data-act="swapask" title="Swap PF 1st / PF 2nd — grades stay with each pilot">⇅ Swap crewmembers</button>`; }
+function swapPanel(s){ if (!ui.swapAsk || GP(s).length !== 2) return "";
+  const RS = runs(s), a = pname(s,RS[0].a), b = pname(s,RS[1].a), anyRun = (s.run.t||[]).some(t => t.elapsed || t.startedAt);
+  return `<div class="banner warn" style="margin:10px 0"><b>Swap crewmembers?</b> ${esc(b)} becomes PF 1st (Run 1) and ${esc(a)} PF 2nd (Run 2). Seats follow the new order${swapNeeded(s) ? " (seat swap still happens between runs)" : ""}.
+   Grades, documents, PCWU link and notes stay with each pilot${anyRun ? "; each run's timer moves with its pilot" : ""}.
+   <div class="row" style="margin-top:8px"><button class="btn small primary" data-act="swapdo">Swap</button><button class="btn small" data-act="swapno">Cancel</button></div></div>`; }
+function swapCrew(s){
+  pauseRuns(s);
+  s.setup.order = [runs(s)[1].a, runs(s)[0].a];
+  s.run.t = [s.run.t[1] || {elapsed:0,startedAt:null}, s.run.t[0] || {elapsed:0,startedAt:null}];
+  s.run.cur = 1 - curRun(s);
+  GP(s).forEach(p => s.log[p].push({t:simNow(s), m:`Crew swapped — ${pname(s,p)} is now PF ${runs(s)[0].a===p?"1st (Run 1)":"2nd (Run 2)"}`}));
+}
 function runPlan(s){
   const RS = runs(s);
-  return `<h3>Run plan</h3><div class="card">${GP(s).length === 2 ? `<div class="row"><span class="eyebrow">Run 1 applicant</span><div class="seg">${[0,1].map(p => `<button class="${RS[0].a===p?"on":""}" data-act="order" data-v="${p}">${esc(pname(s,p))}</button>`).join("")}</div></div>` : ""}
+  return `<h3>Run plan</h3><div class="card">${swapPanel(s)}${GP(s).length === 2 ? `<div class="row"><span class="eyebrow">Run 1 applicant</span><div class="seg">${[0,1].map(p => `<button class="${RS[0].a===p?"on":""}" data-act="order" data-v="${p}">${esc(pname(s,p))}</button>`).join("")}</div></div>` : ""}
    <ol style="margin:10px 0 0;padding-left:20px">${RS.map((x,r) => `<li><b>Run ${r+1}:</b> ${esc(pname(s,x.a))} (${esc(s.setup.pilots[x.a].duty)}) PF from the ${seatName(x.seat)}; ${esc(pname(s,x.o))} in the ${seatName(x.seat==="L"?"R":"L")}${isSSI(s,x.o)?" (seat support)":""}.</li>`).join("")}</ol>
    <p class="why" style="margin:8px 0 0">${RS.length === 1 ? "One applicant — one run." : swapNeeded(s) ? `${s.setup.pilots[0].duty}/${s.setup.pilots[1].duty} crew: seat swap between runs so each applicant flies from his own seat.` : "CA/FO crew: no seat swap — each pilot stays in his own seat for both runs."} Device time ${hm(simTarget(s).m)}.</p></div>`;
 }
@@ -1139,7 +1154,7 @@ function renderRun(s){
       ${s.kind==="PCWU" ? `<input class="note" id="enote_${e.id}_${p}" data-k="run/ev/${e.id}/p/${p}/note" value="${esc(r.note||"")}" placeholder="Training note">` : ""}</div>`;
   };
   const otherTxt = isSSI(s,RUN.o) ? `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")} (seat support)` : `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")}, not graded this run`;
-  return `<div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Run ${r+1}<small>${esc(pname(s,x.a))} · ${x.seat==="L"?"left":"right"} seat</small></button>`).join("")}</div>
+  return `${swapPanel(s)}<div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Run ${r+1}<small>${esc(pname(s,x.a))} · ${x.seat==="L"?"left":"right"} seat</small></button>`).join("")}</div>${swapBtn(s)}
     <div class="simclock"><span class="eyebrow">Run ${rc+1}</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${running?"":"primary"}" data-act="rtimer">${running?"Pause":"Start"}</button></div>
     <span class="chip ${el > T.run*60000 ? "bad" : "info"}" id="simTgt">Run target ${hm(T.run)} · device ${hm(T.m)} · total <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
     ${s.kind==="PC" ? [RUN.a].map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">${s.setup.conductor.role==="SCP"?"SCP — CAT II/III credit available":"Not SCP — CAT II/III graded on PC"}</span>`}
@@ -1541,6 +1556,9 @@ document.addEventListener("click", ev => {
     case "btimer": toggleTimer(s.brief); touch(s); break;
     case "rtimer": { const r = curRun(s), t = s.run.t[r]; const was = !!t.startedAt; pauseRuns(s); if (!was) t.startedAt = Date.now(); touch(s); break; }
     case "run": { const r = +v; if (r !== curRun(s)) { pauseRuns(s); s.run.cur = r; touch(s); } break; }
+    case "swapask": ui.swapAsk = true; break;
+    case "swapno": ui.swapAsk = false; break;
+    case "swapdo": ui.swapAsk = false; swapCrew(s); touch(s); toast("Crew swapped"); break;
     case "order": s.setup.order = v === "1" ? [1,0] : [0,1]; touch(s); break;
     case "st": s.setup.st = s.setup.st || [false,false]; s.setup.st[p] = !s.setup.st[p]; touch(s); break;
     case "doc": s.docs[p] = s.docs[p] || {}; s.docs[p][v] = s.docs[p][v] ? 0 : 1; touch(s); break;
