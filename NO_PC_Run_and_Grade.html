@@ -291,7 +291,7 @@ li.chkrow .cb{flex:1}
    SOURCES (all transcribed from the attached Atlas documents)
    ============================================================ */
 const SRC = {
-  form:"Pilot Training / Check Grade Sheet TC_PC_RFT_REC · 07 JUN 17",
+  form:"Pilot Training / Check Grade Sheet TC_PC_RFT_REC · 13 APR 26",
   pcg:"747-400/8 Proficiency Check Simulator Check Pilot Guide · Rev 6.7.2 · 13 OCT 2026",
   pcwu:"747-400/8 Proficiency Check Warm-Up Guide (SPOTS) · Rev 13 · 27 JUL 2026",
   brief:"Standardized Proficiency Check Briefing · Oct 2026",
@@ -301,8 +301,9 @@ const SRC = {
 };
 const SCHEMA = "atlas-no-pc/1";
 
-/* ---------- RFT form items (TC_PC_RFT_REC). cred = ✈ creditable during PCWU (Check Airman only); wv = ★ waiver authority; naf = Non-Appendix F (C, I or /) ---------- */
-const SECS = {2:"Ground Operations",5:"Takeoffs",10:"Instrument Procedures",20:"In-Flight Maneuvers",22:"Landings",27:"Non Appendix F Maneuvers ( C, I or / )",34:"General"};
+/* ---------- RFT form items (TC_PC_RFT_REC). cred = CAT II/III certification creditable on PCWU (SCP only); cert = ✈ certification item; wv = ★ waiver authority; naf = Non-Appendix F (C, I or /) ---------- */
+const SECS = {2:"Ground Operations",5:"Takeoffs",10:"Instrument Procedures",20:"In-Flight Maneuvers",22:"Landings",28:"Non Appendix F Maneuvers ( C, I or / )",34:"General"};
+const FORM_REV = "13APR26";
 const ITEMS = [
  {n:1,t:"Equipment / Oral Examination / Briefing"},
  {n:2,t:"Preflight Inspection"},
@@ -310,33 +311,33 @@ const ITEMS = [
  {n:4,t:"Powerplant Checks"},
  {n:5,t:"Normal"},
  {n:6,t:"Instrument"},
- {n:7,t:"Crosswind (with gust)"},
+ {n:7,t:"Crosswind with Gust"},
  {n:8,t:"With Powerplant Failure"},
- {n:9,t:"Rejected T/O",cred:1,wv:1},
+ {n:9,t:"Rejected T/O",wv:1},
  {n:10,t:"RNAV1 Departure / RNAV1 Arrival (one required)",wv:1,subs:[["dep","RNAV1 Departure"],["arr","RNAV1 Arrival"]]},
- {n:11,t:"Holding",cred:1,wv:1},
+ {n:11,t:"Holding",wv:1},
  {n:12,t:"Normal ILS Approach",subs:[["man","Manual"],["auto","Autoland"]]},
  {n:13,t:"Engine out ILS"},
- {n:14,t:"CAT II ILS Approach — PF (CA) / PM (FO)",cred:1,subs:[["nrm","Normal"],["oei","One Engine Inoperative"]]},
- {n:15,t:"CAT III ILS Approach — PF (CA) / PM (FO)",cred:1,subs:[["nrm","Normal"],["oei","One Engine Inoperative"]]},
- {n:16,t:"Non-Precision approach",subs:[["VOR","VOR"],["NDB","NDB"],["LOC","LOC"],["ASR","ASR"],["RNAV","RNAV"],["man","Manual"]]},
- {n:17,t:"Second Non-Precision approach",subs:[["VOR","VOR"],["NDB","NDB"],["LOC","LOC"],["ASR","ASR"],["RNAV","RNAV"],["man","Manual"]]},
+ {n:14,t:"CAT II ILS Approach",cred:1,cert:1,subs:[["nrm","Normal"],["oei","One Engine Inoperative"]]},
+ {n:15,t:"CAT III ILS Approach",cred:1,cert:1,subs:[["nrm","Normal"],["oei","One Engine Inoperative"]]},
+ {n:16,t:"Non-Precision Approach",subs:[["VOR","VOR"],["NDB","NDB"],["LOC","LOC"],["RNAV","RNAV"],["man","Manual"]]},
+ {n:17,t:"Second Non-Precision Approach",subs:[["VOR","VOR"],["NDB","NDB"],["LOC","LOC"],["RNAV","RNAV"],["man","Manual"]]},
  {n:18,t:"Missed Approach from ILS"},
  {n:19,t:"Second Missed Approach"},
- {n:20,t:"Steep Turns",cred:1,wv:1},
- {n:21,t:"Approach to Stall (one in turn, T/O config required)",cred:1,wv:1,subs:[["to","T/O (in turn)"],["ldg","LDG"],["clean","Clean"]]},
+ {n:20,t:"Steep Turns",wv:1},
+ {n:21,t:"Approach to Stall (one in turn, T/O config required)",wv:1,subs:[["to","T/O"],["ldg","LDG ★"],["clean","Clean ★"]]},
  {n:22,t:"Landing from an ILS"},
- {n:23,t:"Crosswind Landing (with gust)"},
- {n:24,t:"Rejected Landing",cred:1},
+ {n:23,t:"Crosswind with Gust"},
+ {n:24,t:"Rejected Landing"},
  {n:25,t:"Landing with an Engine Inoperative"},
  {n:26,t:"Landing with 50% Power Loss"},
- {n:27,t:"Windshear",naf:1},
- {n:28,t:"Unusual Attitude / Airplane Upset Recovery",naf:1},
+ {n:27,t:"Nonstandard Flap Approach and Landing"},
+ {n:28,t:"Windshear",naf:1},
  {n:29,t:"CFIT",naf:1},
  {n:30,t:"TCAS",naf:1},
  {n:31,t:"Seat Specific (CA)",naf:1},
  {n:32,t:"PRM",naf:1},
- {n:33,t:"PAR",naf:1},
+ {n:33,t:"PAR/ASR",naf:1},
  {n:34,t:"CRM / TEM"},
  {n:35,t:"Emergency / Abnormal Procedures"},
  {n:36,t:"Use of Checklists"},
@@ -345,7 +346,7 @@ const ITEMS = [
  {n:39,t:"Judgment"}
 ];
 const IT = n => ITEMS[n-1];
-const NAF_NOTE = {28:"Not on the PC Guide 6.7.2 progressive summary; record C if trained, otherwise “/”.",32:"Conducted during initial CAT II/III qualification syllabus.",33:"Conducted during initial CAT II/III qualification syllabus."};
+const NAF_NOTE = {27:"Flight Safety Board item (form 13 APR 26): visual pattern from a downwind, no PAPI or glide slope, less than landing flaps. PC Guide 6.7.2 shows it “/” — grade it when flown.",32:"Conducted during initial CAT II/III qualification syllabus.",33:"Conducted during initial CAT II/III qualification syllabus."};
 
 /* ---------- PC categories → PC Guide 6.7.2 Progressive Summary columns ---------- */
 const CATS = [
@@ -358,15 +359,15 @@ const CATS = [
  {k:"TRN",  label:"Transition PC",                        form:"TRANSITION"},
  {k:"UPG",  label:"Upgrade PC",                           form:"UPGRADE", noW:"PIC Upgrade"},
  {k:"INI",  label:"Initial (new hire) PC",                form:"INITIAL", noW:"Initial qualification", note:"PC Guide 6.7.2 has no Initial column; the app applies the Upgrade column (no waivers, all stalls). Confirm with Standards."},
- {k:"ST",   label:"Special Tracking PC",                  form:"RECURRENT", note:"Form has no Special Tracking box; the app checks RECURRENT and adds “Special Tracking” to remarks."}
+ {k:"ST",   label:"Special Tracking PC",                  form:"RECURRENT", note:"Checks RECURRENT and the Special Tracking box on the grade sheet."}
 ];
 const CAT = k => CATS.find(c => c.k === k) || CATS[0];
 /* matrix code: R required · W waivable · / not required · * CAT II/III required on PC if U or / on PCWU · N required unless completed (C) on PCWU · T stall: T/O config in turn required, others waivable */
 function baseCode(n, cat){
   const pcwuCols = ["REC","RQF","RQ12"];
   if (n===14 || n===15) return pcwuCols.includes(cat) ? "*" : "/";
-  if (n>=27 && n<=31 && n!==28) return pcwuCols.includes(cat) ? "N" : "/";
-  if (n===28 || n===32 || n===33) return "/";
+  if (n>=28 && n<=31) return pcwuCols.includes(cat) ? "N" : "/";
+  if (n===27 || n===32 || n===33) return "/";
   if (n===9 || n===11 || n===20) return ["RQF","UPG","INI"].includes(cat) ? "R" : "W";
   if (n===21) return ["RQF","UPG","INI"].includes(cat) ? "R" : "T";
   return "R";
@@ -445,7 +446,7 @@ const BRIEF_PC = [
  {h:"747 and device", items:["747: engine-inop ILS to missed approach, then loss of second engine on the same side","Device weights, engine variant, panel differences||ofp","Nearest exits and motion cutoff switches","Qualification scope — CAT II/III recorded “S” per CAT II/III Policy Guide"]},
  {h:"Close", items:["Questions — scope, standards, waivers, seat restriction, CAT II/III recording","Equipment examination (oral) complete","Visual inspection (walk-around) complete, individually"]}
 ];
-const DOCS = [["atp","Airman certificate — ATP, type rating B-747-4"],["lim","No unacceptable limitations (§61.160, SIC only, B-747-4 PIC)"],["eng","English Proficient shown on certificate"],["med","Medical — first class, valid for age"],["fcc","FCC radiotelephone operator permit"],["photo","Government photo ID (passport or driver’s license)"],["crew","Employee crew ID not expired"],["ftsp","FTSP photo submitted, or not applicable"]];
+const DOCS = [["faa","FAA certificate — ATP, B-747-4 type rating, no unacceptable limitations, English Proficient"],["med","Medical — first class, valid for age"],["jepp","Jepp Pubs current"],["manuals","Manuals current and required reading complete"],["fcc","FCC radiotelephone operator permit"],["photo","Government photo ID"]];
 
 /* ---------- TCB-2026-02 Removal of FAA Gust Factor on Checking Events (eff. 27 MAR 2026) — device-specific evaluation setup ---------- */
 const SIMS = [
@@ -526,8 +527,8 @@ const PCWU_EVENTS = [
  {id:"W06",t:"TCAS RA",x:27,y:14,items:[30],ios:["Straight and level, F/D, A/T, A/P on","Traffic avoidance, re-automation, FMA"]},
  {id:"W07",t:"Non-normal",x:31,y:14,items:[],ios:["Instructor selects; may occur any time","Preferably with deferred items","Check CAT II/III Required Indications and Equipment when selecting"]},
  {id:"W08",t:"ILS CAT III",x:42,y:3,items:[15],crit:1,ios:["Low visibility approaches in effect","Category III (fail operational) to full stop","From qualified seat · requires a Check Pilot to grade"]},
- {id:"W09",t:"Approach windshear",s:"App windshear",x:47,y:1.5,items:[27],ios:["ILS approach","Demonstrate escape A/P on; practice manually flown","Either a departure or approach windshear — instructor selects"]},
- {id:"W10",t:"Departure windshear",s:"Dep windshear",x:54,y:1,items:[27],ios:["Crosswind takeoff with gust","Windshear during initial climb; escape maneuver, re-automate"],gust:1},
+ {id:"W09",t:"Approach windshear",s:"App windshear",x:47,y:1.5,items:[28],ios:["ILS approach","Demonstrate escape A/P on; practice manually flown","Either a departure or approach windshear — instructor selects"]},
+ {id:"W10",t:"Departure windshear",s:"Dep windshear",x:54,y:1,items:[28],ios:["Crosswind takeoff with gust","Windshear during initial climb; escape maneuver, re-automate"],gust:1},
  {id:"W11",t:"CFIT",x:58,y:4,items:[29],ios:["Descending into terrain","Terrain avoidance, re-automation, FMA"]},
  {id:"W12",t:"Non-ILS VNAV (X-wind, gust)",s:"Non-ILS VNAV",x:63,y:1.5,items:[],gust:1,ios:["Radar vectors or published transition","Flight freeze for “what if” scenarios (CF / FAF clearances, holds)"]},
  {id:"W13",t:"RTO (FO as PF)",x:69,y:0,items:[9],crit:1,ios:["Captain PM, First Officer PF","Low-speed RTO triggered by an engine failure (bulletin)"]},
@@ -567,12 +568,12 @@ const PC_EVENTS = [
  {id:"P18",t:"Engine fail (V1–V2)",s:"Eng fail V1–V2",x:93,y:0,items:[8],crit:1,ios:["CAT I minimums, 10–15 kt crosswind","Failure after V1 and before V2"]},
  {id:"P19",t:"ILS one engine inop (manual)",s:"ILS OEI manual",x:99,y:2,items:[13],crit:1,ios:["A/P and A/T off on base before approach clearance","Fly to 50 ft TDZE"]},
  {id:"P20",t:"REJ → MAP, second engine (same side)",s:"REJ → MAP 2nd eng",x:104,y:0.5,items:[24,19],crit:1,ios:["Rejected landing at ~50 ft, one engine inop missed approach","747: loss of second engine on the same side"]},
- {id:"P21",t:"Visual approach (50% thrust loss)",s:"Visual 50%",x:111,y:3,items:[25,26],crit:1,ios:["CAVOK, no G/S, no PAPI / VASI; LOC at SCP discretion","Both engines failed on the same side; both CA and FO"]},
+ {id:"P21",t:"Visual approach (50% thrust loss)",s:"Visual 50%",x:111,y:3,items:[25,26,27],crit:1,ios:["CAVOK, no G/S, no PAPI / VASI; LOC at SCP discretion","Both engines failed on the same side; both CA and FO"]},
  {id:"P22",t:"Evacuation (if required)",s:"Evacuation",x:119,y:1,items:[35],ios:["Emergency carried through; SCP: “Consider the emergency complete”"]},
  {id:"P23",t:"After landing & shutdown",s:"Shutdown",x:126,y:0,items:[3]},
  {id:"P24",t:"CAT II ILS OEI → MAP",opt:1,items:[14],ios:["Only if not S on the PCWU by an SCP","From qualified seat; FO in CA/FO pairing: CAT I autoland in lieu of CAT III, CAT II MAP not required"]},
  {id:"P25",t:"CAT III ILS",opt:1,items:[15],ios:["To a full stop landing"]},
- {id:"P26",t:"Windshear",opt:1,items:[27]},
+ {id:"P26",t:"Windshear",opt:1,items:[28]},
  {id:"P27",t:"CFIT",opt:1,items:[29]},
  {id:"P28",t:"TCAS",opt:1,items:[30]},
  {id:"P29",t:"Seat specific (CA right seat)",opt:1,items:[31],ios:["Takeoff engine failure (V1–V2) and visual approach and landing from the right seat"]},
@@ -628,7 +629,7 @@ const PATH = s => s.kind === "PCWU" ? PCWU_PATH : PC_PATH;
 
 function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",ssi:false}; }
 function newSession(kind){
-  return {schema:SCHEMA, program:"N&O", kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
+  return {schema:SCHEMA, program:"N&O", form:FORM_REV, kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
     setup:{date:today(), device:"", sim:"", cat:"REC", st:[false,false], order:[0,1], failedQual:[false,false], lapsed:[false,false], typeRating:false,
       conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null]},
     docs:[{},{}],
@@ -637,7 +638,14 @@ function newSession(kind){
     g:[{},{}], counts:[{to:"",ldg:""},{to:"",ldg:""}], log:[[],[]],
     debrief:{p:[{result:"",remarks:"",study:""},{result:"",remarks:"",study:""}], crew:"", signedBy:"", signedAt:"", faa:""}};
 }
+/* 07 JUN 17 form → 13 APR 26 form: Non-App F moved down one (27 Windshear → 28), Upset removed, 27 is now Nonstandard Flap; repeat codes A/B/C → X; ASR dropped from non-precision types */
+function remapItems(g){ if (!g) return g; const o = {...g}; const old27 = o[27], old28 = o[28]; delete o[27]; delete o[28]; if (old27) o[28] = old27;
+  Object.values(o).forEach(x => { if (x && x.rep) x.rep = "X"; if (x && x.subs) delete x.subs.ASR; }); return {o, upset:old28}; }
 function migrate(s){ // fill fields added after a record was created
+  if (!s.form) { (s.g||[]).forEach((g,p) => { const r = remapItems(g); s.g[p] = r.o; if (r.upset && r.upset.st && s.log && s.log[p]) s.log[p].push({t:"—", m:`Old form item 28 Upset Recovery (${r.upset.st}) — not on the 13 APR 26 form`}); });
+    ((s.setup||{}).link||[]).forEach(L => { if (L && L.items) L.items = remapItems(L.items).o; });
+    (s.docs||[]).forEach(d => { if (d && d.atp && d.faa === undefined) d.faa = 1; });
+    s.form = FORM_REV; }
   const n = newSession(s.kind || "PC");
   for (const k of Object.keys(n)) if (s[k] === undefined) s[k] = n[k];
   for (const k of Object.keys(n.setup)) if (s.setup[k] === undefined) s.setup[k] = n.setup[k];
@@ -671,9 +679,9 @@ function req(s,p,n){
     const pw = (link.items||{})[n] || {};
     if (it.naf && pw.st === "C") { credited = true; cwhy = `Completed (C) on PCWU ${link.date}`; }
     else if (it.cred && pw.st === "S" && link.role === "SCP") {
-      if (n === 21) { const need = stallNeed(code); const have = pw.subs || {}; if (need.every(k => have[k])) { credited = true; cwhy = `Stall credited — S on PCWU ${link.date} by SCP`; } else cwhy = `PCWU stalls don’t cover ${need.filter(k=>!have[k]).map(k=>({to:"T/O",ldg:"LDG",clean:"Clean"})[k]).join(", ")} — grade on PC`; }
-      else { credited = true; cwhy = `S on PCWU ${link.date} by SCP ${link.conductor||""}`.trim(); }
-    } else if (it.cred && link.role !== "SCP") cwhy = "PCWU given by an instructor — not creditable (Check Airman only)";
+      credited = true; cwhy = `CAT II/III certified S on PCWU ${link.date} by SCP ${link.conductor||""}`.trim();
+    } else if (it.cred && link.role !== "SCP") cwhy = "PCWU not conducted by a SCP — CAT II/III certification must be graded on the PC";
+    else if (it.cred && pw.st === "I") cwhy = `Incomplete (I) on PCWU ${link.date} — grade on the PC`;
   }
   return {code, lock, why, credited, cwhy, waivable: code === "W" || code === "T"};
 }
@@ -705,10 +713,10 @@ function pcwuCell(s,p,n){ // returns {shaded, val, auto}
   if (!(it.cred || it.naf)) return {shaded:true, val:""};
   const g = (s.g[p]||{})[n] || {};
   if (n === 31 && s.setup.pilots[p].duty !== "CA") return {val:"/", auto:true, why:"FO — not applicable"};
-  if (it.cred && s.setup.conductor.role !== "SCP") return {val:"/", auto:true, why:"Instructor PCWU — diagonal line; credit requires a Check Airman"};
+  if (it.cred && s.setup.conductor.role !== "SCP") return {val:"/", auto:true, why:"CAT II/III certification must be graded by a SCP — it will be graded on the PC"};
   return {val:g.st || "", why:""};
 }
-function pcwuAllowed(s,p,n){ const it = IT(n); if (it.naf) return ["C","/"]; return ["S"]; }
+function pcwuAllowed(s,p,n){ const it = IT(n); if (it.naf) return ["C","I","/"]; return ["S","I","/"]; }
 
 /* problems that block submission */
 function problems(s,p){
@@ -724,7 +732,7 @@ function problems(s,p){
     const res = s.debrief.p[p].result;
     if (!res) add(0,"Result not selected");
     const inc = res === "INC";
-    if (!s.setup.link[p] && ["REC","RQF","RQ12"].includes(pcat(s,p))) add(0,"No PCWU linked — creditable and CAT II/III / Non-App F items will all be required on the PC", true);
+    if (!s.setup.link[p] && ["REC","RQF","RQ12"].includes(pcat(s,p))) add(0,"No PCWU linked — CAT II/III and Non-App F items will all be required on the PC", true);
     let anyU = false;
     ITEMS.forEach(it => {
       const n = it.n, r = req(s,p,n), v = eff(s,p,n), g = (s.g[p]||{})[n] || {};
@@ -733,20 +741,20 @@ function problems(s,p){
       if (v === "/" && !r.na && !r.credited && r.code !== "/") add(n, `${it.t}: “/” not allowed — ${r.code==="*"||r.code==="N" ? "not credited from a PCWU" : "item is required"}`);
       if (v === "W" && r.code !== "W") add(n, `${it.t}: cannot be waived — ${r.lock || "no waiver authority for this item"}`);
       if (v === "W" && n === 9 && (P.duty === "FO" || s.setup.pilots[1-p].duty === "FO")) add(n, "RTO waived for an FO / FO pairing — confirm judgment standard applied (not automatic)", true);
-      if (g.rep && !(g.note||"").trim() && !(s.debrief.p[p].remarks||"").trim()) add(n, `${it.t}: repeat code ${g.rep} needs a remark`);
+      if (g.rep && !(g.note||"").trim() && !(s.debrief.p[p].remarks||"").trim()) add(n, `${it.t}: repeated (X) — needs a remark`);
       if ((v === "U" || v === "I") && !(g.note||"").trim() && !(s.debrief.p[p].remarks||"").trim()) add(n, `${it.t}: ${v} needs a remark${n===35?" naming the procedure":""}`);
       if (v === "S" && it.subs) {
         const sb = g.subs || {};
         if (n === 10 && !sb.dep && !sb.arr) add(n, "RNAV1: mark departure or arrival flown");
         if (n === 12 && !sb.man && !sb.auto) add(n, "Normal ILS: mark manual or autoland");
         if ((n === 14 || n === 15) && !sb.nrm && !sb.oei) add(n, `${n===14?"CAT II":"CAT III"}: mark normal or one engine inop`);
-        if (n === 16 || n === 17) { if (!["VOR","NDB","LOC","ASR","RNAV"].some(k => sb[k])) add(n, `${it.t}: mark the approach type`); }
+        if (n === 16 || n === 17) { if (!["VOR","NDB","LOC","RNAV"].some(k => sb[k])) add(n, `${it.t}: mark the approach type`); }
         if (n === 21) { const need = stallNeed(r.code); const miss = need.filter(k => !sb[k]); if (miss.length) add(n, `Approach to stall: ${miss.map(k=>({to:"T/O in turn",ldg:"LDG",clean:"Clean"})[k]).join(", ")} required for this PC`); }
       }
     });
     const a = ((s.g[p]||{})[16]||{}).subs||{}, b = ((s.g[p]||{})[17]||{}).subs||{};
     if (eff(s,p,16)==="S" && eff(s,p,17)==="S") {
-      const ta = ["VOR","NDB","LOC","ASR","RNAV"].filter(k=>a[k]), tb = ["VOR","NDB","LOC","ASR","RNAV"].filter(k=>b[k]);
+      const ta = ["VOR","NDB","LOC","RNAV"].filter(k=>a[k]), tb = ["VOR","NDB","LOC","RNAV"].filter(k=>b[k]);
       if (ta.length && tb.length && ta.every(k => tb.includes(k)) && tb.every(k => ta.includes(k))) add(17, "Second non-precision must be a different type from the first");
       if (!a.man && !b.man) add(16, "One non-precision approach must be manually flown");
     }
@@ -754,7 +762,7 @@ function problems(s,p){
     if (res === "SAT" && anyU) add(0,"Result is Satisfactory but an item is graded U / I");
     if (res === "UNSAT" && !anyU) add(0,"Result is Unsat but no item is graded U / I", true);
   } else {
-    const st = ((s.g[p]||{})[21]||{}); if (st.st === "S" && !(st.subs||{}).to) add(21,"Stall credited S without the T/O config stall in turn");
+    [14,15].forEach(n => { const g = (s.g[p]||{})[n]||{}; if (g.st === "S" && !((g.subs||{}).nrm || (g.subs||{}).oei)) add(n, `${IT(n).t}: mark Normal or One Engine Inoperative`); });
   }
   return out;
 }
@@ -850,10 +858,10 @@ function sampleSessions(){
   Object.assign(w.setup, {date:"2026-10-21", device:"FFS 747-400 #2 (FAA 584)", cat:"REC"});
   w.setup.conductor = {name:"Sample SCP", emp:"00000", role:"SCP"};
   w.setup.pilots = [{...blankPilot("CA"), name:"Sample Captain", emp:"10001"}, {...blankPilot("FO"), name:"Sample First Officer", emp:"10002"}];
-  [[9,"S"],[11,"S"],[14,"S"],[15,"S"],[20,"S"],[21,"S"],[24,"S"],[27,"C"],[29,"C"],[30,"C"],[31,"C"]].forEach(([n,v]) => { w.g[0][n] = {st:v}; });
-  w.g[0][21].subs = {to:1}; w.g[0][14].subs = {oei:1}; w.g[0][15].subs = {nrm:1};
-  [[9,"S"],[11,"S"],[20,"S"],[21,"S"],[27,"C"],[29,"C"],[30,"C"]].forEach(([n,v]) => { w.g[1][n] = {st:v}; });
-  w.g[1][21].subs = {to:1,ldg:1}; w.g[1][24] = {st:"", note:"Sample: late go-around decision; train again on the PC."};
+  [[14,"S"],[15,"S"],[28,"C"],[29,"C"],[30,"C"],[31,"C"],[32,"/"],[33,"/"]].forEach(([n,v]) => { w.g[0][n] = {st:v}; });
+  w.g[0][14].subs = {oei:1}; w.g[0][15].subs = {nrm:1};
+  [[14,"S"],[15,"I"],[28,"C"],[29,"C"],[30,"I"],[32,"/"],[33,"/"]].forEach(([n,v]) => { w.g[1][n] = {st:v}; });
+  w.g[1][14].subs = {nrm:1}; w.g[1][15].note = "Sample: late go-around call at DH; train again on the PC.";
   w.status = "submitted"; w.run.t[0].elapsed = 2.25*3600*1000; w.run.t[1].elapsed = 2.25*3600*1000;
   const s = newSession("PC"); s.id = "DEMO"; s.demo = true;
   Object.assign(s.setup, {date:"2026-10-22", device:"FFS 747-400 #2 (FAA 584)", cat:"REC"});
@@ -863,8 +871,8 @@ function sampleSessions(){
   s.docs[0] = Object.fromEntries(DOCS.map(d => [d[0],1]));
   [[1,"S"],[2,"S"],[3,"S"],[4,"S"],[5,"S"],[6,"S"],[7,"S"],[10,"S"],[37,"S"]].forEach(([n,v]) => { s.g[0][n] = {st:v}; s.g[1][n] = {st:v}; });
   s.g[0][10].subs = {dep:1}; s.g[1][10].subs = {dep:1};
-  s.g[0][8] = {st:"S", rep:"B", note:"Sample: first attempt heading drifted 12° right; trained rudder and trim; repeat within ± 5°."};
-  s.log[0].push({t:"0:52", m:"Item 8 unsatisfactory — recorded before training (B)"});
+  s.g[0][8] = {st:"S", rep:"X", note:"Sample: first attempt heading drifted 12° right; trained rudder and trim; repeat within ± 5°."};
+  s.log[0].push({t:"0:52", m:"Item 8 first attempt unsatisfactory — trained, then repeated (X)"});
   s.counts = [{to:"2",ldg:"1"},{to:"2",ldg:"1"}];
   s.run.t[0].elapsed = 58*60*1000;
   return {w, s};
@@ -903,11 +911,11 @@ function renderHome(){
      <div class="sact"><button class="btn small" data-act="open" data-v="${s.id}">Open</button>
      <button class="btn small danger" data-act="del" data-v="${s.id}">${ui.del===s.id?"Tap again to delete":"Delete"}</button></div></div>`;
   return `<div class="intro"><div><span class="eyebrow">747 Proficiency Check Warm-Up and Proficiency Check</span><h2>Brief, run, grade and submit</h2>
-    <p class="lede">The PCWU is usually flown the day before the PC. Items an SCP finds proficient on the PCWU (✈ on the grade sheet) and Non-Appendix F maneuvers completed there carry to the PC automatically. Grading follows the Pilot Training / Check Grade Sheet (TC_PC_RFT_REC) and the PC Guide 6.7.2 progressive summary. No PF / PM split: each pilot is graded on their own PF duties, in any order the SCP chooses.</p></div>
+    <p class="lede">The PCWU is usually flown the day before the PC. CAT II/III certification graded S by an SCP on the PCWU and Non-Appendix F maneuvers completed (C) there carry to the PC automatically. Grading follows the Pilot Training / Check Grade Sheet (TC_PC_RFT_REC, 13 APR 26) and the PC Guide 6.7.2 progressive summary. No PF / PM split: each pilot is graded on their own PF duties, in any order the SCP chooses.</p></div>
     <div class="row"><button class="btn" data-act="sample">Open sample PC</button><button class="btn" data-act="import">Import record (.json)</button></div></div>
     <h3>Start an event</h3>
     <div class="starts">
-      <div class="start pcwu"><span class="chip pcwu" style="align-self:flex-start">PCWU</span><h4>Proficiency Check Warm-Up</h4><p class="muted small">FFSQ-1 profile · 2:00 brief · 4:30 sim (incl. 0:30 SPOTs) · 1:00 debrief. Records the PCWU column: S for creditable items (SCP only), C for Non-Appendix F.</p><button class="btn primary" data-act="start" data-v="PCWU">New PCWU</button></div>
+      <div class="start pcwu"><span class="chip pcwu" style="align-self:flex-start">PCWU</span><h4>Proficiency Check Warm-Up</h4><p class="muted small">FFSQ-1 profile · 2:00 brief · 4:30 sim (incl. 0:30 SPOTs) · 1:00 debrief. Records the PCWU column: CAT II/III S / I / “/” (SCP only), Non-Appendix F C / I / “/”.</p><button class="btn primary" data-act="start" data-v="PCWU">New PCWU</button></div>
       <div class="start pc"><span class="chip pc" style="align-self:flex-start">PC</span><h4>Proficiency Check</h4><p class="muted small">Standardized PC briefing, oral bank, walk-around, profile by PC type. Pulls the pilot’s PCWU record and blocks submission until every status block is filled correctly.</p><button class="btn pcb" data-act="start" data-v="PC">New PC</button></div>
     </div>
     <h3>Sessions</h3>
@@ -950,7 +958,7 @@ function renderSetup(s){
      <label class="f">Name (last, first)${inp("setup/conductor/name",s.setup.conductor.name)}</label>
      <label class="f">Employee no.${inp("setup/conductor/emp",s.setup.conductor.emp)}</label></div>
      ${isPC ? "" : `<div style="margin-top:10px"><span class="eyebrow">Role</span><div class="seg">${[["SCP","Simulator Check Pilot"],["INSTR","Instructor"]].map(([k,l])=>`<button class="${s.setup.conductor.role===k?"on":""}" data-act="role" data-v="${k}">${l}</button>`).join("")}</div>
-     <p class="why" style="margin:6px 0 0">${s.setup.conductor.role==="SCP" ? "✈ items found proficient are credited toward the PC." : "Instructor PCWU: ✈ boxes get a diagonal line — no PC credit. Non-Appendix F maneuvers can still be recorded C."}</p></div>`}
+     <p class="why" style="margin:6px 0 0">${s.setup.conductor.role==="SCP" ? "CAT II/III certified S here is credited toward the PC." : "Not a SCP: CAT II/III gets a diagonal line and is graded on the PC. Non-Appendix F maneuvers can still be recorded C / I."}</p></div>`}
    </div>
   </div>
   <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
@@ -1091,8 +1099,8 @@ function gradeWidget(s,p,n){
     const c = pcwuCell(s,p,n);
     if (c.shaded) return "";
     const subs = it.subs && (n===21||n===14||n===15) ? `<div class="gsub">${it.subs.map(([k,l]) => `<button class="sb ${(g.subs||{})[k]?"on":""}" data-act="sub" data-p="${p}" data-n="${n}" data-v="${k}">${esc(l)}</button>`).join("")}</div>` : "";
-    return `<div class="gi ${c.val?"done":""}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.cred?`<span class="sym">✈ creditable</span>`:""}${it.naf?`<span class="sym">Non-App F</span>`:""}</div>
-      ${c.auto ? `<p class="why">“/” — ${esc(c.why)}</p>` : `<div class="gv">${pcwuAllowed(s,p,n).map(v => `<button class="gb v-${v==="/"?"sl":v} ${g.st===v?"on":""}" data-act="g" data-p="${p}" data-n="${n}" data-v="${v}">${v}</button>`).join("")}<span class="why">${it.naf ? "C complete · / not observed · blank = not proficient (do on PC)" : "S = proficient, credit toward PC · blank = do on PC"}</span></div>`}
+    return `<div class="gi ${c.val?"done":""}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.cred?`<span class="sym">✈ certification · SCP only</span>`:""}${it.naf?`<span class="sym">Non-App F</span>`:""}</div>
+      ${c.auto ? `<p class="why">“/” — ${esc(c.why)}</p>` : `<div class="gv">${pcwuAllowed(s,p,n).map(v => `<button class="gb v-${v==="/"?"sl":v} ${g.st===v?"on":""}" data-act="g" data-p="${p}" data-n="${n}" data-v="${v}">${v}</button>`).join("")}<span class="why">${it.naf ? "C trained to proficiency · I not proficient (do on PC) · / not observed" : "S certified (credit toward PC) · I could not train to proficiency · / not attempted"}</span></div>`}
       ${(n===14||n===15) && s.setup.conductor.role!=="SCP" ? `<p class="why bad">CAT II/III certification requires a Check Pilot to grade.</p>` : ""}
       ${subs}${NAF_NOTE[n]?`<p class="why">${esc(NAF_NOTE[n])}</p>`:""}</div>`;
   }
@@ -1100,14 +1108,14 @@ function gradeWidget(s,p,n){
   const need = !v;
   const subs = it.subs ? `<div class="gsub">${it.subs.map(([k,l]) => `<button class="sb ${(g.subs||{})[k]?"on":""}" data-act="sub" data-p="${p}" data-n="${n}" data-v="${k}">${esc(l)}</button>`).join("")}</div>` : "";
   const reqTag = r.na ? `<span class="req">N/A</span>` : r.credited ? `<span class="req C">PCWU credit</span>` : `<span class="req ${r.code==="W"||r.code==="T"?"W":r.code==="/"?"":"R"}" title="${esc(CODE_LABEL[r.code]||"")}">${r.code==="R"?"Required":r.code==="W"?"Waivable":r.code==="T"?"T/O stall req":r.code==="/"?"Not required":"Required"}</span>`;
-  return `<div class="gi ${need?"need":"done"}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.wv?`<span class="sym" title="Waiver authority">★</span>`:""}${it.cred?`<span class="sym" title="Creditable during PCWU">✈</span>`:""}${reqTag}</div>
+  return `<div class="gi ${need?"need":"done"}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.wv?`<span class="sym" title="Waiver authority">★</span>`:""}${it.cert?`<span class="sym" title="Certification item">✈</span>`:""}${reqTag}</div>
    <div class="gv">${A.map(x => `<button class="gb v-${x==="/"?"sl":x} ${v===x?"on":""} ${v===x&&auto?"auto":""}" data-act="g" data-p="${p}" data-n="${n}" data-v="${x}" ${r.na?"disabled":""}>${g.rep && x==="S" ? "S · repeat passed" : g.rep && x==="U" ? "U · repeat failed" : x}</button>`).join("")}</div>
-    ${!it.naf && !r.na ? `<div class="gv"><span class="why">${g.rep ? "Repeated — first attempt failed for:" : "First attempt failed? Repeat reason:"}</span>${[["A","Systems knowledge"],["B","Control tech / execution"],["C","Procedural error"]].map(([x,l]) => `<button class="sb ${g.rep===x?"on":""}" data-act="rep" data-p="${p}" data-n="${n}" data-v="${x}">${x} · ${l}</button>`).join("")}</div>` : ""}
+    ${!it.naf && !r.na ? `<div class="gv"><span class="why">Repeat column:</span><button class="sb ${g.rep?"on":""}" data-act="rep" data-p="${p}" data-n="${n}" data-v="X">${g.rep ? "X · maneuver was repeated" : "Mark X — maneuver repeated"}</button></div>` : ""}
    ${r.credited ? `<p class="why cr">✓ ${esc(r.cwhy)}${g.st?" — re-evaluated on PC":""}</p>` : r.cwhy ? `<p class="why bad">${esc(r.cwhy)}</p>` : ""}
    ${r.lock && it.wv ? `<p class="why bad">🔒 ${esc(r.lock)}</p>` : ""}
    ${n===21 ? `<p class="why">${r.code==="R" ? "T/O (in turn), LDG and Clean all required." : "T/O config stall in a 15–30° turn required; LDG and Clean may be waived."}</p>` : ""}
    ${n===9 && v==="W" && (s.setup.pilots[p].duty==="FO") ? `<p class="why bad">FO RTO — judgment standard; not automatically waived.</p>` : ""}
-   ${g.rep ? `<p class="why">Repeat recorded (code ${g.rep}). Train first, then repeat once: grade S if the repeat passes, U if it fails.</p>` : ""}
+   ${g.rep ? `<p class="why">X recorded. Train first, then one repeat: grade S if the repeat passes, U if it fails. Remark required.</p>` : ""}
    ${subs}
    <input class="note" id="note_${p}_${n}" data-k="g/${p}/${n}/note" value="${esc(g.note||"")}" placeholder="${v==="U"||v==="I"||g.rep ? "Remark required — brief and specific (e.g. deviation exceeded one dot)" : "Note"}"></div>`;
 }
@@ -1132,7 +1140,7 @@ function renderRun(s){
   return `<div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Run ${r+1}<small>${esc(pname(s,x.a))} · ${x.seat==="L"?"left":"right"} seat</small></button>`).join("")}</div>
     <div class="simclock"><span class="eyebrow">Run ${rc+1}</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${running?"":"primary"}" data-act="rtimer">${running?"Pause":"Start"}</button></div>
     <span class="chip ${el > T.run*60000 ? "bad" : "info"}" id="simTgt">Run target ${hm(T.run)} · device ${hm(T.m)} · total <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
-    ${s.kind==="PC" ? [RUN.a].map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">${s.setup.conductor.role==="SCP"?"SCP — ✈ credit available":"Instructor — no ✈ credit"}</span>`}
+    ${s.kind==="PC" ? [RUN.a].map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">${s.setup.conductor.role==="SCP"?"SCP — CAT II/III credit available":"Not SCP — CAT II/III graded on PC"}</span>`}
     <span class="grow"></span><span class="muted small">Order of events is SCP discretion — grade whatever was flown.</span></div>
    ${rc === 1 && swapNeeded(s) ? `<div class="banner warn"><b>Seat swap before Run 2:</b> ${esc(pname(s,RUN.a))} moves to the ${seatName(RUN.seat)} to fly his ${s.kind} as PF; ${esc(pname(s,RUN.o))} moves to the ${seatName(RUN.seat==="L"?"R":"L")}.</div>` : ""}
    <div class="banner info" style="padding:8px 14px">Run ${rc+1}: <b>${esc(pname(s,RUN.a))}</b> (${esc(s.setup.pilots[RUN.a].duty)}) is PF from the ${seatName(RUN.seat)} · ${otherTxt}.${RS.length===2 && rc===0 ? (swapNeeded(s) ? " Seat swap before Run 2." : " No seat swap for Run 2.") : ""}</div>
@@ -1179,26 +1187,26 @@ function renderSheet(s){
   const left = Array.from({length:21},(_,i)=>i+1), right = Array.from({length:18},(_,i)=>i+22);
   const pcTime = fmtHM(totalEl(s));
   const box = (on,l) => `<span class="${on?"x":""}">${l}</span>`;
-  return `<span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2>
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC 13 APR 26</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2></div><button class="btn primary" data-act="printform">Print grade sheet</button></div>
    <div class="pilottabs" style="margin-top:10px">${GP(s).map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
-   ${isPC && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) ? `<div class="banner warn">No PCWU linked for this pilot — every ✈ item, CAT II/III and Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
+   ${isPC && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) ? `<div class="banner warn">No PCWU linked for this pilot — CAT II/III and every Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
    ${seatRestricted(s,p) ? `<div class="banner bad">Unsatisfactory item recorded — seat restriction applies for the remainder of the session.</div>` : ""}
    <div class="formhdr">
     <div><div class="k">Name of airman · Employee no.</div><div class="v">${esc(P.name||"—")} · ${esc(P.emp||"—")}</div></div>
     <div><div class="k">CA / FO · A/C type</div><div class="v">${esc(P.duty)} · ${esc(P.acType)}</div></div>
-    ${isPC ? `<div style="flex-basis:100%"><div class="k">Documents checked</div><div class="boxes">${box((s.docs[p]||{}).atp,"ATP · B-747-4")}${box((s.docs[p]||{}).lim,"Limitations OK")}${box((s.docs[p]||{}).eng,"English Proficient")}${box((s.docs[p]||{}).med,"Medical — First")}${box((s.docs[p]||{}).fcc,"FCC Permit")}${box((s.docs[p]||{}).photo,"Photo ID")}${box((s.docs[p]||{}).crew,"Crew ID")}${box((s.docs[p]||{}).ftsp,"FTSP")}</div></div>` : ""}
+    ${isPC ? `<div style="flex-basis:100%"><div class="k">Documents checked</div><div class="boxes">${box((s.docs[p]||{}).faa,"FAA Certificate")}${box((s.docs[p]||{}).med,"Medical")}${box((s.docs[p]||{}).jepp,"Jepp Pubs")}${box((s.docs[p]||{}).manuals,"Manuals")}${box((s.docs[p]||{}).fcc,"FCC Permit")}${box((s.docs[p]||{}).photo,"Photo ID")}</div></div>` : ""}
     <div><div class="k">Simulator ID # (PCWU / PC)</div><div class="v">${isPC ? `${esc(L?L.device:"—")} / ${esc(s.setup.device||"—")}` : esc(s.setup.device||"—")}</div></div>
     <div><div class="k">TO / LDGs (3 min) · Times</div><div class="v">${isPC ? `<span class="row"><input class="in" style="width:70px;min-height:34px" id="to_${p}" data-k="counts/${p}/to" value="${esc(s.counts[p].to)}" inputmode="numeric" aria-label="Takeoffs"> / <input class="in" style="width:70px;min-height:34px" id="ldg_${p}" data-k="counts/${p}/ldg" value="${esc(s.counts[p].ldg)}" inputmode="numeric" aria-label="Landings"></span>` : ""}PCWU ${isPC ? esc(L?L.time:"—") : pcTime} · ${isPC?`PC ${pcTime}`:""}</div></div>
-    <div><div class="k">Event</div><div class="boxes">${box(isPC && P.duty==="CA","CA PIC PC")}${box(isPC && P.duty==="FO","FO PIC PC")}${box(s.setup.typeRating,"TYPE RATING")}${box(false,"RFT")}</div></div>
-    <div><div class="k">Category of event</div><div class="boxes">${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x => box(c.form===x,x)).join("")}${box(pcat(s,p)==="ST","SPECIAL TRACKING")}</div></div>
+    <div><div class="k">Event</div><div class="boxes">${box(true,"PC")}${box(s.setup.typeRating,"TYPE RATING")}</div></div>
+    <div><div class="k">Category of event</div><div class="boxes">${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION","REFRESHER","CONSOLIDATION","ADMINISTRATIVE"].map(x => box(c.form===x,x)).join("")}${box(pcat(s,p)==="ST","SPECIAL TRACKING")}</div></div>
     <div><div class="k">${isPC?"PC Check Airman":"PCWU Instructor / Ck Amn"}</div><div class="v">${esc(s.setup.conductor.name||"—")} · ${esc(s.setup.conductor.emp||"")}</div>${isPC && L ? `<div class="small muted">PCWU: ${esc(L.conductor||"—")} ${esc(L.condEmp||"")} · ${esc(L.date)}</div>` : ""}</div>
     ${isPC ? `<div><div class="k">Result</div><div class="boxes">${box(res==="SAT","SATISFACTORY / COMPLETE")}${box(res==="UNSAT","UNSAT / INCOMPLETE – REMOVED FROM FLIGHT STATUS")}${box(res==="INC","INCOMPLETE – SIM MALFUNCTION OR ILLNESS")}</div></div>` : ""}
    </div>
-   <div class="legend"><span>S Satisfactory · U Unsatisfactory · C Complete · I Incomplete · W Waived · / Not observed</span><span>★ waiver authority (PC) · ✈ creditable during PCWU</span><span>Repeat column = reason the first attempt failed: A systems knowledge · B control tech / execution · C procedural error. Repeat result goes in Status (S passed / U failed).</span>${isPC?`<span>Grey “/” = filled automatically (credited or not required) · red “?” = must be graded</span>`:""}</div>
+   <div class="legend"><span>S Satisfactory · U Unsatisfactory · C Complete · I Incomplete · W Waived · / Not observed</span><span>★ waiver authority (PC) · ✈ certification item</span><span>Repeat: X = maneuver was repeated (one repeat, after training). Repeat result goes in Status (S passed / U failed).</span>${isPC?`<span>Grey “/” = filled automatically (credited or not required) · red “?” = must be graded</span>`:""}</div>
    <div class="sheet"><div class="scroll"><table class="rft">${head}<tbody>${rows(left)}</tbody></table></div><div class="scroll"><table class="rft">${head}<tbody>${rows(right)}</tbody></table></div></div>
    ${ui.sel ? `<div class="card" style="margin-top:14px;position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 6px 24px rgba(0,0,0,.18)"><div class="row" style="justify-content:space-between"><span class="eyebrow">Grade item ${ui.sel}</span><button class="btn small" data-act="sel" data-v="">Close</button></div>${gradeWidget(s,p,ui.sel)}</div>` : ""}
    ${isPC ? "" : `<h3>PCWU column — ${esc(pname(s,p))}</h3><div class="cols">${ITEMS.filter(it=>it.cred||it.naf).map(it => gradeWidget(s,p,it.n)).join("")}</div>`}
-   <p class="small muted">${isPC ? "Tap any PC/RFT status block to grade it. Every block must hold S, U, C, I, W or “/”." : "Shaded blocks are not marked on a PCWU. Creditable items not found proficient are left blank and must be completed on the PC."}</p>`;
+   <p class="small muted">${isPC ? "Tap any PC/RFT status block to grade it. Every block must hold S, U, C, I, W or “/”." : "Shaded blocks are not marked on a PCWU. CAT II/III or Non-App F not trained to proficiency (I) must be completed on the PC."}</p>`;
 }
 
 /* ============================================================ DEBRIEF */
@@ -1229,7 +1237,7 @@ function renderDebrief(s){
     ${!okAll ? `<p class="why bad" style="text-align:right">Fix the items listed above to submit. Nothing is skipped: every PC status block needs S, U, C, I, W or a valid “/”.</p>` : ""}
     ${!isPC ? `<p class="why" style="text-align:right">Submitting makes this PCWU findable by employee number when the PC is set up.${store.db ? "" : " On this device only — export the record (.json) to move it to another device."}</p>` : ""}
    </div>
-   <div class="card" style="margin-top:16px"><h4>Exports</h4><div class="row"><button class="btn" data-act="exp" data-v="html">Grade sheet (.html)</button><button class="btn" data-act="exp" data-v="csv">Item grades (.csv)</button><button class="btn" data-act="exp" data-v="json">${isPC?"Full record":"PCWU record for the PC"} (.json)</button></div>
+   <div class="card" style="margin-top:16px"><h4>Exports</h4><div class="row"><button class="btn primary" data-act="printform">Print grade sheet (official form PDF)</button><button class="btn" data-act="exp" data-v="html">Grade sheet (.html)</button><button class="btn" data-act="exp" data-v="csv">Item grades (.csv)</button><button class="btn" data-act="exp" data-v="json">${isPC?"Full record":"PCWU record for the PC"} (.json)</button></div>
    <p class="small muted">The .json record carries program “N&amp;O”, kind ${s.kind}, item numbers matching TC_PC_RFT_REC, and every source revision. ${isPC?"":"Import it on the PC device if the shared store isn’t available."}</p></div>`;
 }
 function carryPreview(s,p){ // as if this PCWU were linked to a PC of the session's category
@@ -1260,9 +1268,9 @@ function exportHTML(s){
     const tb = ns => ns.map(n => `${SECS[n]?`<tr><td colspan="5" class="sec">${esc(SECS[n].toUpperCase())}</td></tr>`:""}<tr><td>${n}.</td><td>${esc(IT(n).t)} ${IT(n).wv?"★":""}${IT(n).cred?"✈":""}${subLine(s,p,n).replace(/<[^>]+>/g," ")}</td>${cell(n,"rep")}${cell(n,"pc")}${cell(n,"pcwu")}</tr>`).join("");
     const th = `<tr><th></th><th></th><th>Repeat</th><th>PC/RFT</th><th>PCWU</th></tr>`;
     const X = b => b ? "☒" : "☐";
-    return `<section><div class="hdr"><div><b>PILOT TRAINING / CHECK GRADE SHEET</b><br><small>TC_PC_RFT_REC · generated by N&amp;O PC Run-and-Grade</small></div><div><span class="tag">N&amp;O ${s.kind}</span></div></div>
-     <table class="h"><tr><td>Name of airman<br><b>${esc(P.name)}</b></td><td>Employee no.<br><b>${esc(P.emp)}</b></td><td>${X(P.duty==="CA")} CA ${X(P.duty==="FO")} FO · A/C ${esc(P.acType)}</td><td>EVENT: ${X(isPC&&P.duty==="CA")} CA PIC PC ${X(isPC&&P.duty==="FO")} FO PIC PC ${X(s.setup.typeRating)} TYPE RATING</td></tr>
-     <tr><td>Certificate ${X((s.docs[p]||{}).atp)} ATP checked<br>${X((s.docs[p]||{}).eng)} English Proficient</td><td>${X((s.docs[p]||{}).med)} Medical — First checked<br>${X((s.docs[p]||{}).fcc)} FCC Permit ${X((s.docs[p]||{}).photo)} Photo ID</td><td>Sim ID ${isPC?`${esc(L?L.device:"")} / ${esc(s.setup.device)}`:esc(s.setup.device)}<br>TO/LDGs ${esc(s.counts[p].to)}/${esc(s.counts[p].ldg)}</td><td>CATEGORY: ${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x=>`${X(c.form===x)} ${x}`).join(" ")} ${X(pcat(s,p)==="ST")} SPECIAL TRACKING<br><small>${esc(c.label)}</small></td></tr>
+    return `<section><div class="hdr"><div><b>PILOT TRAINING / CHECK GRADE SHEET</b><br><small>TC_PC_RFT_REC 13 APR 26 · generated by N&amp;O PC Run-and-Grade</small></div><div><span class="tag">N&amp;O ${s.kind}</span></div></div>
+     <table class="h"><tr><td>Name of airman<br><b>${esc(P.name)}</b></td><td>Employee no.<br><b>${esc(P.emp)}</b></td><td>${X(P.duty==="CA")} CA ${X(P.duty==="FO")} FO · A/C ${esc(P.acType)}</td><td>EVENT: ${X(true)} PC ${X(s.setup.typeRating)} TYPE RATING</td></tr>
+     <tr><td>Certificate ${X((s.docs[p]||{}).faa)} FAA Certificate<br>${X((s.docs[p]||{}).med)} Medical ${X((s.docs[p]||{}).jepp)} Jepp Pubs ${X((s.docs[p]||{}).manuals)} Manuals</td><td>${X((s.docs[p]||{}).fcc)} FCC Permit ${X((s.docs[p]||{}).photo)} Photo ID</td><td>Sim ID ${isPC?`${esc(L?L.device:"")} / ${esc(s.setup.device)}`:esc(s.setup.device)}<br>TO/LDGs ${esc(s.counts[p].to)}/${esc(s.counts[p].ldg)}</td><td>CATEGORY: ${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x=>`${X(c.form===x)} ${x}`).join(" ")} ${X(pcat(s,p)==="ST")} SPECIAL TRACKING<br><small>${esc(c.label)}</small></td></tr>
      <tr><td colspan="2">PCWU instructor / Ck Amn: <b>${esc(isPC ? (L?L.conductor:"") : s.setup.conductor.name)}</b> ${esc(isPC ? (L?L.condEmp:"") : s.setup.conductor.emp)} · ${esc(isPC ? (L?L.date:"") : s.setup.date)} · PCWU time ${esc(isPC ? (L?L.time:"") : fmtHM(totalEl(s)))}</td><td colspan="2">${isPC?`PC Check Airman: <b>${esc(s.debrief.signedBy||s.setup.conductor.name)}</b> ${esc(s.setup.conductor.emp)} · ${esc(s.debrief.signedAt||s.setup.date)} · PC time ${fmtHM(totalEl(s))}<br>RESULT: ${X(res==="SAT")} SATISFACTORY / COMPLETE ${X(res==="UNSAT")} UNSAT / INCOMPLETE – REMOVED ${X(res==="INC")} INCOMPLETE – SIM / ILLNESS`:""}</td></tr></table>
      <div class="two"><table>${th}${tb(Array.from({length:21},(_,i)=>i+1))}</table><table>${th}${tb(Array.from({length:18},(_,i)=>i+22))}</table></div>
      <p><b>Remarks:</b> ${esc(s.debrief.p[p].remarks||"—")}${pcat(s,p)==="ST"?" · Special Tracking PC.":""}</p>
@@ -1281,6 +1289,103 @@ async function printSetup(){
   try { const r = await fetch(SETUP_PDF); if (!r.ok) throw new Error("HTTP " + r.status);
     await store.dl.save({filename:"747_PCWU_PC_Setup_Material_KGS_19DEC25.pdf", data: await r.blob()}); toast("Saved — open the PDF and print it"); }
   catch(e){ if (!e || e.code !== "declined") toast("Couldn't get the setup PDF: " + (e.message || e.code)); }
+}
+/* ============================================================ printed grade sheet: fills the official TC_PC_RFT_REC 13 APR 26 form (one page set per graded pilot) */
+const FORM_PDF = "setup/TC_PC_RFT_REC_13APR26.pdf";
+const FF_ITEM = { // item → [repeat field, PC/RFT status field, PCWU status field]
+ 1:["Repeat1 Equipment  Oral Examination  Briefing","Status1 Equipment  Oral Examination  Briefing"],2:["2 Preflight Inspection","Text12"],3:["3 Taxi  Runway Operations","Text18"],
+ 4:["4 Powerplant Checks","Text13"],5:["5 Normal","Text14"],6:["6 Instrument","Text19"],7:["7 Crosswind with Gust","Text15"],8:["8 With Powerplant Failure","Text20"],
+ 9:["9 Rejected TO","Text16"],10:["10 RNAV1 Departure   RNAV1 Arrival  one required","Text17"],11:["11 Holding","Text21"],12:["12 Normal ILS Approach Manual Autoland","Text26"],
+ 13:["13 Engine out ILS","Text22"],14:["INSTRUMENT PROCEDURESRow5","INSTRUMENT PROCEDURESRow5_2","INSTRUMENT PROCEDURESRow5_3"],
+ 15:["INSTRUMENT PROCEDURESRow6","INSTRUMENT PROCEDURESRow6_2","INSTRUMENT PROCEDURESRow6_3"],16:["16 NonPrecision Approach Manual VOR NDB LOC RNAV","Text23"],
+ 17:["17 Second NonPrecision Approach Manual VOR NDB LOC RNAV","Text27"],18:["18 Missed Approach from ILS","Text24"],19:["19 Second Missed Approach","Text28"],
+ 20:["20 Steep Turns","Text25"],21:["INFLIGHT MANEUVERSRow2","INFLIGHT MANEUVERSRow2_2"],22:["22 Landing from an ILS","Text38"],23:["23 Crosswind with Gust","Text47"],
+ 24:["24 Rejected Landing","Text39"],25:["25 Landing with an Engine Inoperative","Text37"],26:["26 Landing with 50 Power Loss","Text46"],27:["27 Nonstandard Flap Approach and Landing","Text36"],
+ 28:[null,"Text33","Text49"],29:[null,"Text34","Text51"],30:[null,"Text48","Text45"],31:[null,"Text35","Text53"],32:[null,"Text41","Text50"],33:[null,"Text32","Text54"],
+ 34:["34 CRM  TEM","Text40"],35:["35 Emergency  Abnormal Procedures","Text31"],36:["36 Use of Checklists","Text42"],37:["37 FMC  CDU","Text30"],38:["38 English Proficient","Text44"],39:["39 Judgment","Text29"]};
+const FF_SUB = {12:{man:"Manual",auto:"Autoland"},14:{nrm:"Check Box66",oei:"Check Box67"},15:{nrm:"Check Box65",oei:"Check Box68"},
+ 16:{VOR:"VOR",NDB:"NDB",LOC:"LOC",RNAV:"Check Box69",man:"Manual_2"},17:{VOR:"VOR_2",NDB:"NDB_2",LOC:"LOC_2",RNAV:"RNAV_2",man:"Manual_3"},21:{to:"RNAV",ldg:"Check Box70",clean:"Check Box63"}};
+const FF_CAT = {INITIAL:"INH",TRANSITION:"TIE",UPGRADE:"U",RECURRENT:"REC",REQUALIFICATION:"REQ",REFRESHER:"REFRESHER",CONSOLIDATION:"CONSOLIDATION",ADMINISTRATIVE:"ADMINISTRATIVE"};
+const FF_DOC = {faa:"FAA",med:"Medical",jepp:"Jepp Pubs",manuals:"Manuals",fcc:"Check Box57",photo:"Check Box58"};
+const mdy = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d||""); return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : (d||""); };
+const simNo = d => { d = String(d||""); const m = d.match(/FAA\s*#?\s*(\d+)/i) || d.match(/#\s*(\d{3,4})/) || d.match(/\b(\d{3,4})\b/); return m ? m[1] : d.slice(0,10); };
+function loadPdfLib(){
+  if (window.PDFLib) return Promise.resolve(window.PDFLib);
+  return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+    sc.onload = () => window.PDFLib ? ok(window.PDFLib) : no(new Error("pdf-lib did not load")); sc.onerror = () => no(new Error("couldn't load pdf-lib")); document.head.appendChild(sc); });
+}
+const winAnsi = v => String(v ?? "").replace(/→/g,"->").replace(/[★✈✓☒]/g,"").replace(/./gu, ch => (ch.codePointAt(0) < 256 || "–—‘’“”•…€™ŠšŽžŒœŸƒˆ˜†‡‰‹›".includes(ch)) ? ch : "?");
+function wrapLines(txt, max){ const out = []; String(txt||"").split(/\n+/).forEach(par => { let line = "";
+  par.split(/\s+/).filter(Boolean).forEach(w => { if ((line + " " + w).trim().length > max) { if (line) out.push(line); line = w; } else line = (line + " " + w).trim(); }); if (line) out.push(line); }); return out; }
+function formValues(s,p){ // → {text:{field:value}, check:[field...], remarks:[lines]}
+  const isPC = s.kind === "PC", P = s.setup.pilots[p], L = pcwuOf(s,p), c = CAT(pcat(s,p)), T = {}, C = [];
+  T["EmployeeName"] = P.name; T["EEID"] = P.emp; T["Fleet"] = P.acType; C.push(P.duty === "CA" ? "CA" : "FO");
+  C.push("Check Box60"); if (s.setup.typeRating) C.push("TYPE RATING");
+  if (isPC) Object.entries(FF_DOC).forEach(([k,f]) => { if ((s.docs[p]||{})[k]) C.push(f); });
+  const sim = simById(s.setup.sim);
+  const dev = simNo(s.setup.device) || (sim ? sim.faa : "");
+  T["Text9"] = isPC ? (L ? simNo(L.device) : "") : dev; T["Simulator ID"] = isPC ? dev : "";
+  const cn = s.counts[p] || {}; T["Text10"] = cn.to || ""; T["CATEGORY"] = cn.ldg || "";
+  T["PC  RFT  RLOFTQLOFT Time"] = isPC ? (L ? L.time : "") : fmtHM(totalEl(s));
+  if (isPC) T["Text11"] = fmtHM(totalEl(s));
+  if (isPC) { if (L) { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = L.conductor||""; T["Employee No_2"] = L.condEmp||""; T["RESULT"] = mdy(L.date); }
+    T["PC Check Pilot  APD"] = s.debrief.signedBy || s.setup.conductor.name; T["Employee No_3"] = s.setup.conductor.emp; T["FAA InspectorExaminer"] = mdy(s.debrief.signedAt || s.setup.date); }
+  else { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = s.debrief.signedBy || s.setup.conductor.name; T["Employee No_2"] = s.setup.conductor.emp; T["RESULT"] = mdy(s.debrief.signedAt || s.setup.date); }
+  if (FF_CAT[c.form]) C.push(FF_CAT[c.form]); if (pcat(s,p) === "ST") C.push("Special");
+  if (isPC) { const r = s.debrief.p[p].result; if (r === "SAT") C.push("undefined_2"); if (r === "UNSAT") C.push("UNSAT  INCOMPLETE  REMOVED FROM FLIGHT STATUS"); if (r === "INC") C.push("INCOMPLETE  SIMULATOR MALFUNCTION OR ILLNESS");
+    if ((s.debrief.faa||"").trim()) { C.push("Observation"); T["Name of Observing FAA Inspector  Examiner Last First Mi"] = s.debrief.faa; } }
+  ITEMS.forEach(it => { const n = it.n, F = FF_ITEM[n], g = (s.g[p]||{})[n] || {};
+    if (isPC) { if (F[0] && g.rep) T[F[0]] = "X"; const v = eff(s,p,n); if (F[1]) T[F[1]] = v; }
+    if (F[2]) T[F[2]] = isPC ? (L ? ((L.items[n]||{}).st || "") : "") : pcwuCell(s,p,n).val || "";
+    let subs = g.subs || {}; if (isPC && (n===14||n===15) && !g.st && L) subs = (L.items[n]||{}).subs || {};
+    if (!isPC && !(n===14||n===15)) subs = {};
+    if (FF_SUB[n]) Object.entries(FF_SUB[n]).forEach(([k,f]) => { if (subs[k]) C.push(f); }); });
+  const rem = []; const d = s.debrief.p[p];
+  if (pcat(s,p) === "ST") rem.push("Special Tracking PC.");
+  if ((d.remarks||"").trim()) rem.push(d.remarks.trim());
+  ITEMS.forEach(it => { const g = (s.g[p]||{})[it.n] || {}; if ((g.note||"").trim()) rem.push(`${it.n}. ${it.t}${g.rep?" (repeated)":""}: ${g.note.trim()}`); });
+  if (isPC && (s.g[p]||{})[10] && ((s.g[p][10].subs||{}).dep || (s.g[p][10].subs||{}).arr)) rem.push(`10. RNAV1 flown: ${[s.g[p][10].subs.dep?"departure":"",s.g[p][10].subs.arr?"arrival":""].filter(Boolean).join(" and ")}.`);
+  const lines = wrapLines(rem.join("\n"), 138);
+  if (lines.length) C.push("Y"); else if (isPC) C.push("N");
+  return {T, C, lines};
+}
+async function buildFormPDF(s){
+  const {PDFDocument, StandardFonts} = await loadPdfLib();
+  const r = await fetch(FORM_PDF); if (!r.ok) throw new Error("form HTTP " + r.status);
+  const tpl = await r.arrayBuffer(), out = await PDFDocument.create();
+  for (const p of GP(s)) {
+    const doc = await PDFDocument.load(tpl), form = doc.getForm(), font = await doc.embedFont(StandardFonts.Helvetica);
+    const {T, C, lines} = formValues(s,p);
+    const set = (name, v) => { try { const f = form.getTextField(name); f.setText(winAnsi(v)); } catch(e){ console.warn("field", name, e.message); } };
+    Object.entries(T).forEach(([k,v]) => set(k, v));
+    const shown = lines.slice(0,7); if (lines.length > 7) shown[6] = shown[6].slice(0,110) + " … (continued in N&O record)";
+    shown.forEach((l,i) => set(`REMARKS  ADDITIONAL PROCEDURESRow${i+1}`, l));
+    const pg1 = doc.getPage(0), marks = [];
+    C.forEach(k => { try { form.getCheckBox(k).acroField.getWidgets().forEach(wd => marks.push(wd.getRectangle())); } catch(e){ console.warn("box", k, e.message); } });
+    form.updateFieldAppearances(font); form.flatten();
+    marks.forEach(r => {   // draw a clear X in the printed box, after flattening so no field appearance covers it
+        const x0 = Math.min(r.x, r.x + r.width), y0 = Math.min(r.y, r.y + r.height), w = Math.abs(r.width), h = Math.abs(r.height), sz = Math.min(w,h), cx = x0 + w/2, cy = y0 + h/2, d = sz/2 - 0.4;
+        pg1.drawLine({start:{x:cx-d,y:cy-d}, end:{x:cx+d,y:cy+d}, thickness:1.3}); pg1.drawLine({start:{x:cx-d,y:cy+d}, end:{x:cx+d,y:cy-d}, thickness:1.3}); });
+    const pages = await out.copyPages(doc, doc.getPageIndices()); pages.forEach(pg => out.addPage(pg));
+  }
+  out.setTitle(`TC_PC_RFT_REC ${s.kind} ${s.setup.date}`);
+  return new Blob([await out.save()], {type:"application/pdf"});
+}
+async function printForm(){
+  const s = cur(); if (!GP(s).length) { toast("No graded pilot on this record."); return; }
+  const name = `TC_PC_RFT_REC_${s.kind}_${s.setup.date}_${GP(s).map(p => pname(s,p).replace(/\W+/g,"")).join("_")}.pdf`;
+  const inClaude = !!(window.claude && window.claude.use);
+  const w = inClaude ? null : (() => { try { return window.open("", "_blank"); } catch(e){ return null; } })();
+  try {
+    toast("Filling the grade sheet…");
+    const blob = await buildFormPDF(s);
+    if (inClaude) { if (!store.dl) { toast("Saving isn't available in this view. Open the GitHub copy to print."); return; }
+      await store.dl.save({filename:name, data:blob}); toast("Saved — open the PDF and print it"); return; }
+    const url = URL.createObjectURL(blob);
+    if (w) w.location.href = url;
+    else { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  } catch(e){ if (w) w.close(); if (!e || e.code !== "declined") toast("Couldn't build the grade sheet: " + (e.message || e.code)); }
 }
 async function doExport(kind){
   const s = cur();
@@ -1448,9 +1553,9 @@ document.addEventListener("click", ev => {
       if (cur0 === v) g.st = ""; else g.st = v;
       if (s.kind === "PC" && g.st === "U" && !g.rep) s.log[p].push({t:simNow(s), m:`Item ${n} ${IT(n).t} — unsatisfactory recorded`});
       touch(s); break; }
-    case "rep": { const g = gRec(s,p,n); if (g.rep === v) g.rep = ""; else { g.rep = v; s.log[p].push({t:simNow(s), m:`Item ${n} ${IT(n).t} — first attempt unsat (${v}); recorded before training`}); } touch(s); break; }
+    case "rep": { const g = gRec(s,p,n); if (g.rep === v) g.rep = ""; else { g.rep = "X"; s.log[p].push({t:simNow(s), m:`Item ${n} ${IT(n).t} — first attempt unsatisfactory; train, then repeat (X)`}); } touch(s); break; }
     case "sub": { const g = gRec(s,p,n); g.subs = g.subs || {}; g.subs[v] = g.subs[v] ? 0 : 1;
-      if (n === 10 || n === 12 || n === 14 || n === 15) {} if ((n===16||n===17) && v !== "man" && g.subs[v]) ["VOR","NDB","LOC","ASR","RNAV"].forEach(k => { if (k !== v) g.subs[k] = 0; });
+      if (n === 10 || n === 12 || n === 14 || n === 15) {} if ((n===16||n===17) && v !== "man" && g.subs[v]) ["VOR","NDB","LOC","RNAV"].forEach(k => { if (k !== v) g.subs[k] = 0; });
       touch(s); break; }
     case "log": s.log[p].push({t:simNow(s), m:v}); touch(s); break;
     case "pilot": ui.p = +v; ui.sel = null; break;
@@ -1463,6 +1568,7 @@ document.addEventListener("click", ev => {
     case "reopen": s.status = "open"; touch(s); break;
     case "exp": doExport(v); return;
     case "printsetup": printSetup(); return;
+    case "printform": printForm(); return;
     case "ref": openRef(v); return;
     case "refclose": closeRef(); return;
     case "present": openPresent(v, b.dataset.i, (b.dataset.list||"").split(",").filter(x=>x!=="").map(Number)); return;
