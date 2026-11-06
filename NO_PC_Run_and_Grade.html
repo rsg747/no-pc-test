@@ -537,8 +537,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.9";
+const APP_VERSION = "2026.11.06.10";
 const REVISIONS = [
+ {v:"2026.11.06.10", d:"6 Nov 2026", n:["Swap crewmembers no longer writes to the training / re-check log (it's only used at the start of the sim); earlier swap entries are removed."]},
  {v:"2026.11.06.9", d:"6 Nov 2026", n:["Waivers lock for a pilot as soon as any item is repeated (X) or graded U — judgment standard. W is removed from every ★ item, the 🔒 reason names the item, and any W already entered must be flown and graded before submitting. Removing the X restores waivers."]},
  {v:"2026.11.06.8", d:"6 Nov 2026", n:["Setup: the Date box no longer runs over the Simulator box on the iPad.","Swap crewmembers is now only on the Run tab, next to Run 1 / Run 2 (removed from Setup)."]},
  {v:"2026.11.06.7", d:"6 Nov 2026", n:["High contrast: grey panels (Print setup bar, Script / IOS boxes, flight data, oral answers, grade-sheet section rows and headers) now use white lettering on dark slate instead of dark text on grey."]},
@@ -728,6 +729,7 @@ function migrate(s){ // fill fields added after a record was created
   for (const k of Object.keys(n.setup)) if (s.setup[k] === undefined) s.setup[k] = n.setup[k];
   for (const k of Object.keys(n.brief)) if (s.brief[k] === undefined) s.brief[k] = n.brief[k];
   if (!s.run.t) { s.run.t = [{elapsed:s.run.elapsed||0, startedAt:s.run.startedAt||null},{elapsed:0,startedAt:null}]; s.run.cur = 0; delete s.run.elapsed; delete s.run.startedAt; }
+  if (Array.isArray(s.log)) s.log = s.log.map(l => (l||[]).filter(x => !/^Crew swapped/.test(x.m||"")));   // swaps are not logged
   if (s.setup.cat === "ST") { s.setup.cat = "REC"; s.setup.st = [true,true]; }
   return s;
 }
@@ -1061,7 +1063,6 @@ function swapCrew(s){
   s.setup.order = [runs(s)[1].a, runs(s)[0].a];
   s.run.t = [s.run.t[1] || {elapsed:0,startedAt:null}, s.run.t[0] || {elapsed:0,startedAt:null}];
   s.run.cur = 1 - curRun(s);
-  GP(s).forEach(p => s.log[p].push({t:simNow(s), m:`Crew swapped — ${pname(s,p)} is now PF ${runs(s)[0].a===p?"1st (Run 1)":"2nd (Run 2)"}`}));
 }
 function runPlan(s){
   const RS = runs(s);
