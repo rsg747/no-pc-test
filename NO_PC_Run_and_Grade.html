@@ -245,7 +245,7 @@ ul.probs li b{font-family:var(--f-mono)}
 /* reference pop-up */
 .refmodal{position:fixed;inset:0;z-index:40;background:rgba(10,20,20,.55);display:flex;align-items:flex-start;justify-content:center;padding:calc(40px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
 .refbox{background:var(--panel);color:var(--ink);border-radius:12px;max-width:760px;width:100%;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
-.refbody{font-size:15px} .refbody ul{margin:0;padding-left:20px} .refbody li{margin:4px 0}
+.refbody{font-size:15px} .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px} .shots img{width:100%;border-radius:8px;border:1px solid var(--line)} .refbody ul{margin:0;padding-left:20px} .refbody li{margin:4px 0}
 li.chkrow{display:flex;align-items:flex-start;gap:4px}
 li.chkrow .cb{flex:1}
 .showref{flex:none;border:1px solid var(--line);background:var(--infobg);color:var(--info);border-radius:999px;font-size:13px;font-weight:700;padding:3px 10px;margin-top:5px;cursor:pointer;min-height:30px}
@@ -417,7 +417,7 @@ const TOL = [
  ["Landings","Correct configuration and V-speeds; Vref ± 5 kt; positive directional and crosswind control; approved speedbrake, reverse and braking"]
 ];
 const BULLETINS = [
- {h:"Removal of FAA Gust Factor on checking events", b:["Crosswind takeoff and crosswind landing with gusts are required on each PC.","Crosswind component 10–15 kt.","Do NOT use the FAA Gust or Upset Recovery wind models. The SCP enters winds and gust manually on the IOS."]},
+ {h:"Removal of FAA Gust Factor on checking events (TCB-2026-02)", b:["Crosswind takeoff and crosswind landing with gusts are required on each PC.","Evaluation events (PCs and type ratings) use the device-specific setup for that simulator — setups are not interchangeable between devices.","Do NOT use the FAA Gust or Upset Recovery wind models on evaluation events.","Training events (PCWU, FFSI 4.3/4.5/4.7, FFSU 4.3 and 4.5) keep the FAA Gust model."]},
  {h:"Standardization of low-speed RTO — FO as PF", b:["The RTO is conducted with the Captain as PM and the First Officer as PF.","Initiated by a Non-Normal: engine failure at low speed during the takeoff roll.","Waiving the RTO for an FO, or in an FO/FO pairing, needs the judgment standard — it is not automatically waived."]},
  {h:"Airman Certificate Verification (Standards CA, expires 27 DEC 2026)", b:["Correct type rating: B-747-4 (B-747 alone is incorrect).","Not acceptable: “subject to the limitations of §61.160”, “limited to SIC privileges only”, “B-747-4 is subject to PIC limitations”.","May be acceptable: PIC limitation on a previous type (e.g. CL-65).","Medical: first class, valid for holder’s age. Crew ID: expiration date.","Discrepancy in the sim: escalate to Standards CA or Director of Training (alternate Chief Pilot). FOM Ch. 3."]}
 ];
@@ -426,7 +426,7 @@ const BULLETINS = [
 const BRIEF_PCWU = [
  {h:"Preflight (red items are emphasis)", items:["Exterior Safety Inspection","Aircraft Log Inspection — Captain","Preliminary Flight Deck Procedure","CDU Preflight — CA and FO","Flight Deck Procedure — CA / FO","Obtaining ATC departure clearance (CPDLC)||ofp","Final Flight Deck Procedure (takeoff briefing)","Additional: exterior, security (FO), upper deck / cockpit (FO), fuel verification, final document (FO)"]},
  {h:"Engine starts", items:["Autostart — normal and non-normal (hot, hung, no EGT rise → IAI then ENG AUTOSTART checklist)","No N1 / abnormal oil pressure by idle N2 → IAI then Aborted Engine Start","Manual start — normal and non-normal (Supplementary Procedures)","STARTER CUTOUT, START VLV, FIRE ENG TAILPIPE"]},
- {h:"Takeoff", items:["Crosswind with gust — per bulletin (no FAA Gust)||bul0","Low visibility takeoff (RVR 500)","RNAV / RNP departure — retrievable by name, OpSpec C063"]},
+ {h:"Takeoff", items:["Crosswind with gust — FAA Gust model (PCWU is a training event)||gust","Low visibility takeoff (RVR 500)","RNAV / RNP departure — retrievable by name, OpSpec C063"]},
  {h:"Stalls", items:["Turning stall — takeoff configuration (required)","Landing configuration stall (optional)","Clean stall — A/T has no wake-up in FLCH SPD / VNAV SPD (optional)","Re-automate without instructor prompts"]},
  {h:"FMS · TCAS · Non-normals", items:["FMS / LNAV exercises (radials, re-route, PBD, abeam, offset)","TCAS RA — RA pitch region, TA / RA symbology","Non-normal checklist use — consequential EICAS messages","Use of glareshield checklist"]},
  {h:"CAT II / III (AWO)", items:["CAT III ILS to full stop","CAT II ILS one engine inop to missed approach","QRH AWO review, Required Indications and Equipment table","Flown from qualified seat; FO half may do CAT I autoland in lieu of CAT III; CAT II MAP not required for FO","CAT II/III certification requires a Check Pilot to grade"]},
@@ -441,11 +441,34 @@ const BRIEF_PC = [
  {h:"Policy", items:["Regulatory basis — §121.441, Appendix F, AQS N&O","Scenario design — realistic line ops, non-normals carried to an end state","Three parts — oral, walk-around (individually), flight maneuvers","The PC evaluates; it is not a training event"]},
  {h:"Running the event", items:["Sim period 2:15–2:30 per applicant; preflight and taxi credited to both","SCP acts as dispatch, ATC, ground, maintenance","Failures removed after each landing","Sim rules — breaks, illness before any unsat, QRC / ECL / QRH, sterile flight deck, note taking||rules"]},
  {h:"Standards", items:["English language proficiency — ICAO Level 4||eng","Waiver authority and its restrictions||waiver","Satisfactory performance standards||sat","Unsatisfactory performance and critical error||unsat","Performance tolerances||tol"]},
- {h:"Required maneuvers", items:["Minimum required maneuvers||min","Training and re-checking — one repeat per item, failure recorded before training||train","Seat restriction after a failure — no crew seat or seat support||seat","Crosswind with gusts set manually (10–15 kt, no FAA Gust)||bul0"]},
+ {h:"Required maneuvers", items:["Minimum required maneuvers||min","Training and re-checking — one repeat per item, failure recorded before training||train","Seat restriction after a failure — no crew seat or seat support||seat","Crosswind with gusts — device-specific setup, no FAA Gust (TCB-2026-02)||gust"]},
  {h:"747 and device", items:["747: engine-inop ILS to missed approach, then loss of second engine on the same side","Device weights, engine variant, panel differences||ofp","Nearest exits and motion cutoff switches","Qualification scope — CAT II/III recorded “S” per CAT II/III Policy Guide"]},
  {h:"Close", items:["Questions — scope, standards, waivers, seat restriction, CAT II/III recording","Equipment examination (oral) complete","Visual inspection (walk-around) complete, individually"]}
 ];
 const DOCS = [["atp","Airman certificate — ATP, type rating B-747-4"],["lim","No unacceptable limitations (§61.160, SIC only, B-747-4 PIC)"],["eng","English Proficient shown on certificate"],["med","Medical — first class, valid for age"],["fcc","FCC radiotelephone operator permit"],["photo","Government photo ID (passport or driver’s license)"],["crew","Employee crew ID not expired"],["ftsp","FTSP photo submitted, or not applicable"]];
+
+/* ---------- TCB-2026-02 Removal of FAA Gust Factor on Checking Events (eff. 27 MAR 2026) — device-specific evaluation setup ---------- */
+const SIMS = [
+ {id:"MIA1", name:"744 Sim #1", faa:"722", loc:"MIA TC", need:["90° crosswind","10 kt steady, low altitude gust selected to Moderate","Ensure FAA Gust is NOT selected"], steps:["Select “Surface Wind”","Set steady wind: 10 knots (90°)","Select “Gust”","Set “Low Alt” gust to “Moderate”"], shots:["gust_76_1","gust_76_2"]},
+ {id:"MIA2", name:"744 Sim #2", faa:"1092", loc:"MIA TC", need:["90° crosswind","10 kt steady, wind gust 5 kt","Ensure FAA Gust is NOT selected"], steps:["Select “Surface Wind”","Set steady wind: 10 knots (90°)","Set wind gust: 5 knots"], shots:["gust_77_1","gust_77_2"]},
+ {id:"B3", name:"744 Sim #3", faa:"584", loc:"Boeing", need:["90° crosswind","10 kt steady, gust to 25","Ensure FAA Gust is NOT selected"], steps:["Select “Environment Set”","Set steady wind: 10 knots (90°)","Set gust factor: 25 knots"], shots:["gust_78_1"]},
+ {id:"B4", name:"748 Sim #4", faa:"1264", loc:"Boeing", need:["90° crosswind","10 kt steady, wind gust 5 kt","Ensure FAA Gust is NOT selected"], steps:["Select “Surface Wind”","Set steady wind: 10 knots (90°)","Set wind gust: 5 knots"], shots:["gust_79_1","gust_79_2"], note:"Evaluation crosswind gust for Sim #4 as a 744 (#1091) will be added in the future."},
+ {id:"PAA", name:"PanAm 744 Sim", faa:"1322", loc:"PanAm East", need:["Requires selection from the “Directive 2 UPRT” menu","90° crosswind","10 kt steady instructor selected wind","Use −15 / +10 gust selection"], steps:["Select “Directive 2 UPRT / Bounced Landing / Wind Gusts” menu","Set steady wind: 10 knots (90°)","Select “Instructor Selected Steady Wind With Gusts Of −15/+10 Kt”","Ensure the selection is red (selected) before each maneuver"], shots:["gust_80_1","gust_81_1"]},
+ {id:"SC2", name:"Southcoast 744 Sim #2", faa:"420", loc:"Southcoast", need:["90° crosswind","10 kt steady, with wind gust to 15 kt","Ensure FAA Gust is NOT selected"], steps:["Set surface wind: 10 knots (90°)","Set “W/ Gust To”: 15 knots"], shots:["gust_82_1"]}
+];
+const simById = id => SIMS.find(x => x.id === id);
+function gustHTML(id){
+  const s = cur(), isPCWU = s && s.kind === "PCWU";
+  const sim = simById(id) || (s && simById(s.setup.sim));
+  const pick = `<div class="row" style="margin:0 0 10px"><span class="eyebrow">Simulator</span>${SIMS.map(x => `<button class="sb ${sim && sim.id===x.id?"on":""}" data-act="ref" data-v="gust:${x.id}">${esc(x.name)} · ${esc(x.faa)}</button>`).join("")}</div>`;
+  const pcwu = isPCWU ? `<p class="banner warn" style="margin:0 0 10px"><b>PCWU is a training event:</b> keep the FAA Gust model. The device setups below are for evaluation events (PCs and type ratings) only.</p>` : "";
+  const body = sim ? `<h4 style="margin:4px 0">${esc(sim.name)} (#${esc(sim.faa)}) · ${esc(sim.loc)}</h4>
+    <div class="cols" style="margin-top:6px"><div><h5>Required setup (evaluation events)</h5>${ul(sim.need)}</div><div><h5>IOS setup procedure</h5><ol style="margin:0;padding-left:20px">${sim.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div></div>
+    ${sim.note ? `<p class="why">${esc(sim.note)}</p>` : ""}
+    <h5>Reference screenshots</h5><div class="shots">${sim.shots.map(f => `<img src="setup/gust/${f}.jpg" alt="${esc(sim.name)} IOS screen" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('p'),{className:'why',textContent:'Screenshot not available in this copy.'}))">`).join("")}</div>`
+    : `<p class="why">Choose the simulator above (or set it in Setup) to see its setup.</p>`;
+  return pcwu + pick + body + `<div class="cols" style="margin-top:10px"><div><h5>Do</h5>${ul(["Follow the device-specific setups exactly","Confirm setup matches the published configuration prior to starting the maneuver","Provide feedback to Training (Al Cortes) and Standards (John Schumacher) on issues, inconsistencies, or improvements"])}</div><div><h5>Do not</h5>${ul(["Use any other gust setup for evaluation","Modify wind setups beyond defined configurations","Assume setups are transferable between devices","Experiment with alternate wind setups during an evaluation event"])}</div></div>`;
+}
 
 /* ---------- Reference pop-ups for briefing items (Standardized PC Briefing, Oct 2026) ---------- */
 const ul = a => `<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
@@ -462,11 +485,12 @@ const REFS = {
  rules:{h:"Simulator rules", src:"Standardized PC Briefing", html:() => ul(["Physiological needs — advise the SCP; breaks will be taken as required.","The PC may be discontinued due to a failure of the training device, and the crewmember or SCP becoming ill – crewmember illness must be communicated prior to any unsatisfactory performance.","Treat the Simulator exactly like the airplane – use the QRC/ECL/QRH and/or Company documents as appropriate.","Unless directed by the SCP to manually fly a specific task or maneuver, crewmembers are encouraged to use automation.","All non-normals must be continued through completion of the associated task or maneuver unless otherwise directed by the SCP.","Sterile flight deck as in the airplane; keep all communications relevant to the simulator flight.","There will be note taking by the SCP. Do not let this distract you, as this is part of the debriefing process."])},
  ofp:{h:"Flight data — OFP, ATIS, clearance, TLR", src:"KGS 19 DEC 25 setup material", html:() => flightDataBody()},
  bul0:{h:"Bulletin — "+BULLETINS[0].h, src:"Standards bulletin", html:() => ul(BULLETINS[0].b)},
+ gust:{h:"Crosswind gust setup by simulator", src:"TCB-2026-02 · Removal of FAA Gust Factor on Checking Events · eff. 27 MAR 2026", html:(arg) => gustHTML(arg)},
  bul1:{h:"Bulletin — "+BULLETINS[1].h, src:"Standards bulletin", html:() => ul(BULLETINS[1].b)},
  bul2:{h:"Bulletin — "+BULLETINS[2].h, src:"Standards bulletin", html:() => ul(BULLETINS[2].b)}
 };
-function openRef(k){ const r = REFS[k]; if (!r) return; const m = $("refModal");
-  m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html()}</div></div>`;
+function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k]; if (!r) return; const m = $("refModal");
+  m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 function closeRef(){ const m = $("refModal"); m.hidden = true; m.innerHTML = ""; }
 
@@ -495,16 +519,16 @@ const ORAL = [{"bank":1,"title":"PC Oral Question Bank 1","qs":[{"sec":"AC Gen, 
 const PCWU_EVENTS = [
  {id:"W01",t:"Preflight",x:3,y:0,items:[],ios:["KSFO, parking Superbay, cold and dark","ATIS Alpha: 190/15, ¼ sm FG, OVC001, 06/06, A29.92, RWY 10L, RVR 500/500/500"]},
  {id:"W02",t:"Engine start",x:9,y:0,items:[],ios:["Normal starts — auto and manual","Non-normal start, choose one: autostart hot / hung / no EGT rise, starter cutout, low oil pressure, no N1, tailpipe fire","Carry the malfunction to its conclusion, then “Consider the malfunction complete”"]},
- {id:"W03",t:"Takeoff — INST / RNAV 1",s:"Takeoff INST/RNAV1",x:18,y:0,items:[],ios:["Aligned on centerline, ready for takeoff","Practice crosswind directional control, rate of rotation, RNAV / RNP departure, FMA changes","Crosswind gust entered manually — FAA Gust not selected (bulletin)"]},
+ {id:"W03",t:"Takeoff — INST / RNAV 1",s:"Takeoff INST/RNAV1",x:18,y:0,items:[],ios:["Aligned on centerline, ready for takeoff","Practice crosswind directional control, rate of rotation, RNAV / RNP departure, FMA changes","Crosswind with FAA Gust model (training event — TCB-2026-02 device setup is for PCs only)"],gust:1},
  {id:"W04",t:"Departure stall",x:21,y:4,items:[21],crit:1,ios:["Remove gust before the stall","Gear up, Flaps 10 or 20, A/P on, VNAV, climbing departure turn","Instructor disconnects A/T, thrust 60%","Complete only after re-automation"]},
  {id:"W05",t:"FMS exercises",x:23,y:9,items:[],ios:["In a climb or level","Inbound / outbound radial, re-route, direct-to then re-route, PBD, abeam points, route offset"]},
  {id:"W06",t:"TCAS RA",x:27,y:14,items:[30],ios:["Straight and level, F/D, A/T, A/P on","Traffic avoidance, re-automation, FMA"]},
  {id:"W07",t:"Non-normal",x:31,y:14,items:[],ios:["Instructor selects; may occur any time","Preferably with deferred items","Check CAT II/III Required Indications and Equipment when selecting"]},
  {id:"W08",t:"ILS CAT III",x:42,y:3,items:[15],crit:1,ios:["Low visibility approaches in effect","Category III (fail operational) to full stop","From qualified seat · requires a Check Pilot to grade"]},
  {id:"W09",t:"Approach windshear",s:"App windshear",x:47,y:1.5,items:[27],ios:["ILS approach","Demonstrate escape A/P on; practice manually flown","Either a departure or approach windshear — instructor selects"]},
- {id:"W10",t:"Departure windshear",s:"Dep windshear",x:54,y:1,items:[27],ios:["Crosswind takeoff with gust","Windshear during initial climb; escape maneuver, re-automate"]},
+ {id:"W10",t:"Departure windshear",s:"Dep windshear",x:54,y:1,items:[27],ios:["Crosswind takeoff with gust","Windshear during initial climb; escape maneuver, re-automate"],gust:1},
  {id:"W11",t:"CFIT",x:58,y:4,items:[29],ios:["Descending into terrain","Terrain avoidance, re-automation, FMA"]},
- {id:"W12",t:"Non-ILS VNAV (X-wind, gust)",s:"Non-ILS VNAV",x:63,y:1.5,items:[],ios:["Radar vectors or published transition","Flight freeze for “what if” scenarios (CF / FAF clearances, holds)"]},
+ {id:"W12",t:"Non-ILS VNAV (X-wind, gust)",s:"Non-ILS VNAV",x:63,y:1.5,items:[],gust:1,ios:["Radar vectors or published transition","Flight freeze for “what if” scenarios (CF / FAF clearances, holds)"]},
  {id:"W13",t:"RTO (FO as PF)",x:69,y:0,items:[9],crit:1,ios:["Captain PM, First Officer PF","Low-speed RTO triggered by an engine failure (bulletin)"]},
  {id:"W14",t:"Engine fail (V1–V2)",s:"Eng fail V1–V2",x:74,y:0,items:[],crit:1,ios:["At V1, VR or V2: fail / severe damage / separation","Directional control in crosswind, rate of rotation, rudder trim technique"]},
  {id:"W15",t:"ILS CAT II OEI → MAP",s:"CAT II OEI → MAP",x:81,y:1.5,items:[14],crit:1,ios:["Category II, no visual cues at minimums → missed approach","From qualified seat · requires a Check Pilot to grade"]},
@@ -525,7 +549,7 @@ const PC_EVENTS = [
  {id:"P01",t:"Preflight",x:2,y:0,items:[2]},
  {id:"P02",t:"Engine start",x:6,y:0,items:[4],ios:["Normal and non-normal starts at SCP discretion"]},
  {id:"P03",t:"Taxi",x:10,y:0,items:[3],ios:["Low visibility, airport diagram, clearance before crossing or entering runways","Before takeoff checks, FMS runway before hold short"]},
- {id:"P04",t:"Takeoff — X-wind w/ gust, INST, RNAV 1",s:"Takeoff X-wind/INST/RNAV1",x:16,y:0,items:[5,6,7,10],ios:["RVR 500 for the instrument takeoff","Crosswind ≥ 10 kt with gust, entered manually","At least one RNAV1 / RNP1 departure"]},
+ {id:"P04",t:"Takeoff — X-wind w/ gust, INST, RNAV 1",s:"Takeoff X-wind/INST/RNAV1",x:16,y:0,items:[5,6,7,10],ios:["RVR 500 for the instrument takeoff","Crosswind with gust — device-specific setup (TCB-2026-02), FAA Gust NOT selected","At least one RNAV1 / RNP1 departure"],gust:1},
  {id:"P05",t:"FMS exercises",x:21,y:10,items:[37],ios:["LNAV (SCP discretion), VNAV speed and altitude constraints"]},
  {id:"P06",t:"Steep turns",x:25,y:20,items:[20],ios:["280 kt, 45° bank, ≥ 180° each direction","ALT ± 100, A/S ± 10, bank ± 5°, roll-out ± 10°; re-automate"]},
  {id:"P07",t:"Non-normal (R)",x:30,y:22,items:[35,36],ios:["At least one system non-normal required","Carry to a logical conclusion"]},
@@ -537,7 +561,7 @@ const PC_EVENTS = [
  {id:"P13",t:"Non-normal (O)",x:61,y:4,items:[35],ios:["Optional second non-normal"]},
  {id:"P14",t:"Non-ILS (auto)",x:65,y:2.5,items:[16],ios:["VOR / NDB / RNAV / LOC"]},
  {id:"P15",t:"Missed approach",x:71,y:1,items:[18],ios:["Complete once LNAV captured and holding speed addressed"]},
- {id:"P16",t:"Non-ILS manual (X-wind, gust)",s:"Non-ILS manual",x:78,y:2,items:[17,23],ios:["Different type from the first non-ILS","A/P and A/T off on base before approach clearance","10–15 kt crosswind plus gust to a full stop"]},
+ {id:"P16",t:"Non-ILS manual (X-wind, gust)",s:"Non-ILS manual",x:78,y:2,items:[17,23],ios:["Different type from the first non-ILS","A/P and A/T off on base before approach clearance","Crosswind with gust to a full stop — device-specific setup (TCB-2026-02)"],gust:1},
  {id:"P17",t:"RTO",x:88,y:0,items:[9],crit:1,ios:["RVR 500, max gross weight, TO rated thrust","FO as PF per bulletin when conducted"]},
  {id:"P18",t:"Engine fail (V1–V2)",s:"Eng fail V1–V2",x:93,y:0,items:[8],crit:1,ios:["CAT I minimums, 10–15 kt crosswind","Failure after V1 and before V2"]},
  {id:"P19",t:"ILS one engine inop (manual)",s:"ILS OEI manual",x:99,y:2,items:[13],crit:1,ios:["A/P and A/T off on base before approach clearance","Fly to 50 ft TDZE"]},
@@ -604,7 +628,7 @@ const PATH = s => s.kind === "PCWU" ? PCWU_PATH : PC_PATH;
 function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",ssi:false}; }
 function newSession(kind){
   return {schema:SCHEMA, program:"N&O", kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
-    setup:{date:today(), device:"", cat:"REC", st:[false,false], order:[0,1], failedQual:[false,false], lapsed:[false,false], typeRating:false,
+    setup:{date:today(), device:"", sim:"", cat:"REC", st:[false,false], order:[0,1], failedQual:[false,false], lapsed:[false,false], typeRating:false,
       conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null]},
     docs:[{},{}],
     brief:{checked:{}, notes:"", startedAt:null, elapsed:0, bank:1, oral:[{},{}], walk:[{},{}], open:{}},
@@ -914,6 +938,7 @@ function renderSetup(s){
   <div class="cols">
    <div class="card"><h4>Event</h4><div class="g2">
      <label class="f">Date${inp("setup/date",s.setup.date,"","date")}</label>
+     <label class="f">Simulator (gust setup per TCB-2026-02)<select id="f_sim" data-k="setup/sim"><option value="">Choose…</option>${SIMS.map(x=>`<option value="${x.id}" ${s.setup.sim===x.id?"selected":""}>${esc(x.name)} · #${esc(x.faa)} · ${esc(x.loc)}</option>`).join("")}</select></label>
      <label class="f">Simulator FAA ID${inp("setup/device",s.setup.device,"e.g. 584")}</label>
      <label class="f wide" style="grid-column:1/-1">PC type (drives what is required and waivable · Special Tracking is checked per pilot below)<select id="f_cat" data-k="setup/cat">${CATS.filter(x=>x.k!=="ST").map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
    </div>
@@ -1112,7 +1137,7 @@ function renderRun(s){
    <div class="banner info" style="padding:8px 14px">Run ${rc+1}: <b>${esc(pname(s,RUN.a))}</b> (${esc(s.setup.pilots[RUN.a].duty)}) is PF from the ${seatName(RUN.seat)} · ${otherTxt}.${RS.length===2 && rc===0 ? (swapNeeded(s) ? " Seat swap before Run 2." : " No seat swap for Run 2.") : ""}</div>
    ${stick(s)}${xchips(s)}
    <div class="evcard"><div><span class="eyebrow">${e.opt ? (s.kind==="PCWU" ? "Optional" : "As required") : `Event ${i+1}`}${e.crit?" · critical":""}</span><h2>${esc(e.t)}</h2></div>
-    ${e.ios && e.ios.length ? `<div class="ios"><span class="eyebrow">Script / IOS</span><ul>${e.ios.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+    ${e.ios && e.ios.length ? `<div class="ios"><span class="eyebrow">Script / IOS</span><ul>${e.ios.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${e.gust ? `<button class="showref" style="margin-top:8px" data-act="ref" data-v="gust">${s.kind==="PCWU" ? "Gust setup note" : `Gust setup — ${esc((simById(s.setup.sim)||{}).name || "pick sim")}`}</button>` : ""}</div>` : ""}
     ${!e.items.length && s.kind==="PC" ? "" : ""}
     <div class="pilots">${pcard(RUN.a)}</div>
     ${s.kind==="PC" ? logBox(s) : ""}
@@ -1377,7 +1402,7 @@ document.addEventListener("change", ev => {
   if (t.id === "importFile") { const f = t.files && t.files[0]; if (f) importFile(f, ui.linkFor); t.value = ""; ui.linkFor = null; return; }
   if (t.dataset.actChange === "topic") { ui.oralTopic = t.value; rerender(); return; }
   const k = t.dataset.k; if (!k) return; const s = cur(); if (!s) return;
-  if (t.tagName === "SELECT") { setPath(s, k, t.value); touch(s); rerender(); return; }
+  if (t.tagName === "SELECT") { setPath(s, k, t.value); if (k === "setup/sim" && simById(t.value) && !s.setup.device.trim()) s.setup.device = simById(t.value).faa; touch(s); rerender(); return; }
   if (/^setup\/pilots\/\d\/emp$/.test(k) && s.kind === "PC" && ui.view === "setup") rerender();
 });
 document.addEventListener("keydown", ev => { const g = ev.target.closest && ev.target.closest(".sk-ev"); if (g && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); g.dispatchEvent(new MouseEvent("click", {bubbles:true})); } });
