@@ -542,8 +542,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.14";
+const APP_VERSION = "2026.11.06.15";
 const REVISIONS = [
+ {v:"2026.11.06.15", d:"6 Nov 2026", n:["PCWU: PRM (32) and PAR/ASR (33) fill “/” automatically — not required; record C / I only if conducted. (PC already treated them as not required, and Seat Specific (CA) as not applicable to an FO.)"]},
  {v:"2026.11.06.14", d:"6 Nov 2026", n:["⚡ Quick grade (Grade sheet, PC): for experienced SCPs — pick RNAV dep/arr, ILS manual/autoland, the two non-precision types and any waived ★ items, then one tap marks every open block S (Non-App F C), checks the documents, sets TO/LDG 3/3 and Result Satisfactory. Never overwrites grades already entered; Undo is available."]},
  {v:"2026.11.06.13", d:"6 Nov 2026", n:["Stick diagram back to its compact height: stacked names in at most four rows, each name drawn over any line behind it so it stays readable."]},
  {v:"2026.11.06.12", d:"6 Nov 2026", n:["★ items now say what the star means: “★ Waivable — SCP discretion”, or “★ 🔒 Waiver not allowed” when locked. Stall buttons read “T/O in turn (required)”, “LDG ★ waivable”, “Clean ★ waivable”."]},
@@ -806,6 +807,7 @@ function pcwuCell(s,p,n){ // returns {shaded, val, auto}
   const g = (s.g[p]||{})[n] || {};
   if (n === 31 && s.setup.pilots[p].duty !== "CA") return {val:"/", auto:true, why:"FO — not applicable"};
   if (it.cred && s.setup.conductor.role !== "SCP") return {val:"/", auto:true, why:"CAT II/III certification must be graded by a SCP — it will be graded on the PC"};
+  if ((n === 32 || n === 33) && !g.st) return {val:"/", auto:true, why:"Not required — PRM and PAR/ASR are trained in Initial CAT II/III qualification. Record C / I only if conducted."};
   return {val:g.st || "", why:""};
 }
 function pcwuAllowed(s,p,n){ const it = IT(n); if (it.naf) return ["C","I","/"]; return ["S","I","/"]; }
