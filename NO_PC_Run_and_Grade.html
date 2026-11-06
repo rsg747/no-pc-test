@@ -237,6 +237,9 @@ ul.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap
 .sb{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:3px 10px;cursor:pointer;font-size:13px;font-weight:600;min-height:32px}
 .sb.on{background:var(--brand2);border-color:var(--brand2);color:var(--on-brand)}
 .why{font-size:13px;color:var(--muted)}
+.qg summary{cursor:pointer;font-size:17px;list-style-position:outside}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:6px}
+.qgrid .eyebrow{margin-bottom:4px}
 .wvtag{font-size:13px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--mutebg);color:var(--mute);white-space:nowrap}
 .wvtag.ok{background:var(--infobg);color:var(--info)} .wvtag.lock{background:var(--badbg);color:var(--bad)}
 .why.bad{color:var(--bad)} .why.cr{color:var(--ok)}
@@ -539,8 +542,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.13";
+const APP_VERSION = "2026.11.06.14";
 const REVISIONS = [
+ {v:"2026.11.06.14", d:"6 Nov 2026", n:["⚡ Quick grade (Grade sheet, PC): for experienced SCPs — pick RNAV dep/arr, ILS manual/autoland, the two non-precision types and any waived ★ items, then one tap marks every open block S (Non-App F C), checks the documents, sets TO/LDG 3/3 and Result Satisfactory. Never overwrites grades already entered; Undo is available."]},
  {v:"2026.11.06.13", d:"6 Nov 2026", n:["Stick diagram back to its compact height: stacked names in at most four rows, each name drawn over any line behind it so it stays readable."]},
  {v:"2026.11.06.12", d:"6 Nov 2026", n:["★ items now say what the star means: “★ Waivable — SCP discretion”, or “★ 🔒 Waiver not allowed” when locked. Stall buttons read “T/O in turn (required)”, “LDG ★ waivable”, “Clean ★ waivable”."]},
  {v:"2026.11.06.11", d:"6 Nov 2026", n:["Stick diagram: event names are stacked on short lines and placed so no event line runs through another name."]},
@@ -878,7 +882,7 @@ function evNeeded(s,e){ // PC: does any linked item still need a grade?
 const LOCAL_KEY = "ATLAS_NO_PC_SESSIONS_v1";
 const store = {db:null, dl:null};
 let sessions = {}, demo = null;
-const ui = {view:"home", cur:null, ev:null, p:0, sel:null, del:null, oralTopic:"", linkFor:null};
+const ui = {view:"home", cur:null, ev:null, p:0, sel:null, del:null, oralTopic:"", linkFor:null, qg:{rnav:"dep", ils:"man", npa1:"", npa2:"", manual:"2", waive:{}}, qgOpen:false, qgUndo:null};
 try { Object.assign(sessions, JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}")); Object.values(sessions).forEach(migrate); } catch(e){}
 const synced = new Set((() => { try { return JSON.parse(localStorage.getItem(LOCAL_KEY+"_synced") || "[]"); } catch(e){ return []; } })());
 function saveSynced(){ try { localStorage.setItem(LOCAL_KEY+"_synced", JSON.stringify([...synced])); } catch(e){} }
@@ -1296,6 +1300,52 @@ function subLine(s,p,n){
   const on = it.subs.filter(([k]) => (g.subs||{})[k]).map(([,l]) => l);
   return on.length ? `<span class="det">☒ ${esc(on.join(" · "))}</span>` : "";
 }
+/* ============================================================ QUICK GRADE — experienced SCP: mark every open block Satisfactory in one step */
+const NPA_T = ["VOR","NDB","LOC","RNAV"];
+function quickOpen(s,p){ return ITEMS.filter(it => { const r = req(s,p,it.n); return !r.na && !eff(s,p,it.n); }); }
+function quickPanel(s,p){
+  const q = ui.qg, open = quickOpen(s,p), on = n => open.some(it => it.n === n);
+  const seg = (k, opts) => `<div class="seg">${opts.map(([v,l]) => `<button class="${q[k]===v?"on":""}" data-act="qg" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>`;
+  const wv = [9,11,20].filter(n => on(n) && req(s,p,n).waivable).map(n => [n, IT(n).t]);
+  const st = on(21) && req(s,p,21).code === "T";
+  const rowsW = [...wv, ...(st ? [["21ldg","LDG stall"],["21clean","Clean stall"]] : [])];
+  const need = (on(16) && !q.npa1) || (on(17) && !q.npa2) || (on(16) && on(17) && q.npa1 && q.npa1 === q.npa2);
+  return `<details class="card qg" ${ui.qgOpen?"open":""} data-qg="1"><summary><b>⚡ Quick grade</b> — mark everything Satisfactory for ${esc(pname(s,p))} <span class="muted small">(${open.length} open)</span></summary>
+   <p class="why" style="margin:8px 0">For when you don’t need to step through the lesson guide. Fills every open status block with <b>S</b> (Non-App F <b>C</b>) and the details the form needs. Items already graded, credited from the PCWU or not required are left alone. Change any single item afterwards on the sheet — a U or repeat still works the normal way.</p>
+   ${open.length ? `<div class="qgrid">
+    ${on(10) ? `<div><span class="eyebrow">10 · RNAV1 flown</span>${seg("rnav",[["dep","Departure"],["arr","Arrival"]])}</div>` : ""}
+    ${on(12) ? `<div><span class="eyebrow">12 · Normal ILS</span>${seg("ils",[["man","Manual"],["auto","Autoland"]])}</div>` : ""}
+    ${on(16) ? `<div><span class="eyebrow">16 · Non-precision approach</span>${seg("npa1", NPA_T.map(t=>[t,t]))}</div>` : ""}
+    ${on(17) ? `<div><span class="eyebrow">17 · Second non-precision</span>${seg("npa2", NPA_T.map(t=>[t,t]))}</div>` : ""}
+    ${on(16) || on(17) ? `<div><span class="eyebrow">Manually flown</span>${seg("manual",[["1","First (16)"],["2","Second (17)"]])}</div>` : ""}
+    ${rowsW.length ? `<div style="grid-column:1/-1"><span class="eyebrow">★ Waived (tap any you did not fly)</span><div class="row">${rowsW.map(([k,l]) => `<button class="cb ${q.waive[k]?"on":""}" style="width:auto" data-act="qgw" data-v="${k}"><span class="box"></span><span>${esc(l)}</span></button>`).join("")}</div></div>` : (waiverLock(s,p) ? `<p class="why bad" style="grid-column:1/-1;margin:0">🔒 ${esc(waiverLock(s,p))}</p>` : "")}
+   </div>
+   <p class="why" style="margin:10px 0 0">Also checks all six documents, sets TO / LDG to 3 / 3 if blank, and the Result to Satisfactory if nothing is U.</p>
+   ${need ? `<p class="why bad" style="margin:6px 0 0">Pick the approach type${on(16)&&on(17)?"s (they must be different)":""} first.</p>` : ""}
+   <div class="row end" style="margin-top:8px">${ui.qgUndo && ui.qgUndo.p === p ? `<button class="btn" data-act="qgundo">Undo quick grade</button>` : ""}<button class="btn primary" data-act="qgdo" ${need?"disabled":""}>✓ Mark ${open.length} item${open.length===1?"":"s"} Satisfactory</button></div>`
+   : `<p class="banner ok" style="margin:8px 0 0">Every status block for this pilot is filled.</p>${ui.qgUndo && ui.qgUndo.p === p ? `<div class="row end"><button class="btn" data-act="qgundo">Undo quick grade</button></div>` : ""}`}</details>`;
+}
+function quickGrade(s,p){
+  const q = ui.qg, open = quickOpen(s,p);
+  ui.qgUndo = {p, g: clone(s.g[p]||{}), docs: clone(s.docs[p]||{}), counts: clone(s.counts[p]), result: s.debrief.p[p].result};
+  s.g[p] = s.g[p] || {};
+  open.forEach(it => { const n = it.n, r = req(s,p,n), g = gRec(s,p,n);
+    if (it.naf) { g.st = "C"; return; }
+    g.st = (it.wv && n !== 21 && r.waivable && q.waive[n]) ? "W" : "S";
+    if (n === 10) g.subs = {[q.rnav]:1};
+    if (n === 12) g.subs = {[q.ils]:1};
+    if (n === 14) g.subs = {oei:1};
+    if (n === 15) g.subs = {nrm:1};
+    if (n === 16) g.subs = {[q.npa1]:1, ...(q.manual === "1" ? {man:1} : {})};
+    if (n === 17) g.subs = {[q.npa2]:1, ...(q.manual === "2" ? {man:1} : {})};
+    if (n === 21) g.subs = r.code === "T" ? {to:1, ...(q.waive["21ldg"] ? {} : {ldg:1}), ...(q.waive["21clean"] ? {} : {clean:1})} : {to:1, ldg:1, clean:1};
+  });
+  s.docs[p] = Object.fromEntries(DOCS.map(d => [d[0],1]));
+  if (!s.counts[p].to) s.counts[p].to = "3"; if (!s.counts[p].ldg) s.counts[p].ldg = "3";
+  const anyU = ITEMS.some(it => ["U","I"].includes(eff(s,p,it.n)));
+  if (!s.debrief.p[p].result && !anyU) s.debrief.p[p].result = "SAT";
+  toast(`${open.length} item${open.length===1?"":"s"} marked — review the sheet`);
+}
 function renderSheet(s){
   if (!GP(s).includes(ui.p)) ui.p = GP(s)[0] ?? 0;
   const p = ui.p, P = s.setup.pilots[p], c = CAT(pcat(s,p)), isPC = s.kind === "PC", L = pcwuOf(s,p);
@@ -1308,6 +1358,7 @@ function renderSheet(s){
   const box = (on,l) => `<span class="${on?"x":""}">${l}</span>`;
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC 13 APR 26</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2></div><button class="btn primary" data-act="printform">Print grade sheet</button></div>
    <div class="pilottabs" style="margin-top:10px">${GP(s).map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
+   ${isPC ? quickPanel(s,p) : ""}
    ${isPC && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) ? `<div class="banner warn">No PCWU linked for this pilot — CAT II/III and every Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
    ${seatRestricted(s,p) ? `<div class="banner bad">Unsatisfactory item recorded — seat restriction applies for the remainder of the session.</div>` : ""}
    <div class="formhdr">
@@ -1655,6 +1706,7 @@ document.addEventListener("change", ev => {
 document.addEventListener("keydown", ev => { const g = ev.target.closest && ev.target.closest(".sk-ev"); if (g && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); g.dispatchEvent(new MouseEvent("click", {bubbles:true})); } });
 document.addEventListener("toggle", ev => { const d = ev.target, s = cur(); if (s && d.dataset && d.dataset.open) { s.brief.open[d.dataset.open] = d.open ? 1 : 0; } }, true);
 
+document.addEventListener("toggle", ev => { const t = ev.target; if (t && t.dataset && t.dataset.qg) ui.qgOpen = t.open; }, true);
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-act]"); if (!b || b.disabled) return;
   const a = b.dataset.act, v = b.dataset.v, p = b.dataset.p != null ? +b.dataset.p : null, n = b.dataset.n != null ? +b.dataset.n : null, s = cur();
@@ -1683,6 +1735,10 @@ document.addEventListener("click", ev => {
     case "rtimer": { const r = curRun(s), t = s.run.t[r]; const was = !!t.startedAt; pauseRuns(s); if (!was) t.startedAt = Date.now(); touch(s); break; }
     case "run": { const r = +v; if (r !== curRun(s)) { pauseRuns(s); s.run.cur = r; touch(s); } break; }
     case "update": checkUpdates(true); return;
+    case "qg": ui.qg[b.dataset.k] = v; ui.qgOpen = true; break;
+    case "qgw": ui.qg.waive[v] = !ui.qg.waive[v]; ui.qgOpen = true; break;
+    case "qgdo": quickGrade(s, ui.p); ui.qgOpen = true; touch(s); break;
+    case "qgundo": { const u = ui.qgUndo; if (u) { s.g[u.p] = u.g; s.docs[u.p] = u.docs; s.counts[u.p] = u.counts; s.debrief.p[u.p].result = u.result; ui.qgUndo = null; touch(s); toast("Quick grade undone"); } break; }
     case "swapask": ui.swapAsk = true; break;
     case "swapno": ui.swapAsk = false; break;
     case "swapdo": ui.swapAsk = false; swapCrew(s); touch(s); toast("Crew swapped"); break;
