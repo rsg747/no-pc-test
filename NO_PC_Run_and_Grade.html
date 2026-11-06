@@ -247,6 +247,8 @@ ul.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap
 .qg summary{cursor:pointer;font-size:17px;list-style-position:outside}
 .qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:6px}
 .qgrid .eyebrow{margin-bottom:4px}
+.aimsload{background:#0b1f3f;color:#fff;border-color:#0b1f3f;font-weight:700}
+.aimsload small{font-weight:700;opacity:.85;color:#f2b10c}
 .wvtag{font-size:13px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--mutebg);color:var(--mute);white-space:nowrap}
 .wvtag.ok{background:var(--infobg);color:var(--info)} .wvtag.lock{background:var(--badbg);color:var(--bad)}
 .why.bad{color:var(--bad)} .why.cr{color:var(--ok)}
@@ -340,6 +342,7 @@ li.chkrow .cb{flex:1}
 <div id="pres" class="pres" hidden></div>
 <div id="refModal" class="refmodal" hidden></div>
 <div id="pdfView" class="pdfov" hidden></div>
+<div id="aimsView" class="pdfov" hidden></div>
 <script>
 /* ============================================================
    SOURCES (all transcribed from the attached Atlas documents)
@@ -549,8 +552,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.17";
+const APP_VERSION = "2026.11.06.18";
 const REVISIONS = [
+ {v:"2026.11.06.18", d:"6 Nov 2026", n:["⤓ Load crew (AIMS) on Sessions and Setup — same flow as the AQP Run-and-Grade: sign in, pick today’s PCWU / PC event, and the date, simulator, PC type, type rating, both pilots (CA/FO or seat support), Special Tracking and check airman fill in; a PC links each pilot’s PCWU by employee number. Demo with sample crews until the AIMS connection is live."]},
  {v:"2026.11.06.17", d:"6 Nov 2026", n:["Atlas Air logo bar across the top (same logo as the AQP Run-and-Grade). “N&O · 747 Non-AQP” under it is now white instead of black."]},
  {v:"2026.11.06.16", d:"6 Nov 2026", n:["“No PCWU linked” is only a reminder (it never blocks submitting) and now disappears once CAT II/III and the Non-App F items are graded on the PC."]},
  {v:"2026.11.06.15", d:"6 Nov 2026", n:["PCWU: PRM (32) and PAR/ASR (33) fill “/” automatically — not required; record C / I only if conducted. (PC already treated them as not required, and Seat Specific (CA) as not applicable to an FO.)"]},
@@ -1019,7 +1023,7 @@ function renderHome(){
      <button class="btn small danger" data-act="del" data-v="${s.id}">${ui.del===s.id?"Tap again to delete":"Delete"}</button></div></div>`;
   return `<div class="intro"><div><span class="eyebrow">747 Proficiency Check Warm-Up and Proficiency Check</span><h2>Brief, run, grade and submit</h2>
     <p class="lede">The PCWU is usually flown the day before the PC. CAT II/III certification graded S by an SCP on the PCWU and Non-Appendix F maneuvers completed (C) there carry to the PC automatically. Grading follows the Pilot Training / Check Grade Sheet (TC_PC_RFT_REC, 13 APR 26) and the PC Guide 6.7.2 progressive summary. No PF / PM split: each pilot is graded on their own PF duties, in any order the SCP chooses.</p></div>
-    <div class="row"><button class="btn" data-act="sample">Open sample PC</button><button class="btn" data-act="import">Import record (.json)</button></div></div>
+    <div class="row">${aimsBtn()}<button class="btn" data-act="sample">Open sample PC</button><button class="btn" data-act="import">Import record (.json)</button></div></div>
     <h3>Start an event</h3>
     <div class="starts">
       <div class="start pcwu"><span class="chip pcwu" style="align-self:flex-start">PCWU</span><h4>Proficiency Check Warm-Up</h4><p class="muted small">FFSQ-1 profile · 2:00 brief · 4:30 sim (incl. 0:30 SPOTs) · 1:00 debrief. Records the PCWU column: CAT II/III S / I / “/” (SCP only), Non-Appendix F C / I / “/”.</p><button class="btn primary" data-act="start" data-v="PCWU">New PCWU</button></div>
@@ -1029,6 +1033,69 @@ function renderHome(){
     ${list.length ? `<div class="slist">${list.map(row).join("")}</div>` : `<div class="empty">No sessions yet. Start a PCWU or a PC above${store.db ? "" : "; sessions are kept on this device"}. A PC finds the pilot’s PCWU by employee number from the shared store, this device, or an imported .json file.</div>`}
     <p class="muted small" style="margin-top:18px">Sources: ${Object.values(SRC).map(esc).join(" · ")}</p>`;
 }
+
+/* ============================================================ AIMS — load crew (DEMO)
+   Same flow as the AQP Run-and-Grade: the SCP is signed in (Atlas sign-on in the live version), Load crew lists the
+   PCWU / PC events AIMS has assigned to them today, they pick one, and date, simulator, PC type, both pilots
+   (name, emp, CA/FO or seat support), Special Tracking and type rating fill in. A PC then links each pilot's PCWU by
+   employee number. Everything here is SAMPLE DATA — nothing is read from AIMS yet. */
+const AIMS_SIGN = "NO_PC_AIMS_SIGNIN_v1";
+function aimsSign(){ try { const v = JSON.parse(localStorage.getItem(AIMS_SIGN) || "null"); if (v && v.name) return v; } catch(e){} return null; }
+function aimsSetSign(v){ try { if (v) localStorage.setItem(AIMS_SIGN, JSON.stringify(v)); else localStorage.removeItem(AIMS_SIGN); } catch(e){} }
+function aimsSchedule(){
+  return [
+    {id:"NO-0600", kind:"PCWU", time:"0600–1030", sim:"B3", cat:"REC", crew:[{name:"SAMPLE, ALEX",emp:"900201",duty:"CA"},{name:"SAMPLE, BLAKE",emp:"900202",duty:"FO"}]},
+    {id:"NO-0700", kind:"PC", time:"0700–1130", sim:"MIA2", cat:"REC", crew:[{name:"SAMPLE, CASEY",emp:"900203",duty:"FO"},{name:"SAMPLE, DREW",emp:"900204",duty:"FO",st:true}]},
+    {id:"NO-1200", kind:"PC", time:"1200–1500", sim:"MIA1", cat:"RQ12", crew:[{name:"SAMPLE, EMERY",emp:"900205",duty:"CA"},{name:"(SCP seat support)",emp:"",duty:"FO",ssi:true}]},
+    {id:"NO-1300", kind:"PCWU", time:"1300–1730", sim:"B4", cat:"REC", crew:[{name:"SAMPLE, FINLEY",emp:"900206",duty:"FO"},{name:"SAMPLE, HAYDEN",emp:"900207",duty:"FO"}]},
+    {id:"NO-1800", kind:"PC", time:"1800–2100", sim:"B3", cat:"UPG", tr:true, crew:[{name:"SAMPLE, JORDAN",emp:"900208",duty:"CA"},{name:"SAMPLE, KENDALL",emp:"900209",duty:"FO"}]}
+  ];
+}
+function openAims(){ ui.aims = true; drawAims(); }
+function closeAims(){ ui.aims = false; const v = $("aimsView"); v.hidden = true; v.innerHTML = ""; }
+function drawAims(){
+  const v = $("aimsView"), si = aimsSign(), s = cur();
+  let body;
+  if (!si) {
+    const c = s ? s.setup.conductor : {name:"", emp:"", role:"SCP"};
+    body = `<div class="banner warn" style="margin:0 0 12px">In the live version you are already signed in through Atlas sign-on (Duo) and your name fills the check airman / instructor box automatically. For this demo, confirm who is signed in:</div>
+     <div class="g2"><label class="f">Name (last, first)<input id="aims_n" value="${esc(c.name||"")}" placeholder="Last, First"></label>
+     <label class="f">Employee no.<input id="aims_e" value="${esc(c.emp||"")}" placeholder="000000"></label>
+     <label class="f">Role<select id="aims_r"><option value="SCP" ${c.role!=="Instructor"?"selected":""}>SCP / Check Airman</option><option value="Instructor" ${c.role==="Instructor"?"selected":""}>Instructor</option></select></label></div>
+     <div class="row end" style="margin-top:12px"><button class="btn primary" data-act="aimssign">Sign in</button></div>`;
+  } else {
+    const ev = aimsSchedule();
+    body = `<div class="row" style="justify-content:space-between;margin-bottom:10px"><span>Signed in: <b>${esc(si.name)}</b> · ${esc(si.emp)} · ${si.role==="Instructor"?"Instructor":"SCP"}</span><button class="btn small" data-act="aimsout">Not you? Sign out</button></div>
+     <p class="why" style="margin:0 0 10px">Your AIMS events for today — tap one to load it. A PCWU event opens a PCWU session, a PC event opens a PC session.</p>
+     <div class="slist">${ev.map((e,i) => { const sim = SIMS.find(x => x.id === e.sim) || {};
+       return `<div class="srow"><span class="scode"><span class="chip ${e.kind==="PC"?"pc":"pcwu"}">${e.kind}</span></span>
+        <div class="smain"><b>${esc(e.time)} · ${esc(e.crew.map(c => c.ssi ? "Seat support" : c.name + " (" + c.duty + (c.st ? " · ST" : "") + ")").join(" / "))}</b>
+        <span class="muted small">${esc(e.id)} · ${e.kind==="PCWU" ? "PCWU (FFSQ-1)" : esc(CAT(e.cat).label)}${e.tr?" · with type rating":""} · ${esc(sim.name||"")} #${esc(sim.faa||"")} ${esc(sim.loc||"")}</span></div>
+        <div class="sact"><button class="btn small primary" data-act="aimsgo" data-v="${i}">Load</button></div></div>`; }).join("")}</div>
+     <p class="muted small" style="margin:12px 0 0">Demo: made-up crews (SAMPLE names, 9002xx employee numbers). Nothing is read from or sent to AIMS yet.</p>`;
+  }
+  v.innerHTML = `<div class="pdfbar" role="dialog" aria-modal="true" aria-label="Load crew from AIMS"><b>⤓ Load crew from AIMS <small style="font-size:13px;opacity:.85">(demo)</small></b><button class="btn" data-act="aimsclose">✕ Close</button></div>
+    <div class="pdfbody" style="padding:16px">${body}</div>`;
+  v.hidden = false;
+}
+function aimsApply(ev){
+  const si = aimsSign() || {};
+  let s = cur();
+  const fresh = s && s.kind === ev.kind && s.status !== "submitted" && !s.setup.pilots.some(P => (P.name||"").trim()) && !s.demo;
+  if (!fresh) { s = newSession(ev.kind); sessions[s.id] = s; ui.cur = s.id; }
+  const sim = SIMS.find(x => x.id === ev.sim);
+  Object.assign(s.setup, {date:today(), sim:ev.sim, device: sim ? sim.faa : "", cat:ev.cat, typeRating:!!ev.tr, order:[0,1], st:[false,false], failedQual:[false,false], lapsed:[false,false], link:[null,null]});
+  s.setup.conductor = {name:si.name||"", emp:si.emp||"", role:si.role||"SCP"};
+  ev.crew.forEach((c,i) => { const P = s.setup.pilots[i];
+    Object.assign(P, {name: c.ssi ? (si.name||"Seat support") : c.name, emp: c.ssi ? (si.emp||"") : c.emp, duty:c.duty, ssi:!!c.ssi});
+    s.setup.st[i] = !!c.st; });
+  let linked = 0;
+  if (s.kind === "PC") GP(s).forEach(p => { const c = pcwuCandidates(s,p); if (c.length) { s.setup.link[p] = snapPCWU(c[0].w, c[0].i); linked++; } });
+  s.aims = {id:ev.id, time:ev.time, loadedAt:new Date().toISOString(), demo:true};
+  ui.view = "setup"; ui.ev = null; ui.p = 0; touch(s); closeAims();
+  toast(`Loaded ${ev.id} — ${ev.crew.filter(c=>!c.ssi).map(c=>c.name).join(" / ")}${linked ? ` · ${linked} PCWU linked` : ""} (sample data)`);
+}
+function aimsBtn(){ return `<button class="btn aimsload" data-act="aimsopen">⤓ Load crew <small>(AIMS)</small></button>`; }
 
 /* ============================================================ SETUP */
 function inp(k,v,ph,type){ return `<input id="f_${k.replace(/\W/g,"_")}" data-k="${k}" value="${esc(v)}" placeholder="${esc(ph||"")}" ${type?`type="${type}"`:""}>`; }
@@ -1050,7 +1117,8 @@ function renderSetup(s){
     </div>
     ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
     ${isPC ? linkBox(s,p) : ""}</div>`}`; };
-  return `<span class="eyebrow">${s.kind} setup</span><h2>${isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2>
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${s.kind} setup</span><h2>${isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div>${s.status==="submitted" ? "" : aimsBtn()}</div>
+  ${s.aims ? `<div class="banner info" style="margin-bottom:10px">Loaded from AIMS: <b>${esc(s.aims.id)}</b> ${esc(s.aims.time||"")}${s.aims.demo ? " · sample data" : ""}</div>` : ""}
   <div class="cols">
    <div class="card"><h4>Event</h4><div class="g2">
      <label class="f">Date${inp("setup/date",s.setup.date,"","date")}</label>
@@ -1667,7 +1735,7 @@ $("pres").addEventListener("click", ev => { const t = ev.target.closest("[data-p
 let swX = null;
 $("pres").addEventListener("touchstart", ev => { swX = ev.touches[0].clientX; }, {passive:true});
 $("pres").addEventListener("touchend", ev => { if (swX == null) return; const dx = ev.changedTouches[0].clientX - swX; swX = null; if (Math.abs(dx) > 60) presAct(dx < 0 ? "next" : "prev"); }, {passive:true});
-document.addEventListener("keydown", ev => { if (ev.key !== "Escape") return; if (!$("pdfView").hidden) closePdf(); else if (!$("refModal").hidden) closeRef(); });
+document.addEventListener("keydown", ev => { if (ev.key !== "Escape") return; if (!$("aimsView").hidden) closeAims(); else if (!$("pdfView").hidden) closePdf(); else if (!$("refModal").hidden) closeRef(); });
 $("refModal").addEventListener("click", ev => { if (ev.target.id === "refModal") closeRef(); });
 document.addEventListener("keydown", ev => { if (!pres.on) return;
   if (["ArrowRight","PageDown"," "].includes(ev.key)) { ev.preventDefault(); presAct("next"); }
@@ -1752,6 +1820,11 @@ document.addEventListener("click", ev => {
     case "qgw": ui.qg.waive[v] = !ui.qg.waive[v]; ui.qgOpen = true; break;
     case "qgdo": quickGrade(s, ui.p); ui.qgOpen = true; touch(s); break;
     case "qgundo": { const u = ui.qgUndo; if (u) { s.g[u.p] = u.g; s.docs[u.p] = u.docs; s.counts[u.p] = u.counts; s.debrief.p[u.p].result = u.result; ui.qgUndo = null; touch(s); toast("Quick grade undone"); } break; }
+    case "aimsopen": openAims(); return;
+    case "aimsclose": closeAims(); return;
+    case "aimssign": { const n = ($("aims_n").value||"").trim(), e = ($("aims_e").value||"").trim(); if (!n) { toast("Enter your name"); return; } aimsSetSign({name:n, emp:e, role:$("aims_r").value}); drawAims(); return; }
+    case "aimsout": aimsSetSign(null); drawAims(); return;
+    case "aimsgo": aimsApply(aimsSchedule()[+v]); break;
     case "swapask": ui.swapAsk = true; break;
     case "swapno": ui.swapAsk = false; break;
     case "swapdo": ui.swapAsk = false; swapCrew(s); touch(s); toast("Crew swapped"); break;
