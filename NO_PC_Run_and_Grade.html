@@ -537,8 +537,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.10";
+const APP_VERSION = "2026.11.06.11";
 const REVISIONS = [
+ {v:"2026.11.06.11", d:"6 Nov 2026", n:["Stick diagram: event names are stacked on short lines and placed so no event line runs through another name."]},
  {v:"2026.11.06.10", d:"6 Nov 2026", n:["Swap crewmembers no longer writes to the training / re-check log (it's only used at the start of the sim); earlier swap entries are removed."]},
  {v:"2026.11.06.9", d:"6 Nov 2026", n:["Waivers lock for a pilot as soon as any item is repeated (X) or graded U — judgment standard. W is removed from every ★ item, the 🔒 reason names the item, and any W already entered must be flown and graded before submitting. Removing the X restores waivers."]},
  {v:"2026.11.06.8", d:"6 Nov 2026", n:["Setup: the Date box no longer runs over the Simulator box on the iPad.","Swap crewmembers is now only on the Run tab, next to Run 1 / Run 2 (removed from Setup)."]},
@@ -1164,20 +1165,32 @@ function halfDisc(cx, cy, r, c0, c1){
 function stick(s){
   const evs = EVENTS(s).filter(e => !e.opt), path = PATH(s);
   const maxX = Math.max(...path.map(p=>p[0])) + 4, maxY = s.kind==="PCWU" ? 16 : 24;
-  const W = 1240, H = 350, L = 40, R = 20, T = 120, B = 34;
-  const X = t => L + (t/maxX)*(W-L-R), Y = a => H - B - (a/maxY)*(H-T-B);
+  /* labels are stacked (wrapped to short lines) and placed so no stem runs through another label */
+  const wrap = t => { const w = t.replace(/\//g, "/ ").split(/\s+/).filter(Boolean), out = []; let ln = "";
+    w.forEach(x => { const sep = ln.endsWith("/") ? "" : " "; if (ln && (ln + sep + x).length > 11) { out.push(ln); ln = x; } else ln = ln ? ln + sep + x : x; }); if (ln) out.push(ln); return out; };
+  const W = 1240, L = 40, R = 20, B = 34, LH = 14, LANE = 46, NL = 7;
+  const pre = evs.map(e => { const lines = wrap(e.s || e.t); return {e, lines, hw: Math.max(...lines.map(l => l.length)) * 3.6 + 5}; });
+  const X0 = t => L + (t/maxX)*(W-L-R);
+  const placed = [];
+  pre.forEach(o => {
+    const cx = X0(o.e.x); let best = null;
+    for (let k = 0; k < NL; k++) for (const off of [0,-22,22,-44,44,-66,66]) {
+      const lx = Math.min(Math.max(cx + off, L+o.hw-6), W-R-o.hw+6), a = lx - o.hw, b = lx + o.hw;
+      const n = placed.reduce((n,p) => n + ((p.lane===k && a < p.b + 6 && b > p.a - 6) || (p.lane < k && p.cx > a - 3 && p.cx < b + 3) || (p.lane > k && cx > p.a - 3 && cx < p.b + 3) ? 1 : 0), 0);
+      const score = n*1000 + k*12 + Math.abs(lx - cx)*0.5;
+      if (!best || score < best.score) best = {score, lx, a, b, lane:k};
+    }
+    placed.push(Object.assign(o, {cx}, best));
+  });
+  const used = Math.max(...placed.map(p => p.lane)) + 1, T = 14 + used*LANE + 14, H = T + 230;
+  const X = X0, Y = a => H - B - (a/maxY)*(H-T-B);
   const pts = path.map(([t,a]) => `${X(t).toFixed(1)},${Y(a).toFixed(1)}`).join(" ");
   const ticks = []; for (let t=0; t<=maxX; t+=15) ticks.push(t);
-  const NL = 5, last = Array(NL).fill(-999);
-  const marks = evs.map((e,i) => {
-    const cx = X(e.x), cy = Y(e.y), lab = e.s || e.t, hw = lab.length*3.4 + 6;
-    let lane = last.findIndex(r => cx - hw > r); if (lane < 0) lane = i % NL;
-    last[lane] = cx + hw;
-    const ly = 18 + lane*20;
+  const marks = placed.map(o => { const e = o.e, cx = o.cx, cy = Y(e.y), ly = 18 + o.lane*LANE, bot = ly + (o.lines.length-1)*LH;
     const ra = runs(s)[curRun(s)].a, c0 = evState(s,e,ra), c1 = c0;
     return `<g class="sk-ev ${ui.ev===e.id?"on":""} ${e.crit?"crit":""}" data-act="ev" data-v="${e.id}" tabindex="0" role="button" aria-label="${esc(e.t)}">
-      <line class="sk-stem" x1="${cx}" y1="${ly+4}" x2="${cx}" y2="${cy-12}"/>
-      <text class="sk-lab" x="${Math.min(Math.max(cx, L+hw-6), W-R-hw+6)}" y="${ly}" text-anchor="middle">${esc(lab)}</text>
+      <polyline class="sk-stem" fill="none" points="${o.lx},${bot+5} ${cx},${bot+(Math.abs(o.lx-cx)>1?18:5)} ${cx},${cy-12}"/>
+      <text class="sk-lab" x="${o.lx}" y="${ly}" text-anchor="middle">${o.lines.map((l,k) => `<tspan x="${o.lx}" dy="${k?LH:0}">${esc(l)}</tspan>`).join("")}</text>
       ${halfDisc(cx,cy,11,c0,c1)}</g>`; }).join("");
   return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : esc(CAT(pcat(s,runs(s)[curRun(s)].a)).label)+" profile"}</span><span class="eyebrow">Run ${curRun(s)+1} · markers show ${esc(pname(s,runs(s)[curRun(s)].a))} · tap an event</span></div>
    <svg class="stick" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Flight profile">
