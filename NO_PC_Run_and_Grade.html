@@ -346,7 +346,7 @@ const ITEMS = [
  {n:39,t:"Judgment"}
 ];
 const IT = n => ITEMS[n-1];
-const NAF_NOTE = {27:"Flight Safety Board item (form 13 APR 26): visual pattern from a downwind, no PAPI or glide slope, less than landing flaps. PC Guide 6.7.2 shows it “/” — grade it when flown.",32:"Conducted during initial CAT II/III qualification syllabus.",33:"Conducted during initial CAT II/III qualification syllabus."};
+const NAF_NOTE = {27:"Required only on a type rating; may be given on a PC. Visual pattern from a downwind, no PAPI or glide slope, less than landing flaps.",32:"Conducted during initial CAT II/III qualification syllabus.",33:"Conducted during initial CAT II/III qualification syllabus."};
 
 /* ---------- PC categories → PC Guide 6.7.2 Progressive Summary columns ---------- */
 const CATS = [
@@ -671,6 +671,8 @@ function req(s,p,n){
   const it = IT(n), duty = s.setup.pilots[p].duty;
   if (n === 31 && duty !== "CA") return {code:"/", na:true, why:"Captain seat-specific item; not applicable to an FO"};
   let code = baseCode(n, pcat(s,p)), lock = "", why = CODE_LABEL[code];
+  if (n === 27) { code = s.setup.typeRating ? "R" : "/"; why = s.setup.typeRating ? "Required on a type rating" : "Not required on a PC (required only on a type rating); grade it if given"; }
+  if (n === 10) why = "Required — one RNAV1 departure or one RNAV1 arrival (normally the RNAV1 departure on the first takeoff)";
   const L = waiverLock(s,p);
   if (L && (code === "W" || code === "T")) { lock = L; code = "R"; why = L; }
   const link = pcwuOf(s,p);
@@ -1551,6 +1553,7 @@ document.addEventListener("click", ev => {
     case "treps": { const er = s.run.ev[ui.ev] = s.run.ev[ui.ev] || {}; er.p = er.p || [{},{}]; er.p[p] = er.p[p] || {}; er.p[p].reps = Math.max(0,(er.p[p].reps||0) + +v); touch(s); break; }
     case "g": { const g = gRec(s,p,n); const cur0 = s.kind === "PC" ? (g.st || "") : g.st;
       if (cur0 === v) g.st = ""; else g.st = v;
+      if (n === 10 && g.st === "S" && !((g.subs||{}).dep || (g.subs||{}).arr)) g.subs = {...(g.subs||{}), dep:1};   // normally the RNAV1 departure on the first takeoff
       if (s.kind === "PC" && g.st === "U" && !g.rep) s.log[p].push({t:simNow(s), m:`Item ${n} ${IT(n).t} — unsatisfactory recorded`});
       touch(s); break; }
     case "rep": { const g = gRec(s,p,n); if (g.rep === v) g.rep = ""; else { g.rep = "X"; s.log[p].push({t:simNow(s), m:`Item ${n} ${IT(n).t} — first attempt unsatisfactory; train, then repeat (X)`}); } touch(s); break; }
