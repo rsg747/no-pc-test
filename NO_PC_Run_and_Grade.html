@@ -42,6 +42,16 @@
 :root[data-theme="hc"] .eyebrow{color:var(--ink)}
 :root[data-theme="hc"] .ttl .eyebrow,:root[data-theme="hc"] .ttl .ver{opacity:1}
 :root[data-theme="hc"] .card,:root[data-theme="hc"] .gb,:root[data-theme="hc"] .sb{border-color:var(--line)}
+:root[data-theme="hc"]{--slate:#2e3a39}
+/* High contrast: no dark-on-grey — every grey panel becomes dark slate with white lettering */
+:root[data-theme="hc"] .tvbar,:root[data-theme="hc"] .ios,:root[data-theme="hc"] .ofp,:root[data-theme="hc"] .qa .a,
+:root[data-theme="hc"] table.rft td.sec,:root[data-theme="hc"] table.rft thead th,:root[data-theme="hc"] .tbl th,
+:root[data-theme="hc"] .chip.mute,:root[data-theme="hc"] .req{background:var(--slate);color:#ffffff;border-color:var(--slate)}
+:root[data-theme="hc"] .tvbar *,:root[data-theme="hc"] .ios .eyebrow,:root[data-theme="hc"] .ios li,:root[data-theme="hc"] .ios p,:root[data-theme="hc"] .ios .why,
+:root[data-theme="hc"] .ofp .eyebrow,:root[data-theme="hc"] .ofp .why,:root[data-theme="hc"] .ofp .muted,:root[data-theme="hc"] .qa .a small{color:#ffffff}
+:root[data-theme="hc"] .tvbar .btn,:root[data-theme="hc"] .ios .btn,:root[data-theme="hc"] .ios .showref,:root[data-theme="hc"] .ofp .btn{background:#ffffff;color:#000000;border-color:#ffffff}
+:root[data-theme="hc"] .tvbar .btn.primary{background:#de7419;color:#ffffff;border-color:#de7419}
+:root[data-theme="hc"] input.note{background:#ffffff}
 :root[data-size="lg"] body{zoom:1.15}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body)}
@@ -523,8 +533,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.6";
+const APP_VERSION = "2026.11.06.7";
 const REVISIONS = [
+ {v:"2026.11.06.7", d:"6 Nov 2026", n:["High contrast: grey panels (Print setup bar, Script / IOS boxes, flight data, oral answers, grade-sheet section rows and headers) now use white lettering on dark slate instead of dark text on grey."]},
  {v:"2026.11.06.6", d:"6 Nov 2026", n:["Print setup material and Print grade sheet now open inside the app with ✕ Close, 🖨 Print / Share and Save PDF. On the iPad, Print / Share opens the share sheet — tap Print (or AirDrop / Files / Mail)."]},
  {v:"2026.11.06.5", d:"6 Nov 2026", n:["Colours: new High contrast display (default) — black text on white, darker greys and status colours, heavier type. ◐ button at the top cycles High contrast → Standard → Dark; A+ makes all text larger. Your choice is remembered on this device.","Item 1 (Equipment / Oral examination / Briefing) is now graded at the bottom of the Brief page, after the briefing, oral and walk-around. Same entry as item 1 on the grade sheet and printed form."]},
  {v:"2026.11.06.4", d:"6 Nov 2026", n:["Version number, ↻ Check for updates and this revision history at the top.","The app checks for a newer version when it opens and when you come back to it, and shows an Update button."]},
