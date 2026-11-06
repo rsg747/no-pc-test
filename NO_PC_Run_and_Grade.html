@@ -542,8 +542,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.15";
+const APP_VERSION = "2026.11.06.16";
 const REVISIONS = [
+ {v:"2026.11.06.16", d:"6 Nov 2026", n:["“No PCWU linked” is only a reminder (it never blocks submitting) and now disappears once CAT II/III and the Non-App F items are graded on the PC."]},
  {v:"2026.11.06.15", d:"6 Nov 2026", n:["PCWU: PRM (32) and PAR/ASR (33) fill “/” automatically — not required; record C / I only if conducted. (PC already treated them as not required, and Seat Specific (CA) as not applicable to an FO.)"]},
  {v:"2026.11.06.14", d:"6 Nov 2026", n:["⚡ Quick grade (Grade sheet, PC): for experienced SCPs — pick RNAV dep/arr, ILS manual/autoland, the two non-precision types and any waived ★ items, then one tap marks every open block S (Non-App F C), checks the documents, sets TO/LDG 3/3 and Result Satisfactory. Never overwrites grades already entered; Undo is available."]},
  {v:"2026.11.06.13", d:"6 Nov 2026", n:["Stick diagram back to its compact height: stacked names in at most four rows, each name drawn over any line behind it so it stays readable."]},
@@ -812,6 +813,8 @@ function pcwuCell(s,p,n){ // returns {shaded, val, auto}
 }
 function pcwuAllowed(s,p,n){ const it = IT(n); if (it.naf) return ["C","I","/"]; return ["S","I","/"]; }
 
+/* CAT II/III or Non-App F still open on the PC (only matters when no PCWU is linked) */
+function pcwuItemsOpen(s,p){ return ITEMS.some(it => (it.cred || it.naf) && !req(s,p,it.n).na && !eff(s,p,it.n)); }
 /* problems that block submission */
 function problems(s,p){
   if (isSSI(s,p)) return [];
@@ -826,7 +829,7 @@ function problems(s,p){
     const res = s.debrief.p[p].result;
     if (!res) add(0,"Result not selected");
     const inc = res === "INC";
-    if (!s.setup.link[p] && ["REC","RQF","RQ12"].includes(pcat(s,p))) add(0,"No PCWU linked — CAT II/III and Non-App F items will all be required on the PC", true);
+    if (!s.setup.link[p] && ["REC","RQF","RQ12"].includes(pcat(s,p)) && pcwuItemsOpen(s,p)) add(0,"Reminder (doesn’t block): no PCWU linked — CAT II/III and Non-App F are graded on the PC", true);
     let anyU = false;
     ITEMS.forEach(it => {
       const n = it.n, r = req(s,p,n), v = eff(s,p,n), g = (s.g[p]||{})[n] || {};
@@ -1361,7 +1364,7 @@ function renderSheet(s){
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC 13 APR 26</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2></div><button class="btn primary" data-act="printform">Print grade sheet</button></div>
    <div class="pilottabs" style="margin-top:10px">${GP(s).map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
    ${isPC ? quickPanel(s,p) : ""}
-   ${isPC && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) ? `<div class="banner warn">No PCWU linked for this pilot — CAT II/III and every Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
+   ${isPC && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) && pcwuItemsOpen(s,p) ? `<div class="banner warn">No PCWU linked for this pilot — CAT II/III and every Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
    ${seatRestricted(s,p) ? `<div class="banner bad">Unsatisfactory item recorded — seat restriction applies for the remainder of the session.</div>` : ""}
    <div class="formhdr">
     <div><div class="k">Name of airman · Employee no.</div><div class="v">${esc(P.name||"—")} · ${esc(P.emp||"—")}</div></div>
