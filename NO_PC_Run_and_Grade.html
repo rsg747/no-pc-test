@@ -537,8 +537,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.8";
+const APP_VERSION = "2026.11.06.9";
 const REVISIONS = [
+ {v:"2026.11.06.9", d:"6 Nov 2026", n:["Waivers lock for a pilot as soon as any item is repeated (X) or graded U — judgment standard. W is removed from every ★ item, the 🔒 reason names the item, and any W already entered must be flown and graded before submitting. Removing the X restores waivers."]},
  {v:"2026.11.06.8", d:"6 Nov 2026", n:["Setup: the Date box no longer runs over the Simulator box on the iPad.","Swap crewmembers is now only on the Run tab, next to Run 1 / Run 2 (removed from Setup)."]},
  {v:"2026.11.06.7", d:"6 Nov 2026", n:["High contrast: grey panels (Print setup bar, Script / IOS boxes, flight data, oral answers, grade-sheet section rows and headers) now use white lettering on dark slate instead of dark text on grey."]},
  {v:"2026.11.06.6", d:"6 Nov 2026", n:["Print setup material and Print grade sheet now open inside the app with ✕ Close, 🖨 Print / Share and Save PDF. On the iPad, Print / Share opens the share sheet — tap Print (or AirDrop / Files / Mail)."]},
@@ -737,6 +738,8 @@ function waiverLock(s,p){
   if (c.noW) return `${c.noW} — waivers not permitted`;
   if (s.setup.failedQual[p]) return "Following failure of a qualification event — waivers not permitted";
   if (s.setup.lapsed[p]) return "Recurrent PC interval expired (lapsed) — waivers not permitted";
+  if (s.kind === "PC") { const g = s.g[p] || {}, rep = Object.keys(g).filter(n => g[n] && (g[n].rep || g[n].st === "U")).map(Number).sort((a,b)=>a-b);
+    if (rep.length) return `Item${rep.length>1?"s":""} ${rep.join(", ")} repeated or unsatisfactory — judgment standard: no items may be waived`; }
   return "";
 }
 function stallNeed(code){ return code === "R" ? ["to","ldg","clean"] : ["to"]; }
