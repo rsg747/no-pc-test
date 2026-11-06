@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 /* Layout: IOS clipboard — sticky teal N&O header with PCWU / PC event chip, step tabs, then Brief · Run (stick diagram + event card) · Grade sheet (RFT form replica) · Debrief & submit. */
 :root{
@@ -16,7 +16,7 @@
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
+  :root:not([data-theme="light"]):not([data-theme="hc"]){
     --bg:#0c1415; --panel:#131f20; --panel2:#182728; --ink:#e2ebea; --muted:#93a4a1; --line:#273839; --shade:#2b3a3b;
     --brand:#0b3b3f; --brand2:#11555a; --signal:#f08f3a; --signal-ink:#1a1206; --pcwu:#3fa3a9; --pc:#f08f3a;
     --ok:#5fcf8f; --okbg:#143223; --warn:#f0c45a; --warnbg:#382c10; --bad:#ff8a80; --badbg:#3a1a18;
@@ -29,6 +29,20 @@
   --ok:#5fcf8f; --okbg:#143223; --warn:#f0c45a; --warnbg:#382c10; --bad:#ff8a80; --badbg:#3a1a18;
   --info:#9cbbe6; --infobg:#18263a; --mute:#9aa6a4; --mutebg:#1e2a2b; --focus:#7aa7ff; color-scheme:dark;
 }
+/* High contrast (default): near-black text on white, darker greys and status colours, heavier body weight */
+:root[data-theme="hc"]{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#f1f3f3; --ink:#000000; --muted:#232c2b; --line:#6f7d7b; --shade:#b9c2c1;
+  --brand:#053438; --brand2:#0a5257; --signal:#c45f0a; --signal-ink:#ffffff; --pcwu:#0a5257; --pc:#9a4508;
+  --ok:#0b5a2f; --okbg:#d6efe0; --warn:#6b3f00; --warnbg:#fbe6b8; --bad:#8e140c; --badbg:#f9d9d5;
+  --info:#173f6d; --infobg:#d9e6f6; --mute:#2f3837; --mutebg:#e1e6e5; --focus:#1550c0; color-scheme:light;
+}
+:root[data-theme="hc"] body{font-weight:500}
+:root[data-theme="hc"] .why,:root[data-theme="hc"] .small{font-size:15px}
+:root[data-theme="hc"] .chip{font-size:13px}
+:root[data-theme="hc"] .eyebrow{color:var(--ink)}
+:root[data-theme="hc"] .ttl .eyebrow,:root[data-theme="hc"] .ttl .ver{opacity:1}
+:root[data-theme="hc"] .card,:root[data-theme="hc"] .gb,:root[data-theme="hc"] .sb{border-color:var(--line)}
+:root[data-size="lg"] body{zoom:1.15}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--brand)}
@@ -60,6 +74,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background
 .pill.warn{background:var(--warnbg);color:var(--warn)}
 .pill.demo{background:var(--signal);color:var(--signal-ink);font-weight:700}
 .ghost{background:transparent;border:1px solid rgba(255,255,255,.4);color:var(--on-brand);border-radius:6px;width:38px;height:38px;cursor:pointer;font-size:18px}
+.ghost.dispbtn{width:auto;padding:0 10px;font-size:14px;font-weight:700;white-space:nowrap}
 nav.steps{display:flex;gap:4px;overflow-x:auto}
 nav.steps button{background:none;border:0;color:var(--on-brand);opacity:.72;padding:10px 14px 9px;font-family:var(--f-display);font-size:18px;font-weight:600;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
 nav.steps button.on{opacity:1;border-bottom-color:var(--signal)}
@@ -498,8 +513,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.4";
+const APP_VERSION = "2026.11.06.5";
 const REVISIONS = [
+ {v:"2026.11.06.5", d:"6 Nov 2026", n:["Colours: new High contrast display (default) — black text on white, darker greys and status colours, heavier type. ◐ button at the top cycles High contrast → Standard → Dark; A+ makes all text larger. Your choice is remembered on this device.","Item 1 (Equipment / Oral examination / Briefing) is now graded at the bottom of the Brief page, after the briefing, oral and walk-around. Same entry as item 1 on the grade sheet and printed form."]},
  {v:"2026.11.06.4", d:"6 Nov 2026", n:["Version number, ↻ Check for updates and this revision history at the top.","The app checks for a newer version when it opens and when you come back to it, and shows an Update button."]},
  {v:"2026.11.06.3", d:"6 Nov 2026", n:["⇅ Swap crewmembers (Setup → Crew and the Run tab): trades who flies Run 1 and Run 2. Grades, documents, PCWU link, notes and run time stay with each pilot.","iPad: app starts below the status bar; solid bar behind the clock when opened from the Home Screen (same fix as the AQP app)."]},
  {v:"2026.11.06.2", d:"6 Nov 2026", n:["Item 27 Nonstandard Flap required only on a type rating; may be given on a PC.","Item 10 RNAV1: one departure or arrival always required; grading S defaults to Departure (first takeoff)."]},
@@ -932,7 +948,8 @@ function renderHeader(){
     <span class="grow"></span>
     ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(CAT(s.setup.cat).label)} · ${esc(s.setup.date)}</span></div>` : ""}
     <span class="pill" id="storeState"></span>
-    <button class="ghost" data-act="theme" aria-label="Toggle light or dark">◐</button></div>`;
+    <button class="ghost dispbtn" data-act="theme" aria-label="Change colours" title="Colours: high contrast → standard → dark">◐ ${({hc:"High contrast",light:"Standard",dark:"Dark"})[curTheme()]}</button>
+    <button class="ghost dispbtn" data-act="tsize" aria-label="Text size" title="Larger text">${document.documentElement.dataset.size==="lg" ? "A−" : "A+"}</button></div>`;
   const nb = s ? GP(s).reduce((t,p) => t + blocking(s,p).length, 0) : 0;
   $("nav").innerHTML = VIEWS(s).map(([k,l]) => `<button class="${ui.view===k?"on":""}" data-act="view" data-v="${k}" ${!s && k!=="home" ? "disabled" : ""}>${l}${k==="debrief" && s && s.kind==="PC" && nb ? `<b>${nb}</b>` : ""}</button>`).join("");
   renderStatus();
@@ -1079,7 +1096,7 @@ function oralCard(s){
      return `<div class="qa"><div><span class="eyebrow">${esc(q.topic)}</span><span class="q">${esc(q.q)}</span></div>
       <div class="row"><button class="tv" data-act="present" data-v="oral${bank.bank}" data-i="${i}" data-list="${qs.map(x=>x.i).join(",")}" title="Show this question on the TV" aria-label="Show on TV">📺</button>${GP(s).map(p => { const v = (s.brief.oral[p]||{})[k]; return `<span class="mk" title="${esc(pname(s,p))}"><b class="small muted" style="align-self:center">${seatLab(p)}</b><button class="${v==="c"?"on ok":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="c" aria-label="${esc(pname(s,p))} correct">✓</button><button class="${v==="x"?"on bad":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="x" aria-label="${esc(pname(s,p))} incorrect">✗</button></span>`; }).join("")}</div>
       <details class="a" data-open="q${k}" ${s.brief.open["q"+k]?"open":""}><summary class="small">Answer</summary>${esc(q.a)}${q.ref?`<small>${esc(q.ref)}</small>`:""}</details></div>`; }).join("")}</div></div>
-   ${itemCard(s, 1, "Grade item 1 — Equipment / Oral examination / Briefing", "Based on the oral above and the pilot’s part in the briefing. This is the same entry as item 1 on the grade sheet.")}`;
+`;
 }
 function itemCard(s, n, title, note){
   return `<div class="card" style="margin-top:12px"><h4>${esc(title)}</h4><p class="why" style="margin:0 0 8px">${esc(note)}</p><div class="cols">${GP(s).map(p => `<div><b class="small">${esc(pname(s,p))}</b>${gradeWidget(s,p,n)}</div>`).join("")}</div></div>`;
@@ -1102,7 +1119,7 @@ function renderBrief(s){
    ${isPC ? docsCard(s) : ""}
    <h3>Briefing items</h3><div class="bgrid">${checklist(s, isPC ? BRIEF_PC : BRIEF_PCWU, isPC ? "c" : "w")}</div>
    <h3>References</h3>${flightData()}${refs()}
-   ${isPC ? oralCard(s) + walkCard(s) : docsCardPCWU(s)}
+   ${isPC ? oralCard(s) + walkCard(s) + `<h3>Item 1 — Equipment / Oral examination / Briefing</h3>` + itemCard(s, 1, "Grade item 1", "Grade after the briefing, the oral and the walk-around. This is item 1 on the grade sheet — the same entry, so it shows there (and on the printed form) as soon as you grade it here.") : docsCardPCWU(s)}
    <h3>Brief notes</h3><textarea class="in" id="f_bnotes" data-k="brief/notes" rows="3" placeholder="What was covered, items to watch">${esc(s.brief.notes)}</textarea>
    <div class="row end"><button class="btn primary" data-act="view" data-v="run">Go to the sim →</button></div>`;
 }
@@ -1546,7 +1563,9 @@ function simNow(s){ const r = curRun(s); return `Run ${r+1} ${fmtDur(runEl(s,r))
 function pauseRuns(s){ (s.run.t||[]).forEach(t => { if (t.startedAt) toggleTimer(t); }); }
 function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2800); }
 function applyTheme(t){ if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
-try { applyTheme(localStorage.getItem("NO_PC_THEME")); } catch(e){}
+const curTheme = () => document.documentElement.dataset.theme || "hc";
+{ let t = null, z = null; try { t = localStorage.getItem("NO_PC_THEME2"); z = localStorage.getItem("NO_PC_SIZE"); } catch(e){}
+  applyTheme(t || "hc"); if (z === "lg") document.documentElement.dataset.size = "lg"; }
 function gRec(s,p,n){ s.g[p] = s.g[p] || {}; return s.g[p][n] = s.g[p][n] || {}; }
 
 document.addEventListener("input", ev => {
@@ -1570,8 +1589,10 @@ document.addEventListener("click", ev => {
   const a = b.dataset.act, v = b.dataset.v, p = b.dataset.p != null ? +b.dataset.p : null, n = b.dataset.n != null ? +b.dataset.n : null, s = cur();
   if (a !== "del") ui.del = null;
   switch (a) {
-    case "theme": { const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-      const t = dark ? "light" : "dark"; applyTheme(t); try { localStorage.setItem("NO_PC_THEME", t); } catch(e){} return; }
+    case "theme": { const t = ({hc:"light", light:"dark", dark:"hc"})[curTheme()] || "hc"; applyTheme(t); try { localStorage.setItem("NO_PC_THEME2", t); } catch(e){}
+      renderHeader(); toast(({hc:"High contrast",light:"Standard colours",dark:"Dark"})[t]); return; }
+    case "tsize": { const lg = document.documentElement.dataset.size !== "lg"; if (lg) document.documentElement.dataset.size = "lg"; else delete document.documentElement.dataset.size;
+      try { localStorage.setItem("NO_PC_SIZE", lg ? "lg" : ""); } catch(e){} renderHeader(); return; }
     case "view": ui.view = v; ui.sel = null; window.scrollTo({top:0}); render(); return;
     case "start": { const x = newSession(v); sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "sample": { const d = sampleSessions(); demo = d.s; ui.cur = "DEMO"; ui.view = "run"; ui.ev = "P17"; ui.p = 0; window.scrollTo({top:0}); break; }
