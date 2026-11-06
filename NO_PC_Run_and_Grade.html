@@ -242,6 +242,13 @@ ul.probs li.w{border-left-color:var(--warn);background:var(--warnbg)}
 ul.probs li b{font-family:var(--f-mono)}
 .carry{display:flex;flex-wrap:wrap;gap:6px}
 
+/* reference pop-up */
+.refmodal{position:fixed;inset:0;z-index:40;background:rgba(10,20,20,.55);display:flex;align-items:flex-start;justify-content:center;padding:calc(40px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.refbox{background:var(--panel);color:var(--ink);border-radius:12px;max-width:760px;width:100%;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.refbody{font-size:15px} .refbody ul{margin:0;padding-left:20px} .refbody li{margin:4px 0}
+li.chkrow{display:flex;align-items:flex-start;gap:4px}
+li.chkrow .cb{flex:1}
+.showref{flex:none;border:1px solid var(--line);background:var(--infobg);color:var(--info);border-radius:999px;font-size:13px;font-weight:700;padding:3px 10px;margin-top:5px;cursor:pointer;min-height:30px}
 /* presenter (TV) */
 .pres{position:fixed;inset:0;z-index:50;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .pres img{max-width:100vw;max-height:100vh;width:auto;height:auto;object-fit:contain;display:block}
@@ -278,6 +285,7 @@ ul.probs li b{font-family:var(--f-mono)}
 <div class="toast" id="toast" role="status" hidden></div>
 <input type="file" id="importFile" accept=".json,application/json" hidden>
 <div id="pres" class="pres" hidden></div>
+<div id="refModal" class="refmodal" hidden></div>
 <script>
 /* ============================================================
    SOURCES (all transcribed from the attached Atlas documents)
@@ -416,28 +424,51 @@ const BULLETINS = [
 
 /* ---------- Brief checklists ---------- */
 const BRIEF_PCWU = [
- {h:"Preflight (red items are emphasis)", items:["Exterior Safety Inspection","Aircraft Log Inspection — Captain","Preliminary Flight Deck Procedure","CDU Preflight — CA and FO","Flight Deck Procedure — CA / FO","Obtaining ATC departure clearance (CPDLC)","Final Flight Deck Procedure (takeoff briefing)","Additional: exterior, security (FO), upper deck / cockpit (FO), fuel verification, final document (FO)"]},
+ {h:"Preflight (red items are emphasis)", items:["Exterior Safety Inspection","Aircraft Log Inspection — Captain","Preliminary Flight Deck Procedure","CDU Preflight — CA and FO","Flight Deck Procedure — CA / FO","Obtaining ATC departure clearance (CPDLC)||ofp","Final Flight Deck Procedure (takeoff briefing)","Additional: exterior, security (FO), upper deck / cockpit (FO), fuel verification, final document (FO)"]},
  {h:"Engine starts", items:["Autostart — normal and non-normal (hot, hung, no EGT rise → IAI then ENG AUTOSTART checklist)","No N1 / abnormal oil pressure by idle N2 → IAI then Aborted Engine Start","Manual start — normal and non-normal (Supplementary Procedures)","STARTER CUTOUT, START VLV, FIRE ENG TAILPIPE"]},
- {h:"Takeoff", items:["Crosswind with gust — per bulletin (no FAA Gust)","Low visibility takeoff (RVR 500)","RNAV / RNP departure — retrievable by name, OpSpec C063"]},
+ {h:"Takeoff", items:["Crosswind with gust — per bulletin (no FAA Gust)||bul0","Low visibility takeoff (RVR 500)","RNAV / RNP departure — retrievable by name, OpSpec C063"]},
  {h:"Stalls", items:["Turning stall — takeoff configuration (required)","Landing configuration stall (optional)","Clean stall — A/T has no wake-up in FLCH SPD / VNAV SPD (optional)","Re-automate without instructor prompts"]},
  {h:"FMS · TCAS · Non-normals", items:["FMS / LNAV exercises (radials, re-route, PBD, abeam, offset)","TCAS RA — RA pitch region, TA / RA symbology","Non-normal checklist use — consequential EICAS messages","Use of glareshield checklist"]},
  {h:"CAT II / III (AWO)", items:["CAT III ILS to full stop","CAT II ILS one engine inop to missed approach","QRH AWO review, Required Indications and Equipment table","Flown from qualified seat; FO half may do CAT I autoland in lieu of CAT III; CAT II MAP not required for FO","CAT II/III certification requires a Check Pilot to grade"]},
  {h:"Windshear · CFIT · Non-ILS VNAV", items:["Windshear — departure or approach (instructor selects one)","Terrain avoidance","Non-ILS VNAV — terminology and “what if” clearances"]},
- {h:"RTO · Engine failure", items:["RTO — FO as PF, CA as PM, low-speed engine failure (bulletin)","Engine fail V1–V2 — QRC protocol, rudder trim technique","Standards Questions #1 track or heading, #7 bury the nose"]},
+ {h:"RTO · Engine failure", items:["RTO — FO as PF, CA as PM, low-speed engine failure (bulletin)||bul1","Engine fail V1–V2 — QRC protocol, rudder trim technique","Standards Questions #1 track or heading, #7 bury the nose"]},
  {h:"Engine-out approaches · Landings", items:["ILS one engine inop — manually flown, rejected landing","Two engine inop visual (50% loss of thrust) — Standards Question #8","Crosswind landing presentation (Comply) viewed","Landing Energy Management — FDP as a decision tool","Bounced landing recovery"]},
  {h:"Optional · SPOTs", items:["Steep turns","Holding (or SPOT 6)","SPOT 1 — inadvertent TOGA application","SPOT 2 — crosswind landings (crab, de-crab, slippery rollout, bounced)"]},
  {h:"Emphasis items", items:["Leadership and Command Training for PICs","Tail strike avoidance · flaps-up maneuvering","Typical takeoff tail clearance","TOGA switches — inadvertent application","Go-around after touchdown","FMA awareness and re-automation"]}
 ];
 const BRIEF_PC = [
- {h:"Before the brief", items:["FTSP photo submitted for any non-U.S. citizen / national / green card holder (once per curriculum)","Documents checked (each pilot, below)","Briefing conducted from the Standardized PC Briefing (PC Guide 6.7.2)"]},
+ {h:"Before the brief", items:["FTSP photo submitted for any non-U.S. citizen / national / green card holder (once per curriculum)","Documents checked (each pilot, below)||bul2","Briefing conducted from the Standardized PC Briefing (PC Guide 6.7.2)"]},
  {h:"Policy", items:["Regulatory basis — §121.441, Appendix F, AQS N&O","Scenario design — realistic line ops, non-normals carried to an end state","Three parts — oral, walk-around (individually), flight maneuvers","The PC evaluates; it is not a training event"]},
- {h:"Running the event", items:["Sim period 2:15–2:30 per applicant; preflight and taxi credited to both","SCP acts as dispatch, ATC, ground, maintenance","Failures removed after each landing","Sim rules — breaks, illness before any unsat, QRC / ECL / QRH, sterile flight deck, note taking"]},
- {h:"Standards", items:["English language proficiency — ICAO Level 4","Waiver authority and its restrictions","Satisfactory performance standards","Unsatisfactory performance and critical error","Performance tolerances"]},
- {h:"Required maneuvers", items:["Minimum required maneuvers","Training and re-checking — one repeat per item, failure recorded before training","Seat restriction after a failure — no crew seat or seat support","Crosswind with gusts set manually (10–15 kt, no FAA Gust)"]},
- {h:"747 and device", items:["747: engine-inop ILS to missed approach, then loss of second engine on the same side","Device weights, engine variant, panel differences","Nearest exits and motion cutoff switches","Qualification scope — CAT II/III recorded “S” per CAT II/III Policy Guide"]},
+ {h:"Running the event", items:["Sim period 2:15–2:30 per applicant; preflight and taxi credited to both","SCP acts as dispatch, ATC, ground, maintenance","Failures removed after each landing","Sim rules — breaks, illness before any unsat, QRC / ECL / QRH, sterile flight deck, note taking||rules"]},
+ {h:"Standards", items:["English language proficiency — ICAO Level 4||eng","Waiver authority and its restrictions||waiver","Satisfactory performance standards||sat","Unsatisfactory performance and critical error||unsat","Performance tolerances||tol"]},
+ {h:"Required maneuvers", items:["Minimum required maneuvers||min","Training and re-checking — one repeat per item, failure recorded before training||train","Seat restriction after a failure — no crew seat or seat support||seat","Crosswind with gusts set manually (10–15 kt, no FAA Gust)||bul0"]},
+ {h:"747 and device", items:["747: engine-inop ILS to missed approach, then loss of second engine on the same side","Device weights, engine variant, panel differences||ofp","Nearest exits and motion cutoff switches","Qualification scope — CAT II/III recorded “S” per CAT II/III Policy Guide"]},
  {h:"Close", items:["Questions — scope, standards, waivers, seat restriction, CAT II/III recording","Equipment examination (oral) complete","Visual inspection (walk-around) complete, individually"]}
 ];
 const DOCS = [["atp","Airman certificate — ATP, type rating B-747-4"],["lim","No unacceptable limitations (§61.160, SIC only, B-747-4 PIC)"],["eng","English Proficient shown on certificate"],["med","Medical — first class, valid for age"],["fcc","FCC radiotelephone operator permit"],["photo","Government photo ID (passport or driver’s license)"],["crew","Employee crew ID not expired"],["ftsp","FTSP photo submitted, or not applicable"]];
+
+/* ---------- Reference pop-ups for briefing items (Standardized PC Briefing, Oct 2026) ---------- */
+const ul = a => `<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+const REFS = {
+ tol:{h:"Performance tolerances", src:"AQS Appendix E · 8900.1", html:() => `<div class="scroll"><table class="tbl"><tbody>${TOL.map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div><p class="small muted">Momentary deviation outside these values is not, by itself, unsatisfactory.</p>`},
+ wx:{h:"IOS weather setup", src:"PC Guide 6.7.2", html:() => `<div class="scroll"><table class="tbl"><thead><tr><th>Task</th><th>Crosswind</th><th>Visibility / RVR</th><th>Ceiling</th><th>Temp</th></tr></thead><tbody>${WX_SETUP.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`},
+ waiver:{h:"Waiver authority", src:"Standardized PC Briefing · PC Guide 6.7.2", html:() => ul(["Items with waiver authority (★): Rejected takeoff · RNAV1 departure or arrival (one always required) · Holding · Steep turns · Approach to stall (two of three may be waived; one in a 15–30° turn, T/O config, always required).","Not permitted: PIC upgrade PC · requalification PC · following failure of a qualification event · initial PC.","Eligibility: currently qualified, or completed an approved curriculum for the type and position within the preceding six calendar months.","Judgment standard: high performance = liberal use of waivers; minimum acceptable = no items waived.","The Judgement Standard must be used for the Rejected takeoff for an FO or an FO/FO pairing. The RTO is not automatically waived."])},
+ sat:{h:"Satisfactory performance standards", src:"Standardized PC Briefing · FOTM · AQS Subpart N&O", html:() => ul(["Execute tasks within airplane performance capabilities and limitations, including systems and ground-based inoperative components.","Execute normal, non-normal, and emergency procedures appropriate to the airplane.","Pilot the airplane with smoothness and accuracy.","Apply Crew Resource Management (CRM) and aeronautical knowledge.","Show mastery of the airplane within Atlas Qualification Standards (AQS) — with the successful outcome of a task never in doubt.","Maintain good judgment and situational awareness.","Throughout, demonstrate good judgment commensurate with a high level of safety — adherence to procedures, sound analysis where none exists, prudence in course of action."])},
+ unsat:{h:"Unsatisfactory performance & critical error", src:"Standardized PC Briefing · PC Policy", html:() => `<p>A maneuver, procedure, or phase of flight is unsatisfactory when performance fails to meet AQS Subpart N&amp;O — including:</p>${ul(["Repeated or uncorrected deviations from flight path, configuration, or limitations that jeopardize safety.","Failure to adhere to required Atlas procedures (FCOM, QRH).","Inability to correctly identify, prioritize, and execute required normal, abnormal, or emergency procedures.","CRM/TEM behaviors incompatible with safe line operation.","Judgment or decision-making inconsistent with Company standards for safe, practical line operations."])}<p><b>Critical Error Standard:</b> a single critical error that creates unacceptable risk, violates aircraft limitations or mandatory procedures, or clearly fails a required task standard may, by itself, constitute unsatisfactory performance. Isolated minor deviations promptly recognized and corrected need not be graded unsatisfactory. The SCP retains discretion to continue to train to proficiency or end the check due to repeated unsatisfactory performance.</p>`},
+ min:{h:"Minimum required maneuvers", src:"Standardized PC Briefing · PC Policy · AQS Subpart N&O", html:() => `<div class="scroll"><table class="tbl"><tbody>${[["Ground Ops & Preflight","All applicable preflight, engine start, taxi, and pre-takeoff items per AQS Subpart N&O."],["Takeoffs","Normal, instrument, crosswind with gusts, engine failure after V1, and rejected takeoff."],["Instrument Procedures","RNAV1 Departure or Arrival (one required), holding, normal ILS, manual engine-out ILS, at least two non-precision approaches, one complete Missed Approach Procedure (MAP), and a second missed approach — 747: two engines inoperative, same side. Missed approaches may be flown independently or with an instrument approach."],["In-Flight Maneuvers","Steep turns and approach to stalls in all required configurations."],["Landings","At least two actual landings, one to a full stop: normal; ILS to landing; crosswind with gusts; engine(s) inoperative; rejected landing ≈ 50 ft AGL; nonstandard flap landing (if applicable)."],["Normal / Non-Normal / Emergency","Representative systems items and emergency procedures per PC Policy and the AQS Subpart N&O."]].map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div>`},
+ train:{h:"Training & re-checking", src:"Standardized PC Briefing · PC Policy · FOTM", html:() => ul(["Training and checking cannot be conducted simultaneously — suspend the check, conduct training, then resume checking.","The failure must be recorded on the grade sheet or computerized form BEFORE training begins.","Announce clearly when training has started and when checking has continued.","Only ONE repeat is allowed for each item. Repeat must be recorded regardless of whether the PC is subsequently completed satisfactorily.","Complete remaining tasks of that crewmember's evaluation before returning to the failed item, or repeat at the end of a logical sequence.","When training to proficiency is completed within the same session, the overall grade may be recorded as satisfactory. If proficiency cannot be reached in the original session, the check is unsatisfactory and the crewmember enters requalification training.","Under no circumstances may a failed item be deferred into or beyond another crewmember's Proficiency Check."])},
+ seat:{h:"Seat restriction following a failure", src:"Standardized PC Briefing · PC Policy", html:() => `<p>The PC is an individually administered evaluation. Each crewmember's PC is a distinct event, regardless of whether two crewmembers are evaluated in the same simulator session.</p><p><b>Key rule:</b> a crewmember who has not demonstrated satisfactory performance on all required items during their portion of the Proficiency Check may NOT occupy any crew position for the remainder of the simulator session — including seat support during another crewmember's PC.</p><p>That crewmember is considered unqualified. Complete the required failure documentation and notify company personnel per the FOTM.</p>`},
+ eng:{h:"English language proficiency", src:"Standardized PC Briefing · FOTM", html:() => `${ul(["Oral: provide appropriate responses to questions.","FFS: ensure effective communication during the performance of duties.","Pilots must understand and comply with ATC instructions sufficient to ensure effective communication for flights into areas where English is required for ATC.","Evaluated during the PC."])}<p><b>Minimum acceptable language level: ICAO Level 4.</b></p>`},
+ rules:{h:"Simulator rules", src:"Standardized PC Briefing", html:() => ul(["Physiological needs — advise the SCP; breaks will be taken as required.","The PC may be discontinued due to a failure of the training device, and the crewmember or SCP becoming ill – crewmember illness must be communicated prior to any unsatisfactory performance.","Treat the Simulator exactly like the airplane – use the QRC/ECL/QRH and/or Company documents as appropriate.","Unless directed by the SCP to manually fly a specific task or maneuver, crewmembers are encouraged to use automation.","All non-normals must be continued through completion of the associated task or maneuver unless otherwise directed by the SCP.","Sterile flight deck as in the airplane; keep all communications relevant to the simulator flight.","There will be note taking by the SCP. Do not let this distract you, as this is part of the debriefing process."])},
+ ofp:{h:"Flight data — OFP, ATIS, clearance, TLR", src:"KGS 19 DEC 25 setup material", html:() => flightDataBody()},
+ bul0:{h:"Bulletin — "+BULLETINS[0].h, src:"Standards bulletin", html:() => ul(BULLETINS[0].b)},
+ bul1:{h:"Bulletin — "+BULLETINS[1].h, src:"Standards bulletin", html:() => ul(BULLETINS[1].b)},
+ bul2:{h:"Bulletin — "+BULLETINS[2].h, src:"Standards bulletin", html:() => ul(BULLETINS[2].b)}
+};
+function openRef(k){ const r = REFS[k]; if (!r) return; const m = $("refModal");
+  m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html()}</div></div>`;
+  m.hidden = false; }
+function closeRef(){ const m = $("refModal"); m.hidden = true; m.innerHTML = ""; }
 
 /* ---------- Walk-around exam (planted abnormals are the SCP's answer key) ---------- */
 const WALK = [
@@ -929,14 +960,15 @@ function carryChips(s,p){
 function checklist(s, groups, pre){
   return groups.map((g,gi) => { const done = g.items.filter((_,ii) => s.brief.checked[`${pre}${gi}:${ii}`]).length;
     return `<div class="card"><h4>${esc(g.h)} <span class="cnt">${done}/${g.items.length}</span></h4><ul class="chk">${g.items.map((t,ii) => { const k = `${pre}${gi}:${ii}`;
-      return `<li><button class="cb ${s.brief.checked[k]?"on":""}" data-act="bchk" data-v="${k}"><span class="box"></span><span>${esc(t)}</span></button></li>`; }).join("")}</ul></div>`; }).join("");
+      const [txt, rk] = t.split("||");
+      return `<li class="chkrow"><button class="cb ${s.brief.checked[k]?"on":""}" data-act="bchk" data-v="${k}"><span class="box"></span><span>${esc(txt)}</span></button>${rk ? `<button class="showref" data-act="ref" data-v="${rk}" aria-label="Show ${esc(REFS[rk].h)}">Show</button>` : ""}</li>`; }).join("")}</ul></div>`; }).join("");
 }
-function flightData(){
-  return `<details class="ref"><summary>Flight data — OFP, ATIS, clearance, TLR (KGS 19 DEC 25)</summary><div>
-   <div class="ofps"><div class="ofp"><div class="ofp-h">${esc(OFP.route)}</div><dl>${OFP.rows.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
+function flightData(){ return `<details class="ref"><summary>Flight data — OFP, ATIS, clearance, TLR (KGS 19 DEC 25)</summary><div>${flightDataBody()}</div></details>`; }
+function flightDataBody(){
+  return `<div class="ofps"><div class="ofp"><div class="ofp-h">${esc(OFP.route)}</div><dl>${OFP.rows.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
    <div class="ofp"><div class="ofp-h">ATIS & clearance</div><p class="small" style="margin:0">${esc(OFP.wx)}</p><p class="small">${esc(OFP.clr)}</p><pre class="mono">${esc(OFP.eo)}</pre></div></div>
    <h5>TLR — runway 10L / 10R</h5><div class="tlr">${OFP.tlr.map(([h,b])=>`<div><b class="small">${esc(h)}</b><pre>${esc(b)}</pre></div>`).join("")}</div>
-   <h5>PCWU LLWS use only — 28R</h5><div class="tlr">${OFP.llws.map(([h,b])=>`<div><b class="small">${esc(h)}</b><pre>${esc(b)}</pre></div>`).join("")}</div><p class="small muted">${esc(OFP.llwsNote)}</p></div></details>`;
+   <h5>PCWU LLWS use only — 28R</h5><div class="tlr">${OFP.llws.map(([h,b])=>`<div><b class="small">${esc(h)}</b><pre>${esc(b)}</pre></div>`).join("")}</div><p class="small muted">${esc(OFP.llwsNote)}</p>`;
 }
 function refs(){
   return `<details class="ref"><summary>IOS weather setup (PC)</summary><div class="scroll"><table class="tbl"><thead><tr><th>Task</th><th>Crosswind</th><th>Visibility / RVR</th><th>Ceiling</th><th>Temp</th></tr></thead><tbody>${WX_SETUP.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table><p class="small muted">Altimeter 29.92 throughout. ATIS verbalized with proper ATC phraseology.</p></div></details>
@@ -961,13 +993,18 @@ function oralCard(s){
    <div style="margin-top:8px">${qs.map(({q,i}) => { const k = `${bank.bank}:${i}`;
      return `<div class="qa"><div><span class="eyebrow">${esc(q.topic)}</span><span class="q">${esc(q.q)}</span></div>
       <div class="row"><button class="tv" data-act="present" data-v="oral${bank.bank}" data-i="${i}" data-list="${qs.map(x=>x.i).join(",")}" title="Show this question on the TV" aria-label="Show on TV">📺</button>${GP(s).map(p => { const v = (s.brief.oral[p]||{})[k]; return `<span class="mk" title="${esc(pname(s,p))}"><b class="small muted" style="align-self:center">${seatLab(p)}</b><button class="${v==="c"?"on ok":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="c" aria-label="${esc(pname(s,p))} correct">✓</button><button class="${v==="x"?"on bad":""}" data-act="oral" data-p="${p}" data-k="${k}" data-v="x" aria-label="${esc(pname(s,p))} incorrect">✗</button></span>`; }).join("")}</div>
-      <details class="a" data-open="q${k}" ${s.brief.open["q"+k]?"open":""}><summary class="small">Answer</summary>${esc(q.a)}${q.ref?`<small>${esc(q.ref)}</small>`:""}</details></div>`; }).join("")}</div></div>`;
+      <details class="a" data-open="q${k}" ${s.brief.open["q"+k]?"open":""}><summary class="small">Answer</summary>${esc(q.a)}${q.ref?`<small>${esc(q.ref)}</small>`:""}</details></div>`; }).join("")}</div></div>
+   ${itemCard(s, 1, "Grade item 1 — Equipment / Oral examination / Briefing", "Based on the oral above and the pilot’s part in the briefing. This is the same entry as item 1 on the grade sheet.")}`;
+}
+function itemCard(s, n, title, note){
+  return `<div class="card" style="margin-top:12px"><h4>${esc(title)}</h4><p class="why" style="margin:0 0 8px">${esc(note)}</p><div class="cols">${GP(s).map(p => `<div><b class="small">${esc(pname(s,p))}</b>${gradeWidget(s,p,n)}</div>`).join("")}</div></div>`;
 }
 function walkCard(s){
   return `<h3>Visual inspection (walk-around) — done individually</h3>${tvBar("walk","Present the walk-around on the TV",null)}<div class="cols">${GP(s).map(p => { const w = s.brief.walk[p] || {}; const id = WALK_FLAT.filter(x => w[x.k]==="c").length, ms = WALK_FLAT.filter(x => w[x.k]==="x").length;
    return `<div class="card"><h4>${esc(pname(s,p))} <span class="cnt">${id} found · ${ms} missed / ${WALK_FLAT.length}</span></h4>${WALK.map((g,gi) => `<h5>${esc(g.a)}</h5>${g.f.map((f,fi) => { const k = gi+"."+fi, v = w[k];
      return `<div class="row" style="justify-content:space-between;padding:2px 0"><span class="small">${esc(f)}</span><span class="mk"><button class="${v==="c"?"on ok":""}" data-act="walk" data-p="${p}" data-k="${k}" data-v="c">Found</button><button class="${v==="x"?"on bad":""}" data-act="walk" data-p="${p}" data-k="${k}" data-v="x">Missed</button></span></div>`; }).join("")}`).join("")}</div>`; }).join("")}</div>
-   <p class="small muted">Answer key from the 747-400F Virtual Walk-Around Exam: the pilot describes what they look for at each station; these are the planted abnormal conditions.</p>`;
+   <p class="small muted">Answer key from the 747-400F Virtual Walk-Around Exam: the pilot describes what they look for at each station; these are the planted abnormal conditions.</p>
+   ${itemCard(s, 2, "Grade item 2 — Preflight inspection", "Walk-around above plus the flight deck preflight in the sim. Same entry as item 2 on the grade sheet and the Preflight event.")}`;
 }
 function renderBrief(s){
   const isPC = s.kind === "PC", target = briefTarget(s);
@@ -976,6 +1013,7 @@ function renderBrief(s){
     <p class="lede">${isPC ? "Brief from the Atlas Standardized PC Briefing, then the oral and the walk-around for each pilot. Results here feed items 1 and 2 on the grade sheet." : "Review the profile and briefing script for each maneuver, brief directly from the manuals, then the emphasis items. 4.5 hr FFS: 4.0 maneuvers + 0.5 SPOTs. 1 hr debrief."}</p></div>
    <div class="card clock"><span class="eyebrow">Brief timer · ${target/60|0}:${String(target%60).padStart(2,"0")}</span><div class="big" id="briefClock">${fmtDur(el)}</div><div class="bar"><span id="briefBar" style="width:${Math.min(100, el/(target*600))}%"></span></div>
    <button class="btn ${s.brief.startedAt?"":"primary"}" data-act="btimer">${s.brief.startedAt?"Pause":"Start brief"}</button></div></div>
+   <div class="tvbar"><span>🖨</span><span class="grow">Sim setup material — OFP, TLR cards, ATIS and clearance (KGS 19 DEC 25 PDF).</span><button class="btn small primary" data-act="printsetup">Print setup material</button></div>
    ${isPC ? docsCard(s) : ""}
    <h3>Briefing items</h3><div class="bgrid">${checklist(s, isPC ? BRIEF_PC : BRIEF_PCWU, isPC ? "c" : "w")}</div>
    <h3>References</h3>${flightData()}${refs()}
@@ -1209,6 +1247,15 @@ function exportHTML(s){
 <style>body{font:12px/1.35 Arial,sans-serif;color:#111;margin:18px}section{page-break-after:always;margin-bottom:28px}.hdr{display:flex;justify-content:space-between;border-bottom:3px solid #e07a1f;padding-bottom:6px;margin-bottom:8px}.tag{background:#0d4a4f;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:3px 5px;vertical-align:top}table.h td{width:25%}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.two td:nth-child(n+3),.two th{width:46px;text-align:center;font-weight:700}.sec{background:#cfcfcf;text-align:center;font-weight:700}.sh{background:#cfcfcf}.sm{font-size:11px;margin:2px 0}small{color:#555}</style></head><body>
 ${GP(s).map(sheet).join("")}${[0,1].filter(p=>isSSI(s,p)).map(p=>`<p><small>${esc(pname(s,p))}: seat support, not graded.</small></p>`).join("")}<p><small>Session ${esc(s.id)} · ${esc(s.status)} · Sources: ${Object.values(SRC).map(esc).join(" · ")} · generated ${new Date().toLocaleString()}</small></p></body></html>`;
 }
+const SETUP_PDF = "setup/747_PCWU_PC_Setup_Material_KGS_19DEC25.pdf";
+async function printSetup(){
+  if (!window.claude || !window.claude.use) {   // GitHub / Safari: open the PDF in a new tab, print from there
+    const a = document.createElement("a"); a.href = SETUP_PDF; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); return; }
+  if (!store.dl) { toast("Printing isn't available in this view. Open the GitHub copy to print."); return; }
+  try { const r = await fetch(SETUP_PDF); if (!r.ok) throw new Error("HTTP " + r.status);
+    await store.dl.save({filename:"747_PCWU_PC_Setup_Material_KGS_19DEC25.pdf", data: await r.blob()}); toast("Saved — open the PDF and print it"); }
+  catch(e){ if (!e || e.code !== "declined") toast("Couldn't get the setup PDF: " + (e.message || e.code)); }
+}
 async function doExport(kind){
   const s = cur();
   const base = `NO_${s.kind}_${s.setup.date}_${pname(s,0).replace(/\W+/g,"")}_${pname(s,1).replace(/\W+/g,"")}`;
@@ -1286,6 +1333,8 @@ $("pres").addEventListener("click", ev => { const t = ev.target.closest("[data-p
 let swX = null;
 $("pres").addEventListener("touchstart", ev => { swX = ev.touches[0].clientX; }, {passive:true});
 $("pres").addEventListener("touchend", ev => { if (swX == null) return; const dx = ev.changedTouches[0].clientX - swX; swX = null; if (Math.abs(dx) > 60) presAct(dx < 0 ? "next" : "prev"); }, {passive:true});
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("refModal").hidden) closeRef(); });
+$("refModal").addEventListener("click", ev => { if (ev.target.id === "refModal") closeRef(); });
 document.addEventListener("keydown", ev => { if (!pres.on) return;
   if (["ArrowRight","PageDown"," "].includes(ev.key)) { ev.preventDefault(); presAct("next"); }
   else if (["ArrowLeft","PageUp"].includes(ev.key)) { ev.preventDefault(); presAct("prev"); }
@@ -1387,6 +1436,9 @@ document.addEventListener("click", ev => {
       pauseRuns(s); touch(s); toast(store.db ? `${s.kind} submitted to the data store` : `${s.kind} submitted — saved on this device`); break;
     case "reopen": s.status = "open"; touch(s); break;
     case "exp": doExport(v); return;
+    case "printsetup": printSetup(); return;
+    case "ref": openRef(v); return;
+    case "refclose": closeRef(); return;
     case "present": openPresent(v, b.dataset.i, (b.dataset.list||"").split(",").filter(x=>x!=="").map(Number)); return;
     default: return;
   }
