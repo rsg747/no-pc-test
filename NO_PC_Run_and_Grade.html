@@ -83,6 +83,7 @@ textarea{resize:vertical}
 .seg button{border:0;background:none;padding:9px 14px;cursor:pointer;font-weight:600;min-height:42px}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.on{background:var(--brand2);color:var(--on-brand)}
+.seg small{display:block;font-weight:400;font-size:12px;opacity:.85}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:20;max-width:calc(100% - 32px)}
 .mono{font-family:var(--f-mono);font-size:13px}
 pre.mono{white-space:pre-wrap;margin:6px 0 0}
@@ -536,29 +537,47 @@ function getPath(o,p){ return p.split("/").reduce((t,k) => t == null ? undefined
 function setPath(o,p,v){ const k = p.split("/"); let t = o; for (let i=0;i<k.length-1;i++){ if (t[k[i]] == null || typeof t[k[i]] !== "object") t[k[i]] = {}; t = t[k[i]]; } t[k[k.length-1]] = v; }
 function fmtDur(ms){ const s = Math.max(0, Math.floor(ms/1000)); return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`; }
 function fmtHM(ms){ const m = Math.round(Math.max(0,ms)/60000); return `${Math.floor(m/60)}+${String(m%60).padStart(2,"0")}`; }
-const pname = (s,p) => (s.setup.pilots[p].name || (p===0 ? "Left seat" : "Right seat")).trim() + (s.setup.pilots[p].ssi ? " (SSI)" : "");
+const pname = (s,p) => (s.setup.pilots[p].name || (p===0 ? "Pilot 1" : "Pilot 2")).trim() + (s.setup.pilots[p].ssi ? " (SSI)" : "");
 const isSSI = (s,p) => !!s.setup.pilots[p].ssi;
 const GP = s => [0,1].filter(p => !isSSI(s,p));
 /* device time per PC Guide 6.7.2 schedule: PC crew 4:30; trainee plus seat support 3:00; PC concurrent with type rating 3:00 (brief 1:00 / debrief 1:00) */
-function simTarget(s){
-  if (s.kind === "PCWU") return {m:270, why:"PCWU 4:30 (4:00 maneuvers + 0:30 SPOTs)"};
-  if (s.setup.pilots.some(x => x.ssi)) return {m:180, why:"PC 3:00 — trainee plus seat support"};
-  if (s.setup.typeRating) return {m:180, why:"PC 3:00 — concurrent with type rating"};
-  return {m:270, why:"PC 4:30 — two applicants"};
+function simTarget(s){   // run = one applicant's period; m = whole device period
+  if (s.kind === "PCWU") return GP(s).length === 1 ? {run:270, m:270, why:"PCWU 4:30"} : {run:135, m:270, why:"PCWU 4:30 · 2:15 per run"};
+  if (s.setup.pilots.some(x => x.ssi)) return {run:180, m:180, why:"PC 3:00 — trainee plus seat support"};
+  if (s.setup.typeRating) return {run:180, m:180, why:"PC 3:00 — concurrent with type rating"};
+  return {run:135, m:270, why:"PC 4:30 — two applicants, 2:15 per run"};
 }
+const hm = m => `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
+/* Special Tracking is per pilot: an ST pilot uses the PC Guide ST column; the other pilot keeps the session's PC type */
+const pcat = (s,p) => (s.setup.st && s.setup.st[p]) ? "ST" : (s.setup.cat === "ST" ? "REC" : s.setup.cat);
+/* Two runs: each applicant flies his own run as PF. Applicant sits in his duty seat (CA left, FO right).
+   CA/FO: no seat swap. FO/FO or CA/CA: the other pilot fills the opposite seat, then the crew swaps seats before run 2. */
+function seatFor(s,a){ const o = 1-a, da = s.setup.pilots[a].duty, dob = s.setup.pilots[o].duty;
+  if (isSSI(s,o) || da !== dob) return da === "CA" ? "L" : "R";
+  return da === "FO" ? "R" : "L"; }
+function runs(s){
+  const g = GP(s); let order = (s.setup.order || [0,1]).filter(p => g.includes(p));
+  if (!order.length) order = g;
+  return order.map(a => ({a, o:1-a, seat:seatFor(s,a)}));
+}
+const curRun = s => Math.max(0, Math.min(s.run.cur || 0, runs(s).length - 1));
+const swapNeeded = s => { const R = runs(s); return R.length === 2 && R[0].seat === R[1].seat; };
+const seatName = x => x === "L" ? "left seat" : "right seat";
+function runEl(s,r){ const t = ((s.run.t)||[])[r] || {}; return (t.elapsed||0) + (t.startedAt ? Date.now()-t.startedAt : 0); }
+const totalEl = s => runEl(s,0) + runEl(s,1);
 const briefTarget = s => s.kind === "PCWU" ? 120 : (s.setup.typeRating ? 60 : 90);   // graded pilots — a seat-support (SSI) seat is never graded
-const seatLab = p => p===0 ? "L" : "R";
+const seatLab = p => String(p+1);
 const EVENTS = s => s.kind === "PCWU" ? PCWU_EVENTS : PC_EVENTS;
 const PATH = s => s.kind === "PCWU" ? PCWU_PATH : PC_PATH;
 
 function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",ssi:false}; }
 function newSession(kind){
   return {schema:SCHEMA, program:"N&O", kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
-    setup:{date:today(), device:"", cat:"REC", failedQual:[false,false], lapsed:[false,false], typeRating:false,
+    setup:{date:today(), device:"", cat:"REC", st:[false,false], order:[0,1], failedQual:[false,false], lapsed:[false,false], typeRating:false,
       conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null]},
     docs:[{},{}],
     brief:{checked:{}, notes:"", startedAt:null, elapsed:0, bank:1, oral:[{},{}], walk:[{},{}], open:{}},
-    run:{startedAt:null, elapsed:0, ev:{}},
+    run:{t:[{elapsed:0,startedAt:null},{elapsed:0,startedAt:null}], cur:0, ev:{}},
     g:[{},{}], counts:[{to:"",ldg:""},{to:"",ldg:""}], log:[[],[]],
     debrief:{p:[{result:"",remarks:"",study:""},{result:"",remarks:"",study:""}], crew:"", signedBy:"", signedAt:"", faa:""}};
 }
@@ -567,12 +586,14 @@ function migrate(s){ // fill fields added after a record was created
   for (const k of Object.keys(n)) if (s[k] === undefined) s[k] = n[k];
   for (const k of Object.keys(n.setup)) if (s.setup[k] === undefined) s.setup[k] = n.setup[k];
   for (const k of Object.keys(n.brief)) if (s.brief[k] === undefined) s.brief[k] = n.brief[k];
+  if (!s.run.t) { s.run.t = [{elapsed:s.run.elapsed||0, startedAt:s.run.startedAt||null},{elapsed:0,startedAt:null}]; s.run.cur = 0; delete s.run.elapsed; delete s.run.startedAt; }
+  if (s.setup.cat === "ST") { s.setup.cat = "REC"; s.setup.st = [true,true]; }
   return s;
 }
 
 /* ============================================================ grading engine */
 function waiverLock(s,p){
-  const c = CAT(s.setup.cat);
+  const c = CAT(pcat(s,p));
   if (c.noW) return `${c.noW} — waivers not permitted`;
   if (s.setup.failedQual[p]) return "Following failure of a qualification event — waivers not permitted";
   if (s.setup.lapsed[p]) return "Recurrent PC interval expired (lapsed) — waivers not permitted";
@@ -585,7 +606,7 @@ function pcwuOf(s,p){ return s.kind === "PC" ? s.setup.link[p] : null; }
 function req(s,p,n){
   const it = IT(n), duty = s.setup.pilots[p].duty;
   if (n === 31 && duty !== "CA") return {code:"/", na:true, why:"Captain seat-specific item; not applicable to an FO"};
-  let code = baseCode(n, s.setup.cat), lock = "", why = CODE_LABEL[code];
+  let code = baseCode(n, pcat(s,p)), lock = "", why = CODE_LABEL[code];
   const L = waiverLock(s,p);
   if (L && (code === "W" || code === "T")) { lock = L; code = "R"; why = L; }
   const link = pcwuOf(s,p);
@@ -647,7 +668,7 @@ function problems(s,p){
     const res = s.debrief.p[p].result;
     if (!res) add(0,"Result not selected");
     const inc = res === "INC";
-    if (!s.setup.link[p] && ["REC","RQF","RQ12"].includes(s.setup.cat)) add(0,"No PCWU linked — creditable and CAT II/III / Non-App F items will all be required on the PC", true);
+    if (!s.setup.link[p] && ["REC","RQF","RQ12"].includes(pcat(s,p))) add(0,"No PCWU linked — creditable and CAT II/III / Non-App F items will all be required on the PC", true);
     let anyU = false;
     ITEMS.forEach(it => {
       const n = it.n, r = req(s,p,n), v = eff(s,p,n), g = (s.g[p]||{})[n] || {};
@@ -764,7 +785,7 @@ function snapPCWU(w,i){
   const items = {};
   ITEMS.forEach(it => { if (it.cred || it.naf) { const c = pcwuCell(w,i,it.n); const g = (w.g[i]||{})[it.n] || {}; items[it.n] = {st:c.val, subs:g.subs||{}}; } });
   return {sid:w.id, date:w.setup.date, device:w.setup.device, conductor:w.setup.conductor.name, condEmp:w.setup.conductor.emp, role:w.setup.conductor.role,
-    pilot:w.setup.pilots[i].name, emp:w.setup.pilots[i].emp, idx:i, status:w.status, time:fmtHM(w.run.elapsed + (w.run.startedAt ? Date.now()-w.run.startedAt : 0)), items};
+    pilot:w.setup.pilots[i].name, emp:w.setup.pilots[i].emp, idx:i, status:w.status, time:fmtHM(totalEl(w)), items};
 }
 
 /* ============================================================ sample data (marked as sample) */
@@ -777,7 +798,7 @@ function sampleSessions(){
   w.g[0][21].subs = {to:1}; w.g[0][14].subs = {oei:1}; w.g[0][15].subs = {nrm:1};
   [[9,"S"],[11,"S"],[20,"S"],[21,"S"],[27,"C"],[29,"C"],[30,"C"]].forEach(([n,v]) => { w.g[1][n] = {st:v}; });
   w.g[1][21].subs = {to:1,ldg:1}; w.g[1][24] = {st:"", note:"Sample: late go-around decision; train again on the PC."};
-  w.status = "submitted"; w.run.elapsed = 4*3600*1000;
+  w.status = "submitted"; w.run.t[0].elapsed = 2.25*3600*1000; w.run.t[1].elapsed = 2.25*3600*1000;
   const s = newSession("PC"); s.id = "DEMO"; s.demo = true;
   Object.assign(s.setup, {date:"2026-10-22", device:"FFS 747-400 #2 (FAA 584)", cat:"REC"});
   s.setup.conductor = {name:"Sample SCP", emp:"00000", role:"SCP"};
@@ -789,7 +810,7 @@ function sampleSessions(){
   s.g[0][8] = {st:"S", rep:"B", note:"Sample: first attempt heading drifted 12° right; trained rudder and trim; repeat within ± 5°."};
   s.log[0].push({t:"0:52", m:"Item 8 unsatisfactory — recorded before training (B)"});
   s.counts = [{to:"2",ldg:"1"},{to:"2",ldg:"1"}];
-  s.run.elapsed = 58*60*1000;
+  s.run.t[0].elapsed = 58*60*1000;
   return {w, s};
 }
 
@@ -843,7 +864,7 @@ function inp(k,v,ph,type){ return `<input id="f_${k.replace(/\W/g,"_")}" data-k=
 function renderSetup(s){
   const isPC = s.kind === "PC", c = CAT(s.setup.cat);
   const pil = p => { const P = s.setup.pilots[p];
-    return `<div class="card"><h4>${p===0?"Left seat":"Right seat"}</h4><div class="g2">
+    return `<div class="card"><h4>${p===0?"Pilot 1":"Pilot 2"}</h4><div class="g2">
       <label class="f">Name (last, first, mi)${inp(`setup/pilots/${p}/name`,P.name)}</label>
       <label class="f">Employee no.${inp(`setup/pilots/${p}/emp`,P.emp)}</label>
       <label class="f">Duty<select id="f_duty${p}" data-k="setup/pilots/${p}/duty"><option ${P.duty==="CA"?"selected":""}>CA</option><option ${P.duty==="FO"?"selected":""}>FO</option></select></label>
@@ -852,6 +873,7 @@ function renderSetup(s){
     <div class="row" style="margin-top:10px"><button class="cb ${P.ssi?"on":""}" style="width:auto" data-act="ssi" data-p="${p}"><span class="box"></span><span>Seat support (SSI) — not graded</span></button></div>
     ${P.ssi ? `<p class="why" style="margin:6px 0 0">This seat is seat support only. It has no grade sheet, no oral or walk-around marks, and is left out of every check.${isPC ? " PC device time becomes 3:00." : ""}</p></div>` : `
     <div class="row" style="margin-top:10px">
+      <button class="cb ${(s.setup.st||[])[p]?"on":""}" style="width:auto" data-act="st" data-p="${p}"><span class="box"></span><span>Special Tracking (ST)</span></button>
       <button class="cb ${s.setup.failedQual[p]?"on":""}" style="width:auto" data-act="flag" data-v="failedQual" data-p="${p}"><span class="box"></span><span>Failed a qualification event</span></button>
       <button class="cb ${s.setup.lapsed[p]?"on":""}" style="width:auto" data-act="flag" data-v="lapsed" data-p="${p}"><span class="box"></span><span>PC interval expired (lapsed)</span></button>
     </div>
@@ -862,7 +884,7 @@ function renderSetup(s){
    <div class="card"><h4>Event</h4><div class="g2">
      <label class="f">Date${inp("setup/date",s.setup.date,"","date")}</label>
      <label class="f">Simulator FAA ID${inp("setup/device",s.setup.device,"e.g. 584")}</label>
-     <label class="f wide" style="grid-column:1/-1">PC type (drives what is required and waivable)<select id="f_cat" data-k="setup/cat">${CATS.map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
+     <label class="f wide" style="grid-column:1/-1">PC type (drives what is required and waivable · Special Tracking is checked per pilot below)<select id="f_cat" data-k="setup/cat">${CATS.filter(x=>x.k!=="ST").map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
    </div>
    ${c.note ? `<p class="why" style="margin:8px 0 0">${esc(c.note)}</p>` : ""}
    ${isPC ? `<div class="row" style="margin-top:10px"><button class="cb ${s.setup.typeRating?"on":""}" style="width:auto" data-act="tr"><span class="box"></span><span>Type rating (form EVENT box)</span></button></div>` : ""}
@@ -875,7 +897,14 @@ function renderSetup(s){
    </div>
   </div>
   <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
+  ${runPlan(s)}
   <div class="row end"><button class="btn primary" data-act="view" data-v="brief">Go to brief →</button></div>`;
+}
+function runPlan(s){
+  const RS = runs(s);
+  return `<h3>Run plan</h3><div class="card">${GP(s).length === 2 ? `<div class="row"><span class="eyebrow">Run 1 applicant</span><div class="seg">${[0,1].map(p => `<button class="${RS[0].a===p?"on":""}" data-act="order" data-v="${p}">${esc(pname(s,p))}</button>`).join("")}</div></div>` : ""}
+   <ol style="margin:10px 0 0;padding-left:20px">${RS.map((x,r) => `<li><b>Run ${r+1}:</b> ${esc(pname(s,x.a))} (${esc(s.setup.pilots[x.a].duty)}) PF from the ${seatName(x.seat)}; ${esc(pname(s,x.o))} in the ${seatName(x.seat==="L"?"R":"L")}${isSSI(s,x.o)?" (seat support)":""}.</li>`).join("")}</ol>
+   <p class="why" style="margin:8px 0 0">${RS.length === 1 ? "One applicant — one run." : swapNeeded(s) ? `${s.setup.pilots[0].duty}/${s.setup.pilots[1].duty} crew: seat swap between runs so each applicant flies from his own seat.` : "CA/FO crew: no seat swap — each pilot stays in his own seat for both runs."} Device time ${hm(simTarget(s).m)}.</p></div>`;
 }
 function linkBox(s,p){
   const L = s.setup.link[p], cands = pcwuCandidates(s,p);
@@ -958,6 +987,7 @@ function docsCardPCWU(s){ return `<h3>Documents to be checked</h3><p class="mute
 
 /* ============================================================ RUN */
 function halfDisc(cx, cy, r, c0, c1){
+  if (c0 === c1) return `<circle cx="${cx}" cy="${cy}" r="${r}" class="h-${c0}"/><circle cx="${cx}" cy="${cy}" r="${r}" class="sk-ring"/>`;
   return `<path d="M${cx} ${cy-r} A${r} ${r} 0 0 0 ${cx} ${cy+r} Z" class="h-${c0}"/><path d="M${cx} ${cy-r} A${r} ${r} 0 0 1 ${cx} ${cy+r} Z" class="h-${c1}"/><circle cx="${cx}" cy="${cy}" r="${r}" class="sk-ring"/><line x1="${cx}" y1="${cy-r}" x2="${cx}" y2="${cy+r}" stroke="var(--panel)" stroke-width="1.5"/>`;
 }
 function stick(s){
@@ -973,12 +1003,12 @@ function stick(s){
     let lane = last.findIndex(r => cx - hw > r); if (lane < 0) lane = i % NL;
     last[lane] = cx + hw;
     const ly = 18 + lane*20;
-    const c0 = evState(s,e,0), c1 = evState(s,e,1);
+    const ra = runs(s)[curRun(s)].a, c0 = evState(s,e,ra), c1 = c0;
     return `<g class="sk-ev ${ui.ev===e.id?"on":""} ${e.crit?"crit":""}" data-act="ev" data-v="${e.id}" tabindex="0" role="button" aria-label="${esc(e.t)}">
       <line class="sk-stem" x1="${cx}" y1="${ly+4}" x2="${cx}" y2="${cy-12}"/>
       <text class="sk-lab" x="${Math.min(Math.max(cx, L+hw-6), W-R-hw+6)}" y="${ly}" text-anchor="middle">${esc(lab)}</text>
       ${halfDisc(cx,cy,11,c0,c1)}</g>`; }).join("");
-  return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : esc(CAT(s.setup.cat).label)+" profile"}</span><span class="eyebrow">${GP(s).length === 2 ? `Tap an event · left half ${esc(pname(s,0))} · right half ${esc(pname(s,1))}` : `Tap an event · markers show ${esc(pname(s,GP(s)[0]))}`}</span></div>
+  return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : esc(CAT(pcat(s,runs(s)[curRun(s)].a)).label)+" profile"}</span><span class="eyebrow">Run ${curRun(s)+1} · markers show ${esc(pname(s,runs(s)[curRun(s)].a))} · tap an event</span></div>
    <svg class="stick" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Flight profile">
     <line class="sk-axis" x1="${L}" y1="${Y(0)}" x2="${W-R}" y2="${Y(0)}"/>
     ${ticks.map(t => `<line class="sk-axis" x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(0)+5}"/><text class="sk-time" x="${X(t)}" y="${Y(0)+20}" text-anchor="middle">${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}</text>`).join("")}
@@ -986,10 +1016,10 @@ function stick(s){
    <div class="sk-key">${s.kind==="PCWU" ? TSTAT.map(x=>`<span><i class="h-${x.c}" style="background:var(--${x.c})"></i>${x.l}</span>`).join("") : `<span><i style="background:var(--ok)"></i>Graded S / C</span><span><i style="background:var(--warn)"></i>Partly graded</span><span><i style="background:var(--bad)"></i>U / I</span><span><i style="background:var(--mute)"></i>Credited / waived / not required</span><span><i style="background:var(--panel2);border:1px solid var(--line)"></i>Not yet</span>`}<span style="color:var(--bad)">Red label = critical maneuver</span></div></div>`;
 }
 function xchips(s){
-  const opt = EVENTS(s).filter(e => e.opt);
+  const opt = EVENTS(s).filter(e => e.opt), ra = runs(s)[curRun(s)].a;
   const lab = s.kind==="PCWU" ? "Optional maneuvers & SPOTs" : "Only if not credited on the PCWU · general items";
-  return `<div class="xchips"><span class="eyebrow">${lab}</span>${opt.map(e => { const need = s.kind==="PC" && evNeeded(s,e);
-    return `<button class="xchip ${ui.ev===e.id?"on":""}" data-act="ev" data-v="${e.id}"><svg width="22" height="22" viewBox="0 0 22 22">${halfDisc(11,11,9,evState(s,e,0),evState(s,e,1))}</svg>${esc(e.t)}${s.kind==="PC" ? (need ? ` <span class="chip bad">needed</span>` : ` <span class="chip mute">done / not needed</span>`) : ""}</button>`; }).join("")}</div>`;
+  return `<div class="xchips"><span class="eyebrow">${lab}</span>${opt.map(e => { const need = s.kind==="PC" && e.items.some(n => !eff(s,ra,n));
+    return `<button class="xchip ${ui.ev===e.id?"on":""}" data-act="ev" data-v="${e.id}"><svg width="22" height="22" viewBox="0 0 22 22">${halfDisc(11,11,9,evState(s,e,runs(s)[curRun(s)].a),evState(s,e,runs(s)[curRun(s)].a))}</svg>${esc(e.t)}${s.kind==="PC" ? (need ? ` <span class="chip bad">needed</span>` : ` <span class="chip mute">done / not needed</span>`) : ""}</button>`; }).join("")}</div>`;
 }
 function gradeWidget(s,p,n){
   const it = IT(n), g = (s.g[p]||{})[n] || {};
@@ -1020,7 +1050,7 @@ function gradeWidget(s,p,n){
 function renderRun(s){
   const E = EVENTS(s); if (!ui.ev || !E.find(e => e.id === ui.ev)) ui.ev = E[0].id;
   const e = E.find(x => x.id === ui.ev), i = E.indexOf(e);
-  const el = s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0);
+  const RS = runs(s), rc = curRun(s), RUN = RS[rc], el = runEl(s,rc), T = simTarget(s), running = !!(s.run.t[rc]||{}).startedAt;
   const er = s.run.ev[e.id] || {};
   const pcard = p => {
     if (isSSI(s,p)) return `<div class="pcard p${p}"><div class="ph"><span class="seat">${seatLab(p)}</span><b>${esc(pname(s,p))}</b></div><p class="why" style="margin:0">Seat support — not graded.</p></div>`;
@@ -1028,21 +1058,25 @@ function renderRun(s){
     const train = s.kind === "PCWU" ? `<div class="sts">${TSTAT.map(x => `<button class="st ${x.c} ${r.st===x.k?"on":""}" data-act="tst" data-p="${p}" data-v="${x.k}">${x.l}</button>`).join("")}</div>
        <div class="reps"><span class="small muted">Repeats</span><button class="btn small" data-act="treps" data-p="${p}" data-v="-1">−</button><b>${r.reps||0}</b><button class="btn small" data-act="treps" data-p="${p}" data-v="1">+</button></div>` : "";
     const restricted = seatRestricted(s,p);
-    return `<div class="pcard p${p}"><div class="ph"><span class="seat">${seatLab(p)}</span><b>${esc(pname(s,p))}</b><span class="muted small">${esc(s.setup.pilots[p].duty)} · as PF</span></div>
+    return `<div class="pcard p${p}"><div class="ph"><span class="seat">${seatLab(p)}</span><b>${esc(pname(s,p))}</b><span class="muted small">${esc(s.setup.pilots[p].duty)} · PF from the ${seatName(seatFor(s,p))}</span>${pcat(s,p)==="ST"?`<span class="chip warn">Special Tracking</span>`:""}</div>
       ${restricted ? `<p class="banner bad" style="margin:0">Unsatisfactory item recorded. This pilot may not occupy any crew seat or give seat support for the rest of the session.</p>` : ""}
       ${train}
       ${e.items.map(n => gradeWidget(s,p,n)).join("")}
       ${s.kind==="PCWU" ? `<input class="note" id="enote_${e.id}_${p}" data-k="run/ev/${e.id}/p/${p}/note" value="${esc(r.note||"")}" placeholder="Training note">` : ""}</div>`;
   };
-  return `<div class="runbar"><div class="simclock"><span class="eyebrow">Sim</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${s.run.startedAt?"":"primary"}" data-act="rtimer">${s.run.startedAt?"Pause":"Start"}</button></div>
-    <span class="chip ${el > simTarget(s).m*60000 ? "bad" : "info"}" id="simTgt">Target ${Math.floor(simTarget(s).m/60)}:${String(simTarget(s).m%60).padStart(2,"0")} · ${esc(simTarget(s).why.split(" — ")[1] || simTarget(s).why.replace(/^PCWU 4:30 /,""))}</span>
-    ${s.kind==="PC" ? GP(s).map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">${s.setup.conductor.role==="SCP"?"SCP — ✈ credit available":"Instructor — no ✈ credit"}</span>`}
+  const otherTxt = isSSI(s,RUN.o) ? `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")} (seat support)` : `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")}, not graded this run`;
+  return `<div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Run ${r+1}<small>${esc(pname(s,x.a))} · ${x.seat==="L"?"left":"right"} seat</small></button>`).join("")}</div>
+    <div class="simclock"><span class="eyebrow">Run ${rc+1}</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${running?"":"primary"}" data-act="rtimer">${running?"Pause":"Start"}</button></div>
+    <span class="chip ${el > T.run*60000 ? "bad" : "info"}" id="simTgt">Run target ${hm(T.run)} · device ${hm(T.m)} · total <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
+    ${s.kind==="PC" ? [RUN.a].map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">${s.setup.conductor.role==="SCP"?"SCP — ✈ credit available":"Instructor — no ✈ credit"}</span>`}
     <span class="grow"></span><span class="muted small">Order of events is SCP discretion — grade whatever was flown.</span></div>
+   ${rc === 1 && swapNeeded(s) ? `<div class="banner warn"><b>Seat swap before Run 2:</b> ${esc(pname(s,RUN.a))} moves to the ${seatName(RUN.seat)} to fly his ${s.kind} as PF; ${esc(pname(s,RUN.o))} moves to the ${seatName(RUN.seat==="L"?"R":"L")}.</div>` : ""}
+   <div class="banner info" style="padding:8px 14px">Run ${rc+1}: <b>${esc(pname(s,RUN.a))}</b> (${esc(s.setup.pilots[RUN.a].duty)}) is PF from the ${seatName(RUN.seat)} · ${otherTxt}.${RS.length===2 && rc===0 ? (swapNeeded(s) ? " Seat swap before Run 2." : " No seat swap for Run 2.") : ""}</div>
    ${stick(s)}${xchips(s)}
    <div class="evcard"><div><span class="eyebrow">${e.opt ? (s.kind==="PCWU" ? "Optional" : "As required") : `Event ${i+1}`}${e.crit?" · critical":""}</span><h2>${esc(e.t)}</h2></div>
     ${e.ios && e.ios.length ? `<div class="ios"><span class="eyebrow">Script / IOS</span><ul>${e.ios.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
     ${!e.items.length && s.kind==="PC" ? "" : ""}
-    <div class="pilots">${pcard(0)}${pcard(1)}</div>
+    <div class="pilots">${pcard(RUN.a)}</div>
     ${s.kind==="PC" ? logBox(s) : ""}
     <div class="row" style="justify-content:space-between"><button class="btn" data-act="step" data-v="-1" ${i===0?"disabled":""}>← Previous</button><button class="btn primary" data-act="step" data-v="1" ${i===E.length-1?"disabled":""}>Next →</button></div></div>`;
 }
@@ -1073,17 +1107,17 @@ function subLine(s,p,n){
 }
 function renderSheet(s){
   if (!GP(s).includes(ui.p)) ui.p = GP(s)[0] ?? 0;
-  const p = ui.p, P = s.setup.pilots[p], c = CAT(s.setup.cat), isPC = s.kind === "PC", L = pcwuOf(s,p);
+  const p = ui.p, P = s.setup.pilots[p], c = CAT(pcat(s,p)), isPC = s.kind === "PC", L = pcwuOf(s,p);
   const res = s.debrief.p[p].result;
   const rows = ns => ns.map(n => { const it = IT(n); const sec = SECS[n] ? `<tr><td class="sec" colspan="5">${esc(SECS[n].toUpperCase())}</td></tr>` : "";
     return `${sec}<tr class="${ui.sel===n?"sel":""}"><td class="n">${n}.</td><td>${esc(it.t)} ${it.wv?"★":""}${it.cred?"✈":""}${subLine(s,p,n)}</td>${sheetCell(s,p,n,"rep")}${sheetCell(s,p,n,"pc")}${sheetCell(s,p,n,"pcwu")}</tr>`; }).join("");
   const head = `<thead><tr><th></th><th></th><th>Repeat</th><th>PC/RFT Status</th><th>PCWU Status</th></tr></thead>`;
   const left = Array.from({length:21},(_,i)=>i+1), right = Array.from({length:18},(_,i)=>i+22);
-  const pcTime = fmtHM(s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0));
+  const pcTime = fmtHM(totalEl(s));
   const box = (on,l) => `<span class="${on?"x":""}">${l}</span>`;
   return `<span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2>
    <div class="pilottabs" style="margin-top:10px">${GP(s).map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
-   ${isPC && !L && ["REC","RQF","RQ12"].includes(s.setup.cat) ? `<div class="banner warn">No PCWU linked for this pilot — every ✈ item, CAT II/III and Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
+   ${isPC && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) ? `<div class="banner warn">No PCWU linked for this pilot — every ✈ item, CAT II/III and Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
    ${seatRestricted(s,p) ? `<div class="banner bad">Unsatisfactory item recorded — seat restriction applies for the remainder of the session.</div>` : ""}
    <div class="formhdr">
     <div><div class="k">Name of airman · Employee no.</div><div class="v">${esc(P.name||"—")} · ${esc(P.emp||"—")}</div></div>
@@ -1092,7 +1126,7 @@ function renderSheet(s){
     <div><div class="k">Simulator ID # (PCWU / PC)</div><div class="v">${isPC ? `${esc(L?L.device:"—")} / ${esc(s.setup.device||"—")}` : esc(s.setup.device||"—")}</div></div>
     <div><div class="k">TO / LDGs (3 min) · Times</div><div class="v">${isPC ? `<span class="row"><input class="in" style="width:70px;min-height:34px" id="to_${p}" data-k="counts/${p}/to" value="${esc(s.counts[p].to)}" inputmode="numeric" aria-label="Takeoffs"> / <input class="in" style="width:70px;min-height:34px" id="ldg_${p}" data-k="counts/${p}/ldg" value="${esc(s.counts[p].ldg)}" inputmode="numeric" aria-label="Landings"></span>` : ""}PCWU ${isPC ? esc(L?L.time:"—") : pcTime} · ${isPC?`PC ${pcTime}`:""}</div></div>
     <div><div class="k">Event</div><div class="boxes">${box(isPC && P.duty==="CA","CA PIC PC")}${box(isPC && P.duty==="FO","FO PIC PC")}${box(s.setup.typeRating,"TYPE RATING")}${box(false,"RFT")}</div></div>
-    <div><div class="k">Category of event</div><div class="boxes">${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x => box(c.form===x,x)).join("")}</div></div>
+    <div><div class="k">Category of event</div><div class="boxes">${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x => box(c.form===x,x)).join("")}${box(pcat(s,p)==="ST","SPECIAL TRACKING")}</div></div>
     <div><div class="k">${isPC?"PC Check Airman":"PCWU Instructor / Ck Amn"}</div><div class="v">${esc(s.setup.conductor.name||"—")} · ${esc(s.setup.conductor.emp||"")}</div>${isPC && L ? `<div class="small muted">PCWU: ${esc(L.conductor||"—")} ${esc(L.condEmp||"")} · ${esc(L.date)}</div>` : ""}</div>
     ${isPC ? `<div><div class="k">Result</div><div class="boxes">${box(res==="SAT","SATISFACTORY / COMPLETE")}${box(res==="UNSAT","UNSAT / INCOMPLETE – REMOVED FROM FLIGHT STATUS")}${box(res==="INC","INCOMPLETE – SIM MALFUNCTION OR ILLNESS")}</div></div>` : ""}
    </div>
@@ -1113,7 +1147,7 @@ function renderDebrief(s){
      ${seatRestricted(s,p) ? `<div class="banner bad" style="margin-top:10px">Unsatisfactory — no crew seat or seat support for the rest of the session. Complete the failure documentation and notify company personnel per the FOTM.</div>` : ""}
      <h5>${isPC ? (bl.length ? `${bl.length} item${bl.length>1?"s":""} block submission` : "All status blocks complete") : "Record check"}</h5>
      ${pr.length ? `<ul class="probs">${pr.map(x => `<li class="${x.warn?"w":""}" ${x.n?`data-act="goto" data-p="${p}" data-v="${x.n}"`:""}>${x.n?`<b>${x.n}</b> `:""}${esc(x.msg)}</li>`).join("")}</ul>` : `<p class="banner ok" style="margin:0">${isPC ? "Ready to submit." : "PCWU column entries are valid."}</p>`}
-     ${!isPC ? `<h5>What the PC must still cover (${esc(CAT(s.setup.cat).label)})</h5><div class="carry">${carryPreview(s,p)}</div>` : ""}
+     ${!isPC ? `<h5>What the PC must still cover (${esc(CAT(pcat(s,p)).label)})</h5><div class="carry">${carryPreview(s,p)}</div>` : ""}
      ${runs.length ? `<h5>Training notes</h5><ul class="small">${runs.map(x => `<li><b>${esc(x.e.t)}</b>${x.r.st?` — ${TSBY[x.r.st].l}`:""}${x.r.reps?` (${x.r.reps} repeats)`:""}${x.r.note?`: ${esc(x.r.note)}`:""}</li>`).join("")}</ul>` : ""}
      ${isPC ? `<h5>Result</h5><div class="seg">${[["SAT","Satisfactory / complete"],["UNSAT","Unsat — removed from flight status"],["INC","Incomplete — sim or illness"]].map(([k,l]) => `<button class="${d.result===k?"on":""}" data-act="result" data-p="${p}" data-v="${k}">${l}</button>`).join("")}</div>` : ""}
      <label class="f" style="margin-top:12px">Remarks (reverse of form)<textarea id="rem_${p}" data-k="debrief/p/${p}/remarks" rows="3" placeholder="Brief and specific — required for U, I and repeated items; name any Emergency / Abnormal procedure graded U or I">${esc(d.remarks)}</textarea></label>
@@ -1147,13 +1181,13 @@ function exportCSV(s){
   GP(s).forEach(p => ITEMS.forEach(it => { const n = it.n, g = (s.g[p]||{})[n] || {};
     const r = s.kind === "PC" ? req(s,p,n) : {};
     const pcw = s.kind === "PCWU" ? pcwuCell(s,p,n).val : (pcwuOf(s,p) ? ((pcwuOf(s,p).items[n]||{}).st||"") : "");
-    out.push(["N&O", s.kind, s.id, s.setup.date, s.setup.cat, pname(s,p), s.setup.pilots[p].emp, s.setup.pilots[p].duty, n, it.t, s.kind==="PC"?r.code:"", g.rep||"", s.kind==="PC"?eff(s,p,n):"", pcw, r.credited?"Y":"", Object.keys(g.subs||{}).filter(k=>g.subs[k]).join("/"), g.note||""].map(q).join(","));
+    out.push(["N&O", s.kind, s.id, s.setup.date, pcat(s,p), pname(s,p), s.setup.pilots[p].emp, s.setup.pilots[p].duty, n, it.t, s.kind==="PC"?r.code:"", g.rep||"", s.kind==="PC"?eff(s,p,n):"", pcw, r.credited?"Y":"", Object.keys(g.subs||{}).filter(k=>g.subs[k]).join("/"), g.note||""].map(q).join(","));
   }));
   return out.join("\n");
 }
 function exportHTML(s){
   const isPC = s.kind === "PC", c = CAT(s.setup.cat);
-  const sheet = p => { const P = s.setup.pilots[p], L = pcwuOf(s,p), res = s.debrief.p[p].result;
+  const sheet = p => { const P = s.setup.pilots[p], L = pcwuOf(s,p), res = s.debrief.p[p].result, c = CAT(pcat(s,p));
     const cell = (n,col) => { const it = IT(n);
       if (col==="rep") return (s.kind==="PCWU"||it.naf) ? `<td class="sh"></td>` : `<td>${((s.g[p]||{})[n]||{}).rep||""}</td>`;
       if (col==="pc") return s.kind==="PCWU" ? `<td class="sh"></td>` : `<td>${eff(s,p,n)}</td>`;
@@ -1164,10 +1198,10 @@ function exportHTML(s){
     const X = b => b ? "☒" : "☐";
     return `<section><div class="hdr"><div><b>PILOT TRAINING / CHECK GRADE SHEET</b><br><small>TC_PC_RFT_REC · generated by N&amp;O PC Run-and-Grade</small></div><div><span class="tag">N&amp;O ${s.kind}</span></div></div>
      <table class="h"><tr><td>Name of airman<br><b>${esc(P.name)}</b></td><td>Employee no.<br><b>${esc(P.emp)}</b></td><td>${X(P.duty==="CA")} CA ${X(P.duty==="FO")} FO · A/C ${esc(P.acType)}</td><td>EVENT: ${X(isPC&&P.duty==="CA")} CA PIC PC ${X(isPC&&P.duty==="FO")} FO PIC PC ${X(s.setup.typeRating)} TYPE RATING</td></tr>
-     <tr><td>Certificate ${X((s.docs[p]||{}).atp)} ATP checked<br>${X((s.docs[p]||{}).eng)} English Proficient</td><td>${X((s.docs[p]||{}).med)} Medical — First checked<br>${X((s.docs[p]||{}).fcc)} FCC Permit ${X((s.docs[p]||{}).photo)} Photo ID</td><td>Sim ID ${isPC?`${esc(L?L.device:"")} / ${esc(s.setup.device)}`:esc(s.setup.device)}<br>TO/LDGs ${esc(s.counts[p].to)}/${esc(s.counts[p].ldg)}</td><td>CATEGORY: ${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x=>`${X(c.form===x)} ${x}`).join(" ")}<br><small>${esc(c.label)}</small></td></tr>
-     <tr><td colspan="2">PCWU instructor / Ck Amn: <b>${esc(isPC ? (L?L.conductor:"") : s.setup.conductor.name)}</b> ${esc(isPC ? (L?L.condEmp:"") : s.setup.conductor.emp)} · ${esc(isPC ? (L?L.date:"") : s.setup.date)} · PCWU time ${esc(isPC ? (L?L.time:"") : fmtHM(s.run.elapsed))}</td><td colspan="2">${isPC?`PC Check Airman: <b>${esc(s.debrief.signedBy||s.setup.conductor.name)}</b> ${esc(s.setup.conductor.emp)} · ${esc(s.debrief.signedAt||s.setup.date)} · PC time ${fmtHM(s.run.elapsed)}<br>RESULT: ${X(res==="SAT")} SATISFACTORY / COMPLETE ${X(res==="UNSAT")} UNSAT / INCOMPLETE – REMOVED ${X(res==="INC")} INCOMPLETE – SIM / ILLNESS`:""}</td></tr></table>
+     <tr><td>Certificate ${X((s.docs[p]||{}).atp)} ATP checked<br>${X((s.docs[p]||{}).eng)} English Proficient</td><td>${X((s.docs[p]||{}).med)} Medical — First checked<br>${X((s.docs[p]||{}).fcc)} FCC Permit ${X((s.docs[p]||{}).photo)} Photo ID</td><td>Sim ID ${isPC?`${esc(L?L.device:"")} / ${esc(s.setup.device)}`:esc(s.setup.device)}<br>TO/LDGs ${esc(s.counts[p].to)}/${esc(s.counts[p].ldg)}</td><td>CATEGORY: ${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION"].map(x=>`${X(c.form===x)} ${x}`).join(" ")} ${X(pcat(s,p)==="ST")} SPECIAL TRACKING<br><small>${esc(c.label)}</small></td></tr>
+     <tr><td colspan="2">PCWU instructor / Ck Amn: <b>${esc(isPC ? (L?L.conductor:"") : s.setup.conductor.name)}</b> ${esc(isPC ? (L?L.condEmp:"") : s.setup.conductor.emp)} · ${esc(isPC ? (L?L.date:"") : s.setup.date)} · PCWU time ${esc(isPC ? (L?L.time:"") : fmtHM(totalEl(s)))}</td><td colspan="2">${isPC?`PC Check Airman: <b>${esc(s.debrief.signedBy||s.setup.conductor.name)}</b> ${esc(s.setup.conductor.emp)} · ${esc(s.debrief.signedAt||s.setup.date)} · PC time ${fmtHM(totalEl(s))}<br>RESULT: ${X(res==="SAT")} SATISFACTORY / COMPLETE ${X(res==="UNSAT")} UNSAT / INCOMPLETE – REMOVED ${X(res==="INC")} INCOMPLETE – SIM / ILLNESS`:""}</td></tr></table>
      <div class="two"><table>${th}${tb(Array.from({length:21},(_,i)=>i+1))}</table><table>${th}${tb(Array.from({length:18},(_,i)=>i+22))}</table></div>
-     <p><b>Remarks:</b> ${esc(s.debrief.p[p].remarks||"—")}${s.setup.cat==="ST"?" · Special Tracking PC.":""}</p>
+     <p><b>Remarks:</b> ${esc(s.debrief.p[p].remarks||"—")}${pcat(s,p)==="ST"?" · Special Tracking PC.":""}</p>
      ${ITEMS.filter(it => ((s.g[p]||{})[it.n]||{}).note).map(it => `<p class="sm">${it.n}. ${esc(it.t)}: ${esc(s.g[p][it.n].note)}</p>`).join("")}
      ${s.log[p].length?`<p class="sm"><b>Training / re-check log:</b> ${s.log[p].map(x=>`${esc(x.t)} ${esc(x.m)}`).join(" · ")}</p>`:""}
      ${isPC && L ? `<p class="sm">PCWU record ${esc(L.sid)} · ${esc(L.role==="SCP"?"Simulator Check Pilot":"Instructor")}.</p>` : ""}</section>`; };
@@ -1273,11 +1307,12 @@ function rerender(){ const y = window.scrollY; render(); window.scrollTo({top:y}
 function tick(){
   const s = cur(); if (!s) return;
   if ($("briefClock")) { const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0); $("briefClock").textContent = fmtDur(el); $("briefBar").style.width = Math.min(100, el/(briefTarget(s)*600)) + "%"; }
-  if ($("simClock")) { const el = s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0); $("simClock").textContent = fmtDur(el); const t = $("simTgt"); if (t) t.className = "chip " + (el > simTarget(s).m*60000 ? "bad" : "info"); }
+  if ($("simClock")) { const r = curRun(s), el = runEl(s,r); $("simClock").textContent = fmtDur(el); const tt = $("simTotal"); if (tt) tt.textContent = fmtDur(totalEl(s)); const t = $("simTgt"); if (t) t.className = "chip " + (el > simTarget(s).run*60000 ? "bad" : "info"); }
 }
 setInterval(tick, 1000);
 function toggleTimer(o){ if (o.startedAt) { o.elapsed += Date.now() - o.startedAt; o.startedAt = null; } else o.startedAt = Date.now(); }
-function simNow(s){ return fmtDur(s.run.elapsed + (s.run.startedAt ? Date.now()-s.run.startedAt : 0)).replace(/^0:/,"0:"); }
+function simNow(s){ const r = curRun(s); return `Run ${r+1} ${fmtDur(runEl(s,r))}`; }
+function pauseRuns(s){ (s.run.t||[]).forEach(t => { if (t.startedAt) toggleTimer(t); }); }
 function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2800); }
 function applyTheme(t){ if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
 try { applyTheme(localStorage.getItem("NO_PC_THEME")); } catch(e){}
@@ -1322,7 +1357,10 @@ document.addEventListener("click", ev => {
     case "unlink": s.setup.link[p] = null; touch(s); break;
     case "bchk": s.brief.checked[v] = s.brief.checked[v] ? 0 : 1; touch(s); break;
     case "btimer": toggleTimer(s.brief); touch(s); break;
-    case "rtimer": toggleTimer(s.run); touch(s); break;
+    case "rtimer": { const r = curRun(s), t = s.run.t[r]; const was = !!t.startedAt; pauseRuns(s); if (!was) t.startedAt = Date.now(); touch(s); break; }
+    case "run": { const r = +v; if (r !== curRun(s)) { pauseRuns(s); s.run.cur = r; touch(s); } break; }
+    case "order": s.setup.order = v === "1" ? [1,0] : [0,1]; touch(s); break;
+    case "st": s.setup.st = s.setup.st || [false,false]; s.setup.st[p] = !s.setup.st[p]; touch(s); break;
     case "doc": s.docs[p] = s.docs[p] || {}; s.docs[p][v] = s.docs[p][v] ? 0 : 1; touch(s); break;
     case "bank": s.brief.bank = +v; ui.oralTopic = ""; touch(s); break;
     case "oral": { const o = s.brief.oral[p] = s.brief.oral[p] || {}; const k = b.dataset.k; o[k] = o[k] === v ? "" : v; touch(s); break; }
@@ -1346,7 +1384,7 @@ document.addEventListener("click", ev => {
     case "result": s.debrief.p[p].result = s.debrief.p[p].result === v ? "" : v; touch(s); break;
     case "submit": if (s.demo) { toast("Sample sessions aren't submitted."); return; }
       s.status = "submitted"; if (!s.debrief.signedBy) s.debrief.signedBy = s.setup.conductor.name; if (!s.debrief.signedAt) s.debrief.signedAt = s.setup.date;
-      if (s.run.startedAt) toggleTimer(s.run); touch(s); toast(store.db ? `${s.kind} submitted to the data store` : `${s.kind} submitted — saved on this device`); break;
+      pauseRuns(s); touch(s); toast(store.db ? `${s.kind} submitted to the data store` : `${s.kind} submitted — saved on this device`); break;
     case "reopen": s.status = "open"; touch(s); break;
     case "exp": doExport(v); return;
     case "present": openPresent(v, b.dataset.i, (b.dataset.list||"").split(",").filter(x=>x!=="").map(Number)); return;
