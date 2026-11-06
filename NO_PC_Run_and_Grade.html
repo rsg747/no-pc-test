@@ -48,6 +48,9 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background
 .stamp{font-family:var(--f-display);font-weight:700;font-size:26px;line-height:1;padding:7px 10px 5px;border-radius:6px;letter-spacing:.5px;background:var(--signal);color:var(--signal-ink)}
 .ttl h1{font-size:26px;line-height:1}
 .ttl .eyebrow{color:var(--on-brand);opacity:.75;font-size:11px}
+.ttl .ver{font-size:12px;color:var(--on-brand);opacity:.9;margin-top:3px;white-space:nowrap}
+.ttl .ver button{background:none;border:0;padding:4px 2px;color:inherit;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;min-height:28px}
+.ttl .ver .newver{background:#de7419;color:#fff;text-decoration:none;border-radius:999px;padding:3px 10px;margin-left:4px}
 .kchip{font-family:var(--f-display);font-weight:700;font-size:18px;padding:2px 10px;border-radius:5px;border:2px solid var(--on-brand)}
 .kchip.pc{background:var(--signal);border-color:var(--signal);color:var(--signal-ink)}
 .cur{display:flex;flex-direction:column;line-height:1.15;text-align:right}
@@ -494,6 +497,36 @@ const REFS = {
 function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k]; if (!r) return; const m = $("refModal");
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
+/* ---------- version, revisions, update check ---------- */
+const APP_VERSION = "2026.11.06.4";
+const REVISIONS = [
+ {v:"2026.11.06.4", d:"6 Nov 2026", n:["Version number, ↻ Check for updates and this revision history at the top.","The app checks for a newer version when it opens and when you come back to it, and shows an Update button."]},
+ {v:"2026.11.06.3", d:"6 Nov 2026", n:["⇅ Swap crewmembers (Setup → Crew and the Run tab): trades who flies Run 1 and Run 2. Grades, documents, PCWU link, notes and run time stay with each pilot.","iPad: app starts below the status bar; solid bar behind the clock when opened from the Home Screen (same fix as the AQP app)."]},
+ {v:"2026.11.06.2", d:"6 Nov 2026", n:["Item 27 Nonstandard Flap required only on a type rating; may be given on a PC.","Item 10 RNAV1: one departure or arrival always required; grading S defaults to Departure (first takeoff)."]},
+ {v:"2026.11.06.1", d:"6 Nov 2026", n:["Graded to the TC_PC_RFT_REC 13 APR 26 form: Repeat = X, item 27 Nonstandard Flap, Non-App F 28–33, PCWU credit only CAT II/III (SCP) and Non-App F.","Print grade sheet: fills the official 13 APR 26 form as a PDF, one per pilot.","Documents checklist matches the form (FAA Certificate, Medical, Jepp Pubs, Manuals, FCC Permit, Photo ID); Special Tracking box."]}
+];
+REFS.revs = {h:"Revision history", src:"N&O PCWU · PC Run-and-Grade · v" + APP_VERSION, html:() => REVISIONS.map(r => `<h4 style="margin:12px 0 4px">v${esc(r.v)} <span class="muted small">${esc(r.d)}</span></h4><ul>${r.n.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`).join("")};
+const inClaudeApp = () => !!(window.claude && window.claude.use);
+let newerVer = "";
+async function latestVersion(){
+  const r = await fetch(location.pathname + "?chk=" + Date.now(), {cache:"no-store"}); if (!r.ok) throw new Error("HTTP " + r.status);
+  const m = (await r.text()).match(/const APP_VERSION = "([^"]+)"/); return m ? m[1] : "";
+}
+function reloadNewest(){
+  try { if (window.top !== window && window.top.location.pathname) { window.top.location.replace(window.top.location.pathname + "?v=" + Date.now()); return; } } catch(e){}
+  location.replace(location.pathname + "?v=" + Date.now());
+}
+async function checkUpdates(manual){
+  if (inClaudeApp()) { if (manual) location.reload(); return; }
+  if (manual) toast("Checking for updates…");
+  try { const v = await latestVersion();
+    if (v && v !== APP_VERSION) { newerVer = v; renderHeader(); if (manual) { toast(`Updating to v${v}…`); setTimeout(reloadNewest, 500); } }
+    else if (manual) toast(`You have the newest version (v${APP_VERSION})`);
+  } catch(e){ if (manual) toast(navigator.onLine === false ? "No internet — can't check for updates" : "Couldn't check: " + e.message); }
+}
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => { if (document.hidden) hiddenAt = Date.now(); else if (Date.now() - hiddenAt > 60000) checkUpdates(false); });
+setTimeout(() => checkUpdates(false), 4000);
 function closeRef(){ const m = $("refModal"); m.hidden = true; m.innerHTML = ""; }
 
 /* ---------- Walk-around exam (planted abnormals are the SCP's answer key) ---------- */
@@ -893,7 +926,8 @@ function renderStatus(state){
 function renderHeader(){
   const s = cur();
   $("hdr").innerHTML = `<div class="brandrow"><span class="stamp">N&amp;O</span>
-    <div class="ttl"><span class="eyebrow">Atlas Air · 747 Non-AQP</span><h1>PCWU · PC Run-and-Grade</h1></div>
+    <div class="ttl"><span class="eyebrow">Atlas Air · 747 Non-AQP</span><h1>PCWU · PC Run-and-Grade</h1>
+      <div class="ver">v${APP_VERSION} · <button data-act="update">↻ Check for updates</button> · <button data-act="ref" data-v="revs">Revisions</button>${newerVer ? ` <button class="newver" data-act="update">Update to v${esc(newerVer)}</button>` : ""}</div></div>
     ${s ? `<span class="kchip ${s.kind==="PC"?"pc":""}">${s.kind}</span>` : ""}
     <span class="grow"></span>
     ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(CAT(s.setup.cat).label)} · ${esc(s.setup.date)}</span></div>` : ""}
@@ -1556,6 +1590,7 @@ document.addEventListener("click", ev => {
     case "btimer": toggleTimer(s.brief); touch(s); break;
     case "rtimer": { const r = curRun(s), t = s.run.t[r]; const was = !!t.startedAt; pauseRuns(s); if (!was) t.startedAt = Date.now(); touch(s); break; }
     case "run": { const r = +v; if (r !== curRun(s)) { pauseRuns(s); s.run.cur = r; touch(s); } break; }
+    case "update": checkUpdates(true); return;
     case "swapask": ui.swapAsk = true; break;
     case "swapno": ui.swapAsk = false; break;
     case "swapdo": ui.swapAsk = false; swapCrew(s); touch(s); toast("Crew swapped"); break;
