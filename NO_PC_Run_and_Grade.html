@@ -237,6 +237,8 @@ ul.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap
 .sb{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:3px 10px;cursor:pointer;font-size:13px;font-weight:600;min-height:32px}
 .sb.on{background:var(--brand2);border-color:var(--brand2);color:var(--on-brand)}
 .why{font-size:13px;color:var(--muted)}
+.wvtag{font-size:13px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--mutebg);color:var(--mute);white-space:nowrap}
+.wvtag.ok{background:var(--infobg);color:var(--info)} .wvtag.lock{background:var(--badbg);color:var(--bad)}
 .why.bad{color:var(--bad)} .why.cr{color:var(--ok)}
 .req{font:700 11px var(--f-mono);border-radius:4px;padding:1px 5px;background:var(--mutebg);color:var(--mute)}
 .req.R{background:var(--badbg);color:var(--bad)} .req.W{background:var(--infobg);color:var(--info)} .req.C{background:var(--okbg);color:var(--ok)}
@@ -367,7 +369,7 @@ const ITEMS = [
  {n:18,t:"Missed Approach from ILS"},
  {n:19,t:"Second Missed Approach"},
  {n:20,t:"Steep Turns",wv:1},
- {n:21,t:"Approach to Stall (one in turn, T/O config required)",wv:1,subs:[["to","T/O"],["ldg","LDG ★"],["clean","Clean ★"]]},
+ {n:21,t:"Approach to Stall (one in turn, T/O config required)",wv:1,subs:[["to","T/O in turn (required)"],["ldg","LDG ★ waivable"],["clean","Clean ★ waivable"]]},
  {n:22,t:"Landing from an ILS"},
  {n:23,t:"Crosswind with Gust"},
  {n:24,t:"Rejected Landing"},
@@ -537,8 +539,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.06.11";
+const APP_VERSION = "2026.11.06.12";
 const REVISIONS = [
+ {v:"2026.11.06.12", d:"6 Nov 2026", n:["★ items now say what the star means: “★ Waivable — SCP discretion”, or “★ 🔒 Waiver not allowed” when locked. Stall buttons read “T/O in turn (required)”, “LDG ★ waivable”, “Clean ★ waivable”."]},
  {v:"2026.11.06.11", d:"6 Nov 2026", n:["Stick diagram: event names are stacked on short lines and placed so no event line runs through another name."]},
  {v:"2026.11.06.10", d:"6 Nov 2026", n:["Swap crewmembers no longer writes to the training / re-check log (it's only used at the start of the sim); earlier swap entries are removed."]},
  {v:"2026.11.06.9", d:"6 Nov 2026", n:["Waivers lock for a pilot as soon as any item is repeated (X) or graded U — judgment standard. W is removed from every ★ item, the 🔒 reason names the item, and any W already entered must be flown and graded before submitting. Removing the X restores waivers."]},
@@ -1219,8 +1222,8 @@ function gradeWidget(s,p,n){
   const r = req(s,p,n), v = eff(s,p,n), auto = isAuto(s,p,n), A = allowed(s,p,n);
   const need = !v;
   const subs = it.subs ? `<div class="gsub">${it.subs.map(([k,l]) => `<button class="sb ${(g.subs||{})[k]?"on":""}" data-act="sub" data-p="${p}" data-n="${n}" data-v="${k}">${esc(l)}</button>`).join("")}</div>` : "";
-  const reqTag = r.na ? `<span class="req">N/A</span>` : r.credited ? `<span class="req C">PCWU credit</span>` : `<span class="req ${r.code==="W"||r.code==="T"?"W":r.code==="/"?"":"R"}" title="${esc(CODE_LABEL[r.code]||"")}">${r.code==="R"?"Required":r.code==="W"?"Waivable":r.code==="T"?"T/O stall req":r.code==="/"?"Not required":"Required"}</span>`;
-  return `<div class="gi ${need?"need":"done"}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.wv?`<span class="sym" title="Waiver authority">★</span>`:""}${it.cert?`<span class="sym" title="Certification item">✈</span>`:""}${reqTag}</div>
+  const reqTag = r.na ? `<span class="req">N/A</span>` : r.credited ? `<span class="req C">PCWU credit</span>` : `<span class="req ${r.code==="W"||r.code==="T"?"W":r.code==="/"?"":"R"}" title="${esc(CODE_LABEL[r.code]||"")}">${r.code==="R"?"Required":r.code==="W"?"Waivable":r.code==="T"?"T/O stall required":r.code==="/"?"Not required":"Required"}</span>`;
+  return `<div class="gi ${need?"need":"done"}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.wv ? `<span class="wvtag ${r.waivable?"ok":r.lock?"lock":""}" title="★ = waiver authority on the grade sheet">${r.waivable ? (n===21 ? "★ LDG & Clean waivable — SCP discretion" : "★ Waivable — SCP discretion") : r.lock ? "★ 🔒 Waiver not allowed" : n===10 ? "★ One of the two required" : "★ Not waivable"}</span>` : ""}${it.cert?`<span class="sym" title="Certification item">✈</span>`:""}${reqTag}</div>
    <div class="gv">${A.map(x => `<button class="gb v-${x==="/"?"sl":x} ${v===x?"on":""} ${v===x&&auto?"auto":""}" data-act="g" data-p="${p}" data-n="${n}" data-v="${x}" ${r.na?"disabled":""}>${g.rep && x==="S" ? "S · repeat passed" : g.rep && x==="U" ? "U · repeat failed" : x}</button>`).join("")}</div>
     ${!it.naf && !r.na ? `<div class="gv"><span class="why">Repeat column:</span><button class="sb ${g.rep?"on":""}" data-act="rep" data-p="${p}" data-n="${n}" data-v="X">${g.rep ? "X · maneuver was repeated" : "Mark X — maneuver repeated"}</button></div>` : ""}
    ${r.credited ? `<p class="why cr">✓ ${esc(r.cwhy)}${g.st?" — re-evaluated on PC":""}</p>` : r.cwhy ? `<p class="why bad">${esc(r.cwhy)}</p>` : ""}
