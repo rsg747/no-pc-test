@@ -109,6 +109,7 @@ main{padding-block:22px 80px}
 .chip.oral{background:#3b2a6b;color:#fff} .start.oral{border-top:4px solid #3b2a6b}
 .chip.catq{background:#1d4775;color:#fff} .start.catq{border-top:4px solid #1d4775}
 .chip.man{background:#5b3a8a;color:#fff} .start.man{border-top:4px solid #5b3a8a}
+.manstarts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px} .manstarts .btn{gap:8px} .manstarts .chip{font-size:11px}
 .chip.ok{background:var(--okbg);color:var(--ok)} .chip.warn{background:var(--warnbg);color:var(--warn)} .chip.bad{background:var(--badbg);color:var(--bad)}
 .chip.info{background:var(--infobg);color:var(--info)} .chip.mute{background:var(--mutebg);color:var(--mute)}
 .chip.pcwu{background:var(--pcwu);color:#fff} .chip.pc{background:var(--pc);color:var(--signal-ink)}
@@ -578,8 +579,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.8";
+const APP_VERSION = "2026.11.07.9";
 const REVISIONS = [
+ {v:"2026.11.07.9", d:"7 Nov 2026", n:["Events are chosen on Sessions → Start an event: PCWU, PC, PC + Type Rating, Oral, CAT II/III, and every other EVENT on the form (RFT, RLOFT, QLOFT, UPRT/EET, TO/LDG Recency, TO/LDG Currency, 767 CFD Currency, 767 LDS Diff., Other) as a manual grade sheet with that box checked. A PC is just a PC — Setup no longer shows the event boxes (only Type rating)."]},
  {v:"2026.11.07.8", d:"7 Nov 2026", n:["EVENT and CATEGORY match the 13 APR 26 form: Setup shows all 12 EVENT boxes (PC, UPRT/EET, TO/LDG Recency, RFT, Type Rating, TO/LDG Currency, RLOFT, CAT II/III, 767 CFD Currency, QLOFT, 767 LDS Diff., Other + text) and every category (Initial, Transition, Upgrade, Recurrent, Requalification, Refresher, Consolidation, Administrative, Special Tracking). AIMS will fill them once connected.","New: Manual grade sheet (Sessions → New manual sheet) — any event / category; mark the status blocks and PCWU column yourself, header entries (sim IDs, times, TO/LDG, documents, which signature line) and print the official form. Only the result and remarks for U / I / repeats are checked."]},
  {v:"2026.11.07.7", d:"7 Nov 2026", n:["🛠 Sim discrepancies (same as the AQP Run-and-Grade): on Setup, the Run tab and Debrief. Record each discrepancy with the Simulator / FSTD ID and an automatic time stamp (clock + sim time); the button shows the count; saved with the session; printed on their own last page of the grade-sheet PDF for the simulator logbook / sim maintenance. Not part of the grade record."]},
  {v:"2026.11.07.6", d:"7 Nov 2026", n:["Special Tracking: the PCWU can be linked (or imported) so the record shows the ST pilot got a PCWU and what the instructor trained. Those items stay not required on the PC (“/”), but the PCWU column on the grade sheet and printed form shows what was done, and the Setup chips show it for the next instructor."]},
@@ -1142,11 +1144,13 @@ function renderHome(){
     <h3>Start an event</h3>
     <div class="starts">
       <div class="start pcwu"><span class="chip pcwu" style="align-self:flex-start">PCWU</span><h4>Proficiency Check Warm-Up</h4><p class="muted small">FFSQ-1 profile · 2:00 brief · 4:30 sim (incl. 0:30 SPOTs) · 1:00 debrief. Records the PCWU column: CAT II/III S / I / “/” (SCP only), Non-Appendix F C / I / “/”.</p><button class="btn primary" data-act="start" data-v="PCWU">New PCWU</button></div>
-      <div class="start pc"><span class="chip pc" style="align-self:flex-start">PC</span><h4>Proficiency Check</h4><p class="muted small">Standardized PC briefing, oral bank, walk-around, profile by PC type. Pulls the pilot’s PCWU record and blocks submission until every status block is filled correctly.</p><button class="btn pcb" data-act="start" data-v="PC">New PC</button></div>
+      <div class="start pc"><span class="chip pc" style="align-self:flex-start">PC</span><h4>Proficiency Check</h4><p class="muted small">Standardized PC briefing, oral bank, walk-around, profile by PC type. Pulls the pilot’s PCWU record and blocks submission until every status block is filled correctly.</p><div class="row"><button class="btn pcb" data-act="start" data-v="PC">New PC</button><button class="btn" data-act="starttr">New PC + Type Rating</button></div></div>
       <div class="start oral"><span class="chip oral" style="align-self:flex-start">ORAL</span><h4>Oral exam only</h4><p class="muted small">Equipment examination given as its own event — new hire, transition / type rating, requal long course (usually ~30 days before the PC). Only item 1 is graded; the PC then shows item 1 as “/”.</p><button class="btn" data-act="startoral">New oral</button></div>
       <div class="start catq"><span class="chip catq" style="align-self:flex-start">CAT II/III</span><h4>CAT II / III qualification sim</h4><p class="muted small">Separate sim for long-course requal and new hires: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Form EVENT “CAT II / III”, “/” everywhere else.</p><button class="btn" data-act="startcatq">New CAT II/III</button></div>
-      <div class="start man"><span class="chip man" style="align-self:flex-start">MANUAL</span><h4>Manual grade sheet</h4><p class="muted small">Any EVENT and CATEGORY on the form — RFT, RLOFT, QLOFT, UPRT/EET, TO/LDG recency or currency, 767 LDS / CFD, Other. No lesson guide: you mark the status blocks yourself, and it prints the official form.</p><button class="btn" data-act="startman">New manual sheet</button></div>
     </div>
+    <h3>Other events on the form <span class="muted small">— manual grade sheet</span></h3>
+    <p class="muted small" style="margin:0 0 8px">No lesson guide for these: you mark the status blocks yourself and it prints the official form with that EVENT box checked. Each pilot’s category is picked in Setup.</p>
+    <div class="manstarts">${FORM_EVENTS.filter(e => !["PC","TR","CAT"].includes(e.k)).map(e => `<button class="btn" data-act="startman" data-v="${e.k}"><span class="chip man">MANUAL</span> ${esc(e.l)}</button>`).join("")}<button class="btn" data-act="startman" data-v=""><span class="chip man">MANUAL</span> Blank form — pick boxes</button></div>
     <h3>Sessions</h3>
     ${list.length ? `<div class="slist">${list.map(row).join("")}</div>` : `<div class="empty">No sessions yet. Start a PCWU or a PC above${store.db ? "" : "; sessions are kept on this device"}. A PC finds the pilot’s PCWU by employee number from the shared store, this device, or an imported .json file.</div>`}
     <p class="muted small" style="margin-top:18px">Sources: ${Object.values(SRC).map(esc).join(" · ")}</p>`;
@@ -1249,7 +1253,7 @@ function evCard(s){
   const on = evFlags(s), lk = evLocked(s);
   return `<div style="margin-top:12px"><span class="eyebrow">Event — boxes as on the form</span><div class="evgrid">${FORM_EVENTS.map(e => `<button class="cb ${on.has(e.k)?"on":""}" data-act="evx" data-v="${e.k}" ${lk.includes(e.k)?"disabled":""}><span class="box"></span><span>${esc(e.l)}${lk.includes(e.k) ? " <small>this event</small>" : ""}</span></button>`).join("")}</div>
    ${on.has("OTH") ? `<label class="f" style="margin-top:6px">Other — what was it?${inp("setup/evOther", s.setup.evOther||"", "e.g. Line check prep, special training")}</label>` : ""}
-   <p class="why" style="margin:6px 0 0">${isMan(s) ? "Check every box that applies; they print exactly as marked." : `${lk.map(k => FORM_EVENTS.find(e => e.k === k).l).join(", ")} is set by this event type. Check any other box that also applies (e.g. Type Rating).`} AIMS will fill these when it is connected.</p></div>`;
+   <p class="why" style="margin:6px 0 0">Check every box that applies; they print exactly as marked. AIMS will fill these when it is connected.</p></div>`;
 }
 function manHdrCard(s){
   return `<div class="card" style="margin-top:12px"><h4>Form header entries</h4><div class="g2">
@@ -1291,7 +1295,8 @@ function renderSetup(s){
      ${isOral(s) || isCatQ(s) ? `<label class="f wide" style="grid-column:1/-1">Course (category of event on the form)<select id="f_cat" data-k="setup/cat">${CATS.filter(x=>x.k!=="ST").map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>` : ""}
    </div>
    ${isPC && !isOral(s) && !isCatQ(s) ? `<p class="why" style="margin:8px 0 0">${isMan(s) ? "Category of event" : "PC type"} is set for each pilot under Crew.</p>` : ""}
-   ${evCard(s)}
+   ${isMan(s) ? evCard(s) : `<p class="why" style="margin:10px 0 0">Event on the form: <b>${FORM_EVENTS.filter(e => evFlags(s).has(e.k)).map(e => e.l).join(" + ")}</b></p>
+   ${isPC && !isOral(s) && !isCatQ(s) ? `<div class="row" style="margin-top:6px"><button class="cb ${s.setup.typeRating?"on":""}" style="width:auto" data-act="tr"><span class="box"></span><span>Type rating</span></button></div>` : ""}`}
    </div>
    <div class="card"><h4>${isMan(s) ? "Conducted by (Instructor / Check Pilot / APD)" : isCatQ(s) ? "Conducted by (Instructor / Check Airman / APD)" : isOral(s) ? "Oral given by (Instructor / Check Airman / APD)" : isPC ? "PC Check Airman / APD" : "PCWU conducted by"}</h4><div class="g2">
      <label class="f">Name (last, first)${inp("setup/conductor/name",s.setup.conductor.name)}</label>
@@ -2022,7 +2027,8 @@ document.addEventListener("click", ev => {
     case "catqall": GP(s).forEach(p => CATQ_ITEMS.forEach(n => { const r = req(s,p,n); if (r.na || eff(s,p,n) && !isAuto(s,p,n)) return; const g = gRec(s,p,n); g.st = IT(n).naf ? "C" : "S"; if ((n===14||n===15) && !((g.subs||{}).nrm||(g.subs||{}).oei)) g.subs = {nrm:1}; }));
       GP(s).forEach(p => { if (!s.debrief.p[p].result) s.debrief.p[p].result = "SAT"; }); touch(s); toast("Marked — review CAT II/III normal / OEI"); break;
     case "startcatq": { const x = newSession("PC"); x.setup.catQual = true; x.setup.cat = "INI"; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
-    case "startman": { const x = newSession("PC"); x.setup.manual = true; x.setup.evx = {}; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
+    case "starttr": { const x = newSession("PC"); x.setup.typeRating = true; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
+    case "startman": { const x = newSession("PC"); x.setup.manual = true; x.setup.evx = v ? {[v]:1} : {}; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "evx": { if (evLocked(s).includes(v)) return; if (v === "TR") s.setup.typeRating = !s.setup.typeRating; else { s.setup.evx = s.setup.evx || {}; s.setup.evx[v] = s.setup.evx[v] ? 0 : 1; }
       if (isMan(s) && v === "PC" && s.setup.evx.PC) s.setup.signLine = "PC"; touch(s); break; }
     case "signline": s.setup.signLine = v; touch(s); break;
