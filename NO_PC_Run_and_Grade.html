@@ -457,17 +457,19 @@ const CAT = k => CATS.find(c => c.k === k) || CATS.find(c => c.k === "REC");
 const FORM_EVENTS = [
  {k:"PC",l:"PC",f:"Check Box60"},{k:"UPRT",l:"UPRT / EET",f:"Check Box72"},{k:"RCY",l:"TO/LDG Recency (expired LDG)",f:"Check Box73"},
  {k:"RFT",l:"RFT",f:"RFT"},{k:"TR",l:"Type Rating",f:"TYPE RATING"},{k:"CUR",l:"TO/LDG Currency",f:"TOLDG CURRENCY"},
- {k:"RLOFT",l:"RLOFT",f:"RLOFT"},{k:"CAT",l:"CAT II / III",f:"CAT II  III"},{k:"CFD",l:"767 CFD Currency",f:"767 CFD CURRENCY"},
- {k:"QLOFT",l:"QLOFT",f:"QLOFT"},{k:"LDS",l:"767 LDS Diff.",f:"767 LDS Diff"},{k:"OTH",l:"Other",f:"Other"}];
+ {k:"RLOFT",l:"RLOFT",f:"RLOFT"},{k:"CAT",l:"CAT II / III",f:"CAT II  III"},{k:"CFD",l:"767 CFD Currency",f:"767 CFD CURRENCY",x767:1},
+ {k:"QLOFT",l:"QLOFT",f:"QLOFT"},{k:"LDS",l:"767 LDS Diff.",f:"767 LDS Diff",x767:1},{k:"OTH",l:"Other",f:"Other"}];
 const isQL = s => !!(s && s.setup && s.setup.qloft);
 const isUP = s => !!(s && s.setup && s.setup.uprt);
 const isRF = s => !!(s && s.setup && s.setup.rft);
 const isRL = s => !!(s && s.setup && s.setup.rloft);
 const isLO = s => isQL(s) || isRL(s);
+/* 747-only app: the 767 boxes stay on the printed form (shared 13 APR 26 sheet) but are never offered or checked */
+const FORM_EVENTS_747 = FORM_EVENTS.filter(e => !e.x767);
 const isMan = s => !!(s && s.setup && (s.setup.manual || s.setup.qloft || s.setup.uprt || s.setup.rft || s.setup.rloft));
 const resultOnly = s => isLO(s) || isUP(s);   // Scott: QLOFT and UPRT record nothing but Sat / Unsat / Incomplete   // QLOFT / UPRT use the manual grade sheet (SCP marks the blocks)   // QLOFT uses the manual grade sheet (non-jeopardy; SCP marks the blocks)
 const evLocked = s => isRL(s) ? ["RLOFT"] : isQL(s) ? ["QLOFT"] : isUP(s) ? ["UPRT"] : isRF(s) ? ["RFT"] : isMan(s) ? [] : isCatQ(s) ? ["CAT"] : ["PC"];
-function evFlags(s){ const on = new Set(evLocked(s)); if (s.setup.typeRating) on.add("TR"); Object.entries(s.setup.evx || {}).forEach(([k,v]) => { if (v) on.add(k); }); return on; }
+function evFlags(s){ const on = new Set(evLocked(s)); if (s.setup.evx) { delete s.setup.evx.CFD; delete s.setup.evx.LDS; } if (s.setup.typeRating) on.add("TR"); Object.entries(s.setup.evx || {}).forEach(([k,v]) => { if (v) on.add(k); }); return on; }
 /* matrix code: R required · W waivable · / not required · * CAT II/III required on PC if U or / on PCWU · N required unless completed (C) on PCWU · T stall: T/O config in turn required, others waivable */
 function baseCode(n, cat){
   const pcwuCols = ["REC","RQF","RQ12"];
@@ -632,8 +634,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.22";
+const APP_VERSION = "2026.11.07.23";
 const REVISIONS = [
+ {v:"2026.11.07.23", d:"7 Nov 2026", n:["747 only: 767 CFD Currency and 767 LDS Diff. removed from every choice in the app. The printed grade sheet is unchanged — the shared 13 APR 26 form still shows its 767 boxes (left unchecked) so records sees the same form."]},
  {v:"2026.11.07.22", d:"7 Nov 2026", n:["Renamed N&O Run-and-Grade. Home screen opens by course, laid out like the 747 tab on Comply365: Initial New Hire / Initial Equipment / Transition, Recurrent Training, Requalification, Upgrade. Each course lists its events with Comply numbering; built events start with the PC type / course preset (Initial, Recurrent, Requal, Upgrade); events without a lesson guide yet are marked Coming (manual sheet offered); FFS for Requal / Upgrade opens the FFSU app until it moves in. Sessions show their course; each course lists its own sessions."]},
  {v:"2026.11.07.21", d:"7 Nov 2026", n:["Result-only grade sheets (RLOFT, QLOFT, UPRT) and manual header: TO / LDG boxes no longer stretch the page sideways."]},
  {v:"2026.11.07.20", d:"7 Nov 2026", n:["PDF viewer shows every page (drawn with pdf.js) — on the iPad the old viewer only showed page 1 of the lesson guides, scripts and paperwork."]},
@@ -1503,8 +1506,8 @@ function renderHome(){
     <div class="row">${aimsBtn()}<button class="btn" data-act="sample">Open sample PC</button><button class="btn" data-act="import">Import record (.json)</button></div></div>
     <div class="ctiles">${COURSES.map(c => { const n = c.items.filter(i => i.go || i.ext).length, cnt = Object.values(sessions).filter(s => courseOf(s) === c.k && s.status !== "submitted").length;
       return `<button class="ctile" data-act="course" data-v="${c.k}"><span class="cico">747</span><span class="ctxt"><b>${esc(c.t)}</b><span class="muted small">${c.items.length} items · ${n} ready${cnt ? ` · ${cnt} in progress` : ""}</span></span><span class="cgo">›</span></button>`; }).join("")}</div>
-    <details class="card" style="margin-top:12px"><summary><b>Manual grade sheet</b> <span class="muted small">— any EVENT on the form (TO/LDG recency or currency, 767 CFD / LDS, other)</span></summary>
-    <div class="manstarts" style="margin-top:8px">${FORM_EVENTS.filter(e => !["PC","TR","CAT","QLOFT","UPRT","RFT","RLOFT"].includes(e.k)).map(e => `<button class="btn" data-act="startman" data-v="${e.k}"><span class="chip man">MANUAL</span> ${esc(e.l)}</button>`).join("")}<button class="btn" data-act="startman" data-v=""><span class="chip man">MANUAL</span> Blank form — pick boxes</button></div></details>
+    <details class="card" style="margin-top:12px"><summary><b>Manual grade sheet</b> <span class="muted small">— any 747 EVENT on the form (TO/LDG recency or currency, other)</span></summary>
+    <div class="manstarts" style="margin-top:8px">${FORM_EVENTS_747.filter(e => !["PC","TR","CAT","QLOFT","UPRT","RFT","RLOFT"].includes(e.k)).map(e => `<button class="btn" data-act="startman" data-v="${e.k}"><span class="chip man">MANUAL</span> ${esc(e.l)}</button>`).join("")}<button class="btn" data-act="startman" data-v=""><span class="chip man">MANUAL</span> Blank form — pick boxes</button></div></details>
     <h3>All sessions</h3>
     ${list.length ? `<div class="slist">${list.map(row).join("")}</div>` : `<div class="empty">No sessions yet. Pick a course above${store.db ? "" : "; sessions are kept on this device"}. A PC finds the pilot’s PCWU by employee number from the shared store, this device, or an imported .json file.</div>`}
     <p class="muted small" style="margin-top:18px">Sources: ${Object.values(SRC).map(esc).join(" · ")}</p>`;
@@ -1605,7 +1608,7 @@ function sdAddPending(s){ const ta = $("sd_new"); const t = ta && (ta.value||"")
 function inp(k,v,ph,type){ return `<input id="f_${k.replace(/\W/g,"_")}" data-k="${k}" value="${esc(v)}" placeholder="${esc(ph||"")}" ${type?`type="${type}"`:""}>`; }
 function evCard(s){
   const on = evFlags(s), lk = evLocked(s);
-  return `<div style="margin-top:12px"><span class="eyebrow">Event — boxes as on the form</span><div class="evgrid">${FORM_EVENTS.map(e => `<button class="cb ${on.has(e.k)?"on":""}" data-act="evx" data-v="${e.k}" ${lk.includes(e.k)?"disabled":""}><span class="box"></span><span>${esc(e.l)}${lk.includes(e.k) ? " <small>this event</small>" : ""}</span></button>`).join("")}</div>
+  return `<div style="margin-top:12px"><span class="eyebrow">Event — boxes as on the form</span><div class="evgrid">${FORM_EVENTS_747.map(e => `<button class="cb ${on.has(e.k)?"on":""}" data-act="evx" data-v="${e.k}" ${lk.includes(e.k)?"disabled":""}><span class="box"></span><span>${esc(e.l)}${lk.includes(e.k) ? " <small>this event</small>" : ""}</span></button>`).join("")}</div>
    ${on.has("OTH") ? `<label class="f" style="margin-top:6px">Other — what was it?${inp("setup/evOther", s.setup.evOther||"", "e.g. Line check prep, special training")}</label>` : ""}
    <p class="why" style="margin:6px 0 0">Check every box that applies; they print exactly as marked. AIMS will fill these when it is connected.</p></div>`;
 }
@@ -2612,7 +2615,7 @@ document.addEventListener("click", ev => {
     case "startup": { const x = newSession("PC"); x.setup.uprt = true; x.setup.pcat = ["INI","INI"]; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "startql": { const x = newSession("PC"); x.setup.qloft = true; x.setup.pcat = ["INI","INI"]; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "startman": { const x = newSession("PC"); x.setup.manual = true; x.setup.evx = v ? {[v]:1} : {}; if (b.dataset.c) { x.setup.course = b.dataset.c; const cc = COURSE(b.dataset.c); if (cc) x.setup.pcat = [cc.cat, cc.cat]; } sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
-    case "evx": { if (evLocked(s).includes(v)) return; if (v === "TR") s.setup.typeRating = !s.setup.typeRating; else { s.setup.evx = s.setup.evx || {}; s.setup.evx[v] = s.setup.evx[v] ? 0 : 1; }
+    case "evx": { if (evLocked(s).includes(v) || !FORM_EVENTS_747.some(e => e.k === v)) return; if (v === "TR") s.setup.typeRating = !s.setup.typeRating; else { s.setup.evx = s.setup.evx || {}; s.setup.evx[v] = s.setup.evx[v] ? 0 : 1; }
       if (isMan(s) && v === "PC" && s.setup.evx.PC) s.setup.signLine = "PC"; touch(s); break; }
     case "signline": s.setup.signLine = v; touch(s); break;
     case "gpw": { const g = gRec(s,p,n); g.pw = g.pw === v ? "" : v; touch(s); break; }
