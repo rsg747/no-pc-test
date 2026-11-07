@@ -108,6 +108,7 @@ main{padding-block:22px 80px}
 .chip{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
 .chip.oral{background:#3b2a6b;color:#fff} .start.oral{border-top:4px solid #3b2a6b}
 .chip.catq{background:#1d4775;color:#fff} .start.catq{border-top:4px solid #1d4775}
+.chip.man{background:#5b3a8a;color:#fff} .start.man{border-top:4px solid #5b3a8a}
 .chip.ok{background:var(--okbg);color:var(--ok)} .chip.warn{background:var(--warnbg);color:var(--warn)} .chip.bad{background:var(--badbg);color:var(--bad)}
 .chip.info{background:var(--infobg);color:var(--info)} .chip.mute{background:var(--mutebg);color:var(--mute)}
 .chip.pcwu{background:var(--pcwu);color:#fff} .chip.pc{background:var(--pc);color:var(--signal-ink)}
@@ -169,6 +170,12 @@ ul.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap
 .cb.on .box::after{content:"";width:9px;height:5px;border:2.5px solid var(--panel);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .cb.on>span:last-child{color:var(--muted)}
 .cb small{display:block;color:var(--muted);font-size:13px}
+.cb[disabled]{cursor:default;opacity:.85}
+.evgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 8px;margin-top:4px}
+@media (max-width:640px){.evgrid{grid-template-columns:1fr 1fr}}
+.docbox{font:inherit;font-size:13px;padding:4px 8px;border:1.5px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink);cursor:pointer}
+.docbox.x{background:var(--ok);border-color:var(--ok);color:#fff}
+.docbox.x::before{content:"☒ "}
 .ofps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}
 .ofp{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--brand2);border-radius:8px;padding:14px;min-width:0}
 .ofp-h{font-family:var(--f-display);font-size:20px;font-weight:700;margin-bottom:8px}
@@ -414,18 +421,30 @@ const NAF_NOTE = {27:"Required only on a type rating; may be given on a PC. Visu
 
 /* ---------- PC categories → PC Guide 6.7.2 Progressive Summary columns ---------- */
 const CATS = [
+ {k:"INI",  label:"Initial (new hire) PC",                form:"INITIAL", noW:"Initial qualification", note:"PC Guide 6.7.2 has no Initial column; the app applies the Upgrade column (no waivers, all stalls). Confirm with Standards."},
+ {k:"TRN",  label:"Transition PC",                        form:"TRANSITION"},
+ {k:"UPG",  label:"Upgrade PC",                           form:"UPGRADE", noW:"PIC Upgrade"},
  {k:"REC",  label:"Recurrent PC",                         form:"RECURRENT"},
  {k:"RQF",  label:"Requalification PC — failed event",    form:"REQUALIFICATION", noW:"Requalification after a failed event"},
  {k:"RQ12", label:"Requalification PC — up to 12 months", form:"REQUALIFICATION", noW:"Requalification"},
  {k:"RQ35", label:"Requalification PC — 12–35 months",    form:"REQUALIFICATION", noW:"Requalification"},
  {k:"RQ59", label:"Requalification PC — 36–59 months",    form:"REQUALIFICATION", noW:"Requalification"},
  {k:"RQ60", label:"Requalification PC — more than 59 months", form:"REQUALIFICATION", noW:"Requalification"},
- {k:"TRN",  label:"Transition PC",                        form:"TRANSITION"},
- {k:"UPG",  label:"Upgrade PC",                           form:"UPGRADE", noW:"PIC Upgrade"},
- {k:"INI",  label:"Initial (new hire) PC",                form:"INITIAL", noW:"Initial qualification", note:"PC Guide 6.7.2 has no Initial column; the app applies the Upgrade column (no waivers, all stalls). Confirm with Standards."},
+ {k:"REF",  label:"Refresher",                            form:"REFRESHER", note:"No PC Guide 6.7.2 column for Refresher — graded like a course PC without a PCWU (CAT II/III and Non-App F “/”, ★ waivers at SCP discretion). Use the manual grade sheet if that doesn’t fit."},
+ {k:"CON",  label:"Consolidation",                        form:"CONSOLIDATION", note:"No PC Guide 6.7.2 column for Consolidation — graded like a course PC without a PCWU. Use the manual grade sheet if that doesn’t fit."},
+ {k:"ADM",  label:"Administrative",                       form:"ADMINISTRATIVE", note:"No PC Guide 6.7.2 column for Administrative — graded like a course PC without a PCWU. Use the manual grade sheet if that doesn’t fit."},
  {k:"ST",   label:"Special Tracking PC",                  form:"SPECIAL TRACKING", note:"Category of event is Special Tracking only (RECURRENT is not checked)."}
 ];
-const CAT = k => CATS.find(c => c.k === k) || CATS[0];
+const CAT = k => CATS.find(c => c.k === k) || CATS.find(c => c.k === "REC");
+/* EVENT boxes exactly as on TC_PC_RFT_REC 13 APR 26 (same 3-column order). f = PDF field (some are misnamed in the PDF) */
+const FORM_EVENTS = [
+ {k:"PC",l:"PC",f:"Check Box60"},{k:"UPRT",l:"UPRT / EET",f:"Check Box72"},{k:"RCY",l:"TO/LDG Recency (expired LDG)",f:"Check Box73"},
+ {k:"RFT",l:"RFT",f:"RFT"},{k:"TR",l:"Type Rating",f:"TYPE RATING"},{k:"CUR",l:"TO/LDG Currency",f:"TOLDG CURRENCY"},
+ {k:"RLOFT",l:"RLOFT",f:"RLOFT"},{k:"CAT",l:"CAT II / III",f:"CAT II  III"},{k:"CFD",l:"767 CFD Currency",f:"767 CFD CURRENCY"},
+ {k:"QLOFT",l:"QLOFT",f:"QLOFT"},{k:"LDS",l:"767 LDS Diff.",f:"767 LDS Diff"},{k:"OTH",l:"Other",f:"Other"}];
+const isMan = s => !!(s && s.setup && s.setup.manual);
+const evLocked = s => isMan(s) ? [] : isCatQ(s) ? ["CAT"] : ["PC"];
+function evFlags(s){ const on = new Set(evLocked(s)); if (s.setup.typeRating) on.add("TR"); Object.entries(s.setup.evx || {}).forEach(([k,v]) => { if (v) on.add(k); }); return on; }
 /* matrix code: R required · W waivable · / not required · * CAT II/III required on PC if U or / on PCWU · N required unless completed (C) on PCWU · T stall: T/O config in turn required, others waivable */
 function baseCode(n, cat){
   const pcwuCols = ["REC","RQF","RQ12"];
@@ -559,8 +578,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.7";
+const APP_VERSION = "2026.11.07.8";
 const REVISIONS = [
+ {v:"2026.11.07.8", d:"7 Nov 2026", n:["EVENT and CATEGORY match the 13 APR 26 form: Setup shows all 12 EVENT boxes (PC, UPRT/EET, TO/LDG Recency, RFT, Type Rating, TO/LDG Currency, RLOFT, CAT II/III, 767 CFD Currency, QLOFT, 767 LDS Diff., Other + text) and every category (Initial, Transition, Upgrade, Recurrent, Requalification, Refresher, Consolidation, Administrative, Special Tracking). AIMS will fill them once connected.","New: Manual grade sheet (Sessions → New manual sheet) — any event / category; mark the status blocks and PCWU column yourself, header entries (sim IDs, times, TO/LDG, documents, which signature line) and print the official form. Only the result and remarks for U / I / repeats are checked."]},
  {v:"2026.11.07.7", d:"7 Nov 2026", n:["🛠 Sim discrepancies (same as the AQP Run-and-Grade): on Setup, the Run tab and Debrief. Record each discrepancy with the Simulator / FSTD ID and an automatic time stamp (clock + sim time); the button shows the count; saved with the session; printed on their own last page of the grade-sheet PDF for the simulator logbook / sim maintenance. Not part of the grade record."]},
  {v:"2026.11.07.6", d:"7 Nov 2026", n:["Special Tracking: the PCWU can be linked (or imported) so the record shows the ST pilot got a PCWU and what the instructor trained. Those items stay not required on the PC (“/”), but the PCWU column on the grade sheet and printed form shows what was done, and the Setup chips show it for the next instructor."]},
  {v:"2026.11.07.5", d:"7 Nov 2026", n:["PC type is now chosen for each pilot under Crew (crews can mix types), and Special Tracking is one of the PC types instead of a checkbox. Existing sessions keep their types."]},
@@ -729,6 +749,8 @@ const hm = m => `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
 /* PC type is per pilot (setup.pcat[p]) — a crew can mix types (rarely); Special Tracking is a PC type, not a flag */
 const pcat = (s,p) => (s.setup.oralOnly || s.setup.catQual) ? s.setup.cat : (s.setup.pcat && s.setup.pcat[p]) || (s.setup.st && s.setup.st[p] ? "ST" : (s.setup.cat === "ST" ? "REC" : s.setup.cat));
 function catLabel(s){
+  if (isMan(s)) { const ev = FORM_EVENTS.filter(e => evFlags(s).has(e.k)).map(e => e.k === "OTH" && s.setup.evOther ? s.setup.evOther : e.l);
+    return "Manual · " + (ev.join(" + ") || "event not set") + " · " + [...new Set(GP(s).map(p => CAT(pcat(s,p)).form))].map(x => x[0] + x.slice(1).toLowerCase()).join(" / "); }
   if (isOral(s)) return "Oral exam · " + CAT(s.setup.cat).label.replace(" PC","");
   if (isCatQ(s)) return "CAT II/III sim · " + CAT(s.setup.cat).label.replace(" PC","");
   const ls = [...new Set(GP(s).map(p => CAT(pcat(s,p)).label))];
@@ -758,7 +780,7 @@ function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",s
 function newSession(kind){
   return {schema:SCHEMA, program:"N&O", form:FORM_REV, kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
     setup:{date:today(), device:"", sim:"", cat:"REC", st:[false,false], order:[0,1], failedQual:[false,false], lapsed:[false,false], typeRating:false,
-      conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null], pcat:["REC","REC"], oralOnly:false, oralDone:[null,null], catQual:false, otherTime:""},
+      conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null], pcat:["REC","REC"], oralOnly:false, oralDone:[null,null], catQual:false, otherTime:"", manual:false, evx:{}, evOther:"", device2:"", pcwuTime:"", evTime:"", signLine:"INSTR"},
     docs:[{},{}],
     brief:{checked:{}, notes:"", startedAt:null, elapsed:0, bank:1, oral:[{},{}], walk:[{},{}], open:{}},
     run:{t:[{elapsed:0,startedAt:null},{elapsed:0,startedAt:null}], cur:0, ev:{}},
@@ -818,6 +840,7 @@ function oralCandidates(s,p){
 function oralSnap(w,i){ return {date:w.setup.date, by:w.setup.conductor.name||"", sid:w.id, result:w.debrief.p[i].result||""}; }
 function req(s,p,n){
   const it = IT(n), duty = s.setup.pilots[p].duty;
+  if (isMan(s)) return {code:"M", why:"Manual entry — mark what the form needs; leave it blank if not used", lock:"", credited:false, cwhy:"", waivable:true};
   if (isOral(s) && n !== 1) return {code:"", na:true, oralSkip:true, why:"Not part of an oral-only event"};
   if (isCatQ(s)) {
     if (!CATQ_ITEMS.includes(n)) return {code:"/", na:true, why:"Not part of the CAT II/III qualification sim — “/”"};
@@ -847,6 +870,7 @@ function req(s,p,n){
 /* allowed PC status entries */
 function allowed(s,p,n){
   const it = IT(n), r = req(s,p,n);
+  if (isMan(s)) return ["S","U","C","I","W","/"];
   if (r.na) return ["/"];
   const slash = r.credited || r.code === "/";
   if (it.naf) return slash ? ["C","I","/"] : ["C","I"];
@@ -872,6 +896,7 @@ function pcwuCell(s,p,n){ // returns {shaded, val, auto}
   const it = IT(n);
   if (!(it.cred || it.naf)) return {shaded:true, val:""};
   const g = (s.g[p]||{})[n] || {};
+  if (isMan(s)) return {val:g.pw || "", why:""};
   if (n === 31 && s.setup.pilots[p].duty !== "CA") return {val:"/", auto:true, why:"FO — not applicable"};
   if (pcat(s,p) === "ST" && !g.st) return {val:"/", auto:true, why:"Special Tracking — CAT II/III and Non-App F not required (extra PC between base months; doesn’t reset the clock). Grade only if done."};
   if (it.cred && s.setup.conductor.role !== "SCP") return {val:"/", auto:true, why:"CAT II/III certification must be graded by a SCP — it will be graded on the PC"};
@@ -888,7 +913,19 @@ function problems(s,p){
   const out = [], P = s.setup.pilots[p], who = pname(s,p);
   const add = (n,msg,warn) => out.push({n,msg,warn:!!warn});
   if (!P.name.trim() || !P.emp.trim()) add(0,"Pilot name and employee number");
-  if (!s.setup.conductor.name.trim()) add(0, isCatQ(s) || isOral(s) ? "Conducted by — name" : s.kind==="PC" ? "PC Check Airman name" : "PCWU instructor / Check Airman name");
+  if (!s.setup.conductor.name.trim()) add(0, isCatQ(s) || isOral(s) || isMan(s) ? "Conducted by — name" : s.kind==="PC" ? "PC Check Airman name" : "PCWU instructor / Check Airman name");
+  if (isMan(s)) {   // manual grade sheet: the SCP fills the form; only the result and remarks for U / I / repeats are checked
+    const res = s.debrief.p[p].result;
+    if (!res) add(0,"Result not selected");
+    if (!evFlags(s).size) add(0,"Mark at least one EVENT box in Setup");
+    if (evFlags(s).has("OTH") && !(s.setup.evOther||"").trim()) add(0,"EVENT Other — say what it was");
+    let any = false;
+    ITEMS.forEach(it => { const g = (s.g[p]||{})[it.n] || {}, v = g.st || ""; if (v || g.pw) any = true;
+      if ((v === "U" || v === "I" || g.rep) && !(g.note||"").trim() && !(s.debrief.p[p].remarks||"").trim()) add(it.n, `${it.t}: ${g.rep ? "repeated (X)" : v} needs a remark`);
+      if (res === "SAT" && (v === "U" || v === "I") && !it.naf) add(0, "Result is Satisfactory but an item is graded U / I"); });
+    if (!any) add(0,"No status blocks filled — blank form", true);
+    return out;
+  }
   if (isCatQ(s)) {
     if (!s.setup.device.trim()) add(0,"Simulator FAA ID");
     const res = s.debrief.p[p].result, inc = res === "INC";
@@ -1064,7 +1101,7 @@ function sampleSessions(){
 }
 
 /* ============================================================ render: header + nav */
-const VIEWS = s => isCatQ(s) ? [["home","Sessions"],["setup","Setup"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
+const VIEWS = s => isCatQ(s) || isMan(s) ? [["home","Sessions"],["setup","Setup"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
   : isOral(s) ? [["home","Sessions"],["setup","Setup"],["brief","Oral"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
   : [["home","Sessions"],["setup","Setup"],["brief","Brief"],["run","Run"],["sheet","Grade sheet"],["debrief","Debrief & submit"]];
 function renderStatus(state){
@@ -1080,7 +1117,7 @@ function renderHeader(){
   $("hdr").innerHTML = `<div class="brandrow"><span class="stamp">N&amp;O</span>
     <div class="ttl"><span class="eyebrow">N&amp;O · 747 Non-AQP</span><h1>PCWU · PC Run-and-Grade</h1>
       <div class="ver">v${APP_VERSION} · <button data-act="update">↻ Check for updates</button> · <button data-act="ref" data-v="revs">Revisions</button>${newerVer ? ` <button class="newver" data-act="update">Update to v${esc(newerVer)}</button>` : ""}</div></div>
-    ${s ? `<span class="kchip ${s.kind==="PC"?"pc":""}">${s.kind}</span>` : ""}
+    ${s ? `<span class="kchip ${s.kind==="PC"?"pc":""}">${isMan(s) ? "MANUAL" : isCatQ(s) ? "CAT II/III" : isOral(s) ? "ORAL" : s.kind}</span>` : ""}
     <span class="grow"></span>
     ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(catLabel(s))} · ${esc(s.setup.date)}</span></div>` : ""}
     <span class="pill" id="storeState"></span>
@@ -1094,7 +1131,7 @@ function renderHeader(){
 /* ============================================================ HOME */
 function renderHome(){
   const list = Object.values(sessions).sort((a,b) => b.updatedAt - a.updatedAt);
-  const row = s => `<div class="srow"><span class="scode"><span class="chip ${isCatQ(s)?"catq":isOral(s)?"oral":s.kind==="PC"?"pc":"pcwu"}">${isCatQ(s)?"CAT II/III":isOral(s)?"ORAL":s.kind}</span></span>
+  const row = s => `<div class="srow"><span class="scode"><span class="chip ${isMan(s)?"man":isCatQ(s)?"catq":isOral(s)?"oral":s.kind==="PC"?"pc":"pcwu"}">${isMan(s)?"MANUAL":isCatQ(s)?"CAT II/III":isOral(s)?"ORAL":s.kind}</span></span>
      <div class="smain"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span class="muted small">${esc(catLabel(s))} · ${esc(s.setup.date)} · ${esc(s.setup.conductor.name || "—")} (${esc(s.setup.conductor.role)})</span></div>
      <span class="chip ${s.status==="submitted"?"ok":"info"}">${s.status==="submitted"?"Submitted":"In progress"}</span>
      <div class="sact"><button class="btn small" data-act="open" data-v="${s.id}">Open</button>
@@ -1108,6 +1145,7 @@ function renderHome(){
       <div class="start pc"><span class="chip pc" style="align-self:flex-start">PC</span><h4>Proficiency Check</h4><p class="muted small">Standardized PC briefing, oral bank, walk-around, profile by PC type. Pulls the pilot’s PCWU record and blocks submission until every status block is filled correctly.</p><button class="btn pcb" data-act="start" data-v="PC">New PC</button></div>
       <div class="start oral"><span class="chip oral" style="align-self:flex-start">ORAL</span><h4>Oral exam only</h4><p class="muted small">Equipment examination given as its own event — new hire, transition / type rating, requal long course (usually ~30 days before the PC). Only item 1 is graded; the PC then shows item 1 as “/”.</p><button class="btn" data-act="startoral">New oral</button></div>
       <div class="start catq"><span class="chip catq" style="align-self:flex-start">CAT II/III</span><h4>CAT II / III qualification sim</h4><p class="muted small">Separate sim for long-course requal and new hires: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Form EVENT “CAT II / III”, “/” everywhere else.</p><button class="btn" data-act="startcatq">New CAT II/III</button></div>
+      <div class="start man"><span class="chip man" style="align-self:flex-start">MANUAL</span><h4>Manual grade sheet</h4><p class="muted small">Any EVENT and CATEGORY on the form — RFT, RLOFT, QLOFT, UPRT/EET, TO/LDG recency or currency, 767 LDS / CFD, Other. No lesson guide: you mark the status blocks yourself, and it prints the official form.</p><button class="btn" data-act="startman">New manual sheet</button></div>
     </div>
     <h3>Sessions</h3>
     ${list.length ? `<div class="slist">${list.map(row).join("")}</div>` : `<div class="empty">No sessions yet. Start a PCWU or a PC above${store.db ? "" : "; sessions are kept on this device"}. A PC finds the pilot’s PCWU by employee number from the shared store, this device, or an imported .json file.</div>`}
@@ -1188,7 +1226,7 @@ function aimsBtn(){ return `<button class="btn aimsload" data-act="aimsopen">⤓
    printed on their own last page of the grade-sheet PDF for the simulator logbook / sim maintenance. Not part of the grade record. */
 function simDisc(s){ s.simDisc = s.simDisc || {fstd:"", items:[]}; if (!s.simDisc.fstd) { const sim = SIMS.find(x => x.id === s.setup.sim); s.simDisc.fstd = sim ? `${sim.name} · FAA ${sim.faa} · ${sim.loc}` : (s.setup.device ? "FAA " + s.setup.device : ""); } return s.simDisc; }
 function sdBtn(s){ const n = ((s.simDisc||{}).items||[]).length; return `<button class="btn small sdbtn ${n?"has":""}" data-act="sdopen">🛠 Sim discrepancies${n ? " (" + n + ")" : ""}</button>`; }
-function sdStamp(s){ const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}${s.kind === "PCWU" || (s.kind === "PC" && !isOral(s)) ? " · " + simNow(s) : ""}`; }
+function sdStamp(s){ const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}${s.kind === "PCWU" || (s.kind === "PC" && !isOral(s) && !isMan(s) && !isCatQ(s)) ? " · " + simNow(s) : ""}`; }
 function drawSD(){
   const s = cur(), v = $("sdView"); if (!s) return; const d = simDisc(s);
   v.innerHTML = `<div class="pdfbar" role="dialog" aria-modal="true" aria-label="Simulator discrepancies"><b>🛠 Simulator discrepancies</b><button class="btn" data-act="sdclose">✓ Done</button></div>
@@ -1207,6 +1245,22 @@ function sdAddPending(s){ const ta = $("sd_new"); const t = ta && (ta.value||"")
 
 /* ============================================================ SETUP */
 function inp(k,v,ph,type){ return `<input id="f_${k.replace(/\W/g,"_")}" data-k="${k}" value="${esc(v)}" placeholder="${esc(ph||"")}" ${type?`type="${type}"`:""}>`; }
+function evCard(s){
+  const on = evFlags(s), lk = evLocked(s);
+  return `<div style="margin-top:12px"><span class="eyebrow">Event — boxes as on the form</span><div class="evgrid">${FORM_EVENTS.map(e => `<button class="cb ${on.has(e.k)?"on":""}" data-act="evx" data-v="${e.k}" ${lk.includes(e.k)?"disabled":""}><span class="box"></span><span>${esc(e.l)}${lk.includes(e.k) ? " <small>this event</small>" : ""}</span></button>`).join("")}</div>
+   ${on.has("OTH") ? `<label class="f" style="margin-top:6px">Other — what was it?${inp("setup/evOther", s.setup.evOther||"", "e.g. Line check prep, special training")}</label>` : ""}
+   <p class="why" style="margin:6px 0 0">${isMan(s) ? "Check every box that applies; they print exactly as marked." : `${lk.map(k => FORM_EVENTS.find(e => e.k === k).l).join(", ")} is set by this event type. Check any other box that also applies (e.g. Type Rating).`} AIMS will fill these when it is connected.</p></div>`;
+}
+function manHdrCard(s){
+  return `<div class="card" style="margin-top:12px"><h4>Form header entries</h4><div class="g2">
+   <label class="f">Simulator ID — PCWU box${inp("setup/device2", s.setup.device2||"", "blank if none")}</label>
+   <label class="f">PCWU time (h+mm)${inp("setup/pcwuTime", s.setup.pcwuTime||"", "e.g. 4+30")}</label>
+   <label class="f">PC / RFT / R-LOFT / QLOFT time (h+mm)${inp("setup/evTime", s.setup.evTime||"", "e.g. 2+15")}</label>
+   <label class="f">Other Training Time (h+mm)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
+   ${GP(s).map(p => `<label class="f">${esc(pname(s,p))}: TO / LDGs<span class="row" style="gap:6px">${inp(`counts/${p}/to`, s.counts[p].to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, s.counts[p].ldg, "LDG")}</span></label>`).join("")}
+   </div>
+   <div style="margin-top:10px"><span class="eyebrow">Your signature goes on</span><div class="seg">${[["INSTR","Instructor / Ck Pilot / APD line (PCWU, RFT, Type/Init PC, Oral, LOFT, UPRT/EET, Other)"],["PC","PC Check Pilot / APD line"]].map(([k,l]) => `<button class="${(s.setup.signLine||"INSTR")===k?"on":""}" data-act="signline" data-v="${k}">${esc(l)}</button>`).join("")}</div></div></div>`;
+}
 function renderSetup(s){
   const isPC = s.kind === "PC", c = CAT(s.setup.cat);
   const pil = p => { const P = s.setup.pilots[p];
@@ -1218,14 +1272,15 @@ function renderSetup(s){
     </div>
     <div class="row" style="margin-top:10px"><button class="cb ${P.ssi?"on":""}" style="width:auto" data-act="ssi" data-p="${p}"><span class="box"></span><span>Seat support (SSI) — not graded</span></button></div>
     ${P.ssi ? `<p class="why" style="margin:6px 0 0">This seat is seat support only. It has no grade sheet, no oral or walk-around marks, and is left out of every check.${isPC ? " PC device time becomes 3:00." : ""}</p></div>` : `
-    ${isOral(s) || isCatQ(s) ? "" : `<label class="f" style="margin-top:10px">${isPC ? "PC type" : "PC type (PCWU for)"}<select id="f_pcat${p}" data-k="setup/pcat/${p}">${CATS.filter(x => isPC || ["REC","RQF","RQ12","ST"].includes(x.k)).map(x => `<option value="${x.k}" ${x.k===pcat(s,p)?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
+    ${isOral(s) || isCatQ(s) ? "" : `<label class="f" style="margin-top:10px">${isMan(s) ? "Category of event" : isPC ? "PC type" : "PC type (PCWU for)"}<select id="f_pcat${p}" data-k="setup/pcat/${p}">${CATS.filter(x => isPC || ["REC","RQF","RQ12","ST"].includes(x.k)).map(x => `<option value="${x.k}" ${x.k===pcat(s,p)?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
     ${CAT(pcat(s,p)).note ? `<p class="why" style="margin:6px 0 0">${esc(CAT(pcat(s,p)).note)}</p>` : ""}`}
-    ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
-    ${isPC && !isOral(s) && !isCatQ(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) || pcat(s,p) === "ST" ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course.</p>`) : ""}</div>`}`; };
-  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div><div class="row">${isOral(s) ? "" : sdBtn(s)}${s.status==="submitted" ? "" : aimsBtn()}</div></div>
+    ${isMan(s) ? "" : waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
+    ${isPC && !isOral(s) && !isCatQ(s) && !isMan(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) || pcat(s,p) === "ST" ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course.</p>`) : ""}</div>`}`; };
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isMan(s) ? "Manual grade sheet" : isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isMan(s) ? "Manual grade sheet — any event on the form" : isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div><div class="row">${isOral(s) ? "" : sdBtn(s)}${s.status==="submitted" ? "" : aimsBtn()}</div></div>
   ${isCatQ(s) ? `<div class="banner info" style="margin-bottom:10px">CAT II/III qualification conducted on its own (long-course requal, new hire). Graded: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Every other block is “/”. Record TO / LDGs and the training time.</div>
    <div class="card" style="margin-bottom:12px"><div class="g2"><label class="f">Training time (h+mm, Other Training Time box)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
    ${GP(s).map(p => `<label class="f">${esc(pname(s,p))}: TO / LDGs<span class="row" style="gap:6px">${inp(`counts/${p}/to`, s.counts[p].to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, s.counts[p].ldg, "LDG")}</span></label>`).join("")}</div></div>` : ""}
+  ${isMan(s) ? `<div class="banner info" style="margin-bottom:10px">Fill the TC_PC_RFT_REC form directly — for an event the app doesn’t walk you through, or whenever you’d rather just mark the sheet. Pick the EVENT and each pilot’s CATEGORY, then mark the status blocks on the Grade sheet. Nothing is required except the result and a remark for U / I / repeated items.</div>` : ""}
   ${isOral(s) ? `<div class="banner info" style="margin-bottom:10px">Oral given as its own event (new hire, transition / type rating, requal long course). Only item 1 is graded; when this pilot’s PC is set up, it finds this oral by employee number and item 1 becomes “/”.</div>` : ""}
   ${s.aims ? `<div class="banner info" style="margin-bottom:10px">Loaded from AIMS: <b>${esc(s.aims.id)}</b> ${esc(s.aims.time||"")}${s.aims.demo ? " · sample data" : ""}</div>` : ""}
   <div class="cols">
@@ -1235,19 +1290,20 @@ function renderSetup(s){
      <label class="f">Simulator FAA ID${inp("setup/device",s.setup.device,"e.g. 584")}</label>`}
      ${isOral(s) || isCatQ(s) ? `<label class="f wide" style="grid-column:1/-1">Course (category of event on the form)<select id="f_cat" data-k="setup/cat">${CATS.filter(x=>x.k!=="ST").map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>` : ""}
    </div>
-   ${isPC && !isOral(s) && !isCatQ(s) ? `<p class="why" style="margin:8px 0 0">PC type is set for each pilot under Crew.</p>` : ""}
-   ${isPC ? `<div class="row" style="margin-top:10px"><button class="cb ${s.setup.typeRating?"on":""}" style="width:auto" data-act="tr"><span class="box"></span><span>Type rating (form EVENT box)</span></button></div>` : ""}
+   ${isPC && !isOral(s) && !isCatQ(s) ? `<p class="why" style="margin:8px 0 0">${isMan(s) ? "Category of event" : "PC type"} is set for each pilot under Crew.</p>` : ""}
+   ${evCard(s)}
    </div>
-   <div class="card"><h4>${isCatQ(s) ? "Conducted by (Instructor / Check Airman / APD)" : isOral(s) ? "Oral given by (Instructor / Check Airman / APD)" : isPC ? "PC Check Airman / APD" : "PCWU conducted by"}</h4><div class="g2">
+   <div class="card"><h4>${isMan(s) ? "Conducted by (Instructor / Check Pilot / APD)" : isCatQ(s) ? "Conducted by (Instructor / Check Airman / APD)" : isOral(s) ? "Oral given by (Instructor / Check Airman / APD)" : isPC ? "PC Check Airman / APD" : "PCWU conducted by"}</h4><div class="g2">
      <label class="f">Name (last, first)${inp("setup/conductor/name",s.setup.conductor.name)}</label>
      <label class="f">Employee no.${inp("setup/conductor/emp",s.setup.conductor.emp)}</label></div>
      ${isPC ? "" : `<div style="margin-top:10px"><span class="eyebrow">Role</span><div class="seg">${[["SCP","Simulator Check Pilot"],["INSTR","Instructor"]].map(([k,l])=>`<button class="${s.setup.conductor.role===k?"on":""}" data-act="role" data-v="${k}">${l}</button>`).join("")}</div>
      <p class="why" style="margin:6px 0 0">${s.setup.conductor.role==="SCP" ? "CAT II/III certified S here is credited toward the PC." : "Not a SCP: CAT II/III gets a diagonal line and is graded on the PC. Non-Appendix F maneuvers can still be recorded C / I."}</p></div>`}
    </div>
   </div>
+  ${isMan(s) ? manHdrCard(s) : ""}
   <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
-  ${isOral(s) || isCatQ(s) ? "" : runPlan(s)}
-  <div class="row end"><button class="btn primary" data-act="view" data-v="${isCatQ(s) ? "sheet" : "brief"}">${isCatQ(s) ? "Go to grading →" : isOral(s) ? "Go to the oral →" : "Go to brief →"}</button></div>`;
+  ${isOral(s) || isCatQ(s) || isMan(s) ? "" : runPlan(s)}
+  <div class="row end"><button class="btn primary" data-act="view" data-v="${isCatQ(s) || isMan(s) ? "sheet" : "brief"}">${isCatQ(s) || isMan(s) ? "Go to grading →" : isOral(s) ? "Go to the oral →" : "Go to brief →"}</button></div>`;
 }
 /* ⇅ Swap crewmembers: trade who flies Run 1 and Run 2 (PF 1st / PF 2nd). Everything stays with the person — grades, documents, PCWU link, notes and each run's timer. */
 function swapBtn(s){ if (GP(s).length !== 2) return "";
@@ -1446,12 +1502,13 @@ function gradeWidget(s,p,n){
       ${subs}${NAF_NOTE[n]?`<p class="why">${esc(NAF_NOTE[n])}</p>`:""}</div>`;
   }
   const r = req(s,p,n), v = eff(s,p,n), auto = isAuto(s,p,n), A = allowed(s,p,n);
-  const need = !v;
+  const need = !v && !isMan(s);
   const subs = it.subs ? `<div class="gsub">${it.subs.map(([k,l]) => `<button class="sb ${(g.subs||{})[k]?"on":""}" data-act="sub" data-p="${p}" data-n="${n}" data-v="${k}">${esc(l)}</button>`).join("")}</div>` : "";
-  const reqTag = r.na ? `<span class="req">N/A</span>` : r.credited ? `<span class="req C">PCWU credit</span>` : `<span class="req ${r.code==="W"||r.code==="T"?"W":r.code==="/"?"":"R"}" title="${esc(CODE_LABEL[r.code]||"")}">${r.code==="R"?"Required":r.code==="W"?"Waivable":r.code==="T"?"T/O stall required":r.code==="/"?"Not required":"Required"}</span>`;
+  const reqTag = isMan(s) ? `<span class="req">Manual</span>` : r.na ? `<span class="req">N/A</span>` : r.credited ? `<span class="req C">PCWU credit</span>` : `<span class="req ${r.code==="W"||r.code==="T"?"W":r.code==="/"?"":"R"}" title="${esc(CODE_LABEL[r.code]||"")}">${r.code==="R"?"Required":r.code==="W"?"Waivable":r.code==="T"?"T/O stall required":r.code==="/"?"Not required":"Required"}</span>`;
   return `<div class="gi ${need?"need":"done"}"><div class="gi-h"><span class="no">${n}</span><span class="nm">${esc(it.t)}</span>${it.wv ? `<span class="wvtag ${r.waivable?"ok":r.lock?"lock":""}" title="★ = waiver authority on the grade sheet">${r.waivable ? (n===21 ? "★ LDG & Clean waivable — SCP discretion" : "★ Waivable — SCP discretion") : r.lock ? "★ 🔒 Waiver not allowed" : n===10 ? "★ One of the two required" : "★ Not waivable"}</span>` : ""}${it.cert?`<span class="sym" title="Certification item">✈</span>`:""}${reqTag}</div>
    <div class="gv">${A.map(x => `<button class="gb v-${x==="/"?"sl":x} ${v===x?"on":""} ${v===x&&auto?"auto":""}" data-act="g" data-p="${p}" data-n="${n}" data-v="${x}" ${r.na?"disabled":""}>${g.rep && x==="S" ? "S · repeat passed" : g.rep && x==="U" ? "U · repeat failed" : x}</button>`).join("")}</div>
     ${!it.naf && !r.na ? `<div class="gv"><span class="why">Repeat column:</span><button class="sb ${g.rep?"on":""}" data-act="rep" data-p="${p}" data-n="${n}" data-v="X">${g.rep ? "X · maneuver was repeated" : "Mark X — maneuver repeated"}</button></div>` : ""}
+   ${isMan(s) && (it.cred || it.naf) ? `<div class="gv"><span class="why">PCWU column:</span>${(it.naf ? ["C","I","/"] : ["S","I","/"]).map(x => `<button class="gb v-${x==="/"?"sl":x} ${g.pw===x?"on":""}" data-act="gpw" data-p="${p}" data-n="${n}" data-v="${x}">${x}</button>`).join("")}</div>` : ""}
    ${r.credited ? `<p class="why cr">✓ ${esc(r.cwhy)}${g.st?" — re-evaluated on PC":""}</p>` : r.cwhy ? `<p class="why bad">${esc(r.cwhy)}</p>` : ""}
    ${r.lock && it.wv ? `<p class="why bad">🔒 ${esc(r.lock)}</p>` : ""}
    ${n===21 ? `<p class="why">${r.code==="R" ? "T/O (in turn), LDG and Clean all required." : "T/O config stall in a 15–30° turn required; LDG and Clean may be waived."}</p>` : ""}
@@ -1506,11 +1563,13 @@ function sheetCell(s,p,n,col){
   if (col === "pcwu") {
     if (s.kind === "PCWU") { const c = pcwuCell(s,p,n); if (c.shaded) return `<td class="c sh"></td>`; return `<td class="c ${c.auto?"auto":""} ro">${c.val||""}</td>`; }
     const L = pcwuOf(s,p); if (!(it.cred||it.naf)) return `<td class="c sh"></td>`;
+    if (isMan(s)) { const pw = ((s.g[p]||{})[n]||{}).pw || ""; return `<td class="c v-${pw==="/"?"sl":pw}" data-act="sel" data-v="${n}">${pw}</td>`; }
     return `<td class="c ro auto">${L ? ((L.items[n]||{}).st || "") : ""}</td>`;
   }
   if (col === "rep") { if (s.kind === "PCWU" || it.naf) return `<td class="c sh"></td>`; const g = (s.g[p]||{})[n]||{}; return `<td class="c ro">${g.rep||""}</td>`; }
   if (s.kind === "PCWU") return `<td class="c sh"></td>`;
   const v = eff(s,p,n), auto = isAuto(s,p,n);
+  if (isMan(s)) return `<td class="c v-${v==="/"?"sl":v}" data-act="sel" data-v="${n}">${v}</td>`;
   return `<td class="c ${!v?"miss":""} ${auto?"auto":""} v-${v==="/"?"sl":v}" data-act="sel" data-v="${n}" title="${esc(req(s,p,n).why||"")}">${v || "?"}</td>`;
 }
 function subLine(s,p,n){
@@ -1581,27 +1640,28 @@ function renderSheet(s){
   const left = Array.from({length:21},(_,i)=>i+1), right = Array.from({length:18},(_,i)=>i+22);
   const pcTime = fmtHM(totalEl(s));
   const box = (on,l) => `<span class="${on?"x":""}">${l}</span>`;
-  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC 13 APR 26</span><h2>${isPC ? "PC grade sheet" : "PCWU column"}</h2></div><button class="btn primary" data-act="printform">Print grade sheet</button></div>
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC 13 APR 26</span><h2>${isMan(s) ? "Manual grade sheet" : isPC ? "PC grade sheet" : "PCWU column"}</h2></div><button class="btn primary" data-act="printform">Print grade sheet</button></div>
    <div class="pilottabs" style="margin-top:10px">${GP(s).map(i => `<button class="btn ${ui.p===i?"primary":""}" data-act="pilot" data-v="${i}">${esc(pname(s,i))} · ${esc(s.setup.pilots[i].duty)}</button>`).join("")}</div>
-   ${isPC ? quickPanel(s,p) : ""}
-   ${isPC && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) && pcwuItemsOpen(s,p) ? `<div class="banner warn">No PCWU linked for this pilot — CAT II/III and every Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
+   ${isPC && !isMan(s) ? quickPanel(s,p) : ""}
+   ${isMan(s) ? `<p class="lede" style="margin:8px 0">Tap any block to mark it. Blank blocks print blank. Documents: tap to check.</p>` : ""}
+   ${isPC && !isMan(s) && !L && ["REC","RQF","RQ12"].includes(pcat(s,p)) && pcwuItemsOpen(s,p) ? `<div class="banner warn">No PCWU linked for this pilot — CAT II/III and every Non-Appendix F maneuver must be graded on the PC. Link it in Setup.</div>` : ""}
    ${seatRestricted(s,p) ? `<div class="banner bad">Unsatisfactory item recorded — seat restriction applies for the remainder of the session.</div>` : ""}
    <div class="formhdr">
     <div><div class="k">Name of airman · Employee no.</div><div class="v">${esc(P.name||"—")} · ${esc(P.emp||"—")}</div></div>
     <div><div class="k">CA / FO · A/C type</div><div class="v">${esc(P.duty)} · ${esc(P.acType)}</div></div>
-    ${isPC ? `<div style="flex-basis:100%"><div class="k">Documents checked</div><div class="boxes">${box((s.docs[p]||{}).faa,"FAA Certificate")}${box((s.docs[p]||{}).med,"Medical")}${box((s.docs[p]||{}).jepp,"Jepp Pubs")}${box((s.docs[p]||{}).manuals,"Manuals")}${box((s.docs[p]||{}).fcc,"FCC Permit")}${box((s.docs[p]||{}).photo,"Photo ID")}</div></div>` : ""}
-    <div><div class="k">Simulator ID # (PCWU / PC)</div><div class="v">${isPC ? `${esc(L?L.device:"—")} / ${esc(s.setup.device||"—")}` : esc(s.setup.device||"—")}</div></div>
-    <div><div class="k">TO / LDGs (3 min) · Times</div><div class="v">${isPC ? `<span class="row"><input class="in" style="width:70px;min-height:34px" id="to_${p}" data-k="counts/${p}/to" value="${esc(s.counts[p].to)}" inputmode="numeric" aria-label="Takeoffs"> / <input class="in" style="width:70px;min-height:34px" id="ldg_${p}" data-k="counts/${p}/ldg" value="${esc(s.counts[p].ldg)}" inputmode="numeric" aria-label="Landings"></span>` : ""}PCWU ${isPC ? esc(L?L.time:"—") : pcTime} · ${isPC?`PC ${pcTime}`:""}</div></div>
-    <div><div class="k">Event</div><div class="boxes">${box(true,"PC")}${box(s.setup.typeRating,"TYPE RATING")}</div></div>
+    ${isPC ? `<div style="flex-basis:100%"><div class="k">Documents checked</div><div class="boxes">${[["faa","FAA Certificate"],["med","Medical"],["jepp","Jepp Pubs"],["manuals","Manuals"],["fcc","FCC Permit"],["photo","Photo ID"]].map(([k,l]) => isMan(s) ? `<button class="docbox ${(s.docs[p]||{})[k]?"x":""}" data-act="doc" data-p="${p}" data-v="${k}">${l}</button>` : box((s.docs[p]||{})[k],l)).join("")}</div></div>` : ""}
+    <div><div class="k">Simulator ID # (PCWU / PC)</div><div class="v">${isMan(s) ? `${esc(s.setup.device2||"—")} / ${esc(s.setup.device||"—")}` : isPC ? `${esc(L?L.device:"—")} / ${esc(s.setup.device||"—")}` : esc(s.setup.device||"—")}</div></div>
+    <div><div class="k">TO / LDGs (3 min) · Times</div><div class="v">${isPC ? `<span class="row"><input class="in" style="width:70px;min-height:34px" id="to_${p}" data-k="counts/${p}/to" value="${esc(s.counts[p].to)}" inputmode="numeric" aria-label="Takeoffs"> / <input class="in" style="width:70px;min-height:34px" id="ldg_${p}" data-k="counts/${p}/ldg" value="${esc(s.counts[p].ldg)}" inputmode="numeric" aria-label="Landings"></span>` : ""}${isMan(s) ? `PCWU ${esc(s.setup.pcwuTime||"—")} · PC/RFT/LOFT ${esc(s.setup.evTime||"—")} · Other ${esc(s.setup.otherTime||"—")}` : `PCWU ${isPC ? esc(L?L.time:"—") : pcTime} · ${isPC?`PC ${pcTime}`:""}`}</div></div>
+    <div><div class="k">Event</div><div class="boxes">${FORM_EVENTS.filter(e => evFlags(s).has(e.k)).map(e => box(true, e.k === "OTH" ? "OTHER: " + (s.setup.evOther||"") : e.l.toUpperCase())).join("") || "—"}</div></div>
     <div><div class="k">Category of event</div><div class="boxes">${["INITIAL","TRANSITION","UPGRADE","RECURRENT","REQUALIFICATION","REFRESHER","CONSOLIDATION","ADMINISTRATIVE"].map(x => box(c.form===x,x)).join("")}${box(pcat(s,p)==="ST","SPECIAL TRACKING")}</div></div>
-    <div><div class="k">${isPC?"PC Check Airman":"PCWU Instructor / Ck Amn"}</div><div class="v">${esc(s.setup.conductor.name||"—")} · ${esc(s.setup.conductor.emp||"")}</div>${isPC && L ? `<div class="small muted">PCWU: ${esc(L.conductor||"—")} ${esc(L.condEmp||"")} · ${esc(L.date)}</div>` : ""}</div>
+    <div><div class="k">${isMan(s) ? ((s.setup.signLine||"INSTR") === "PC" ? "PC Check Pilot / APD" : "Instructor / Ck Pilot / APD") : isPC?"PC Check Airman":"PCWU Instructor / Ck Amn"}</div><div class="v">${esc(s.setup.conductor.name||"—")} · ${esc(s.setup.conductor.emp||"")}</div>${isPC && L ? `<div class="small muted">PCWU: ${esc(L.conductor||"—")} ${esc(L.condEmp||"")} · ${esc(L.date)}</div>` : ""}</div>
     ${isPC ? `<div><div class="k">Result</div><div class="boxes">${box(res==="SAT","SATISFACTORY / COMPLETE")}${box(res==="UNSAT","UNSAT / INCOMPLETE – REMOVED FROM FLIGHT STATUS")}${box(res==="INC","INCOMPLETE – SIM MALFUNCTION OR ILLNESS")}</div></div>` : ""}
    </div>
-   <div class="legend"><span>S Satisfactory · U Unsatisfactory · C Complete · I Incomplete · W Waived · / Not observed</span><span>★ waiver authority (PC) · ✈ certification item</span><span>Repeat: X = maneuver was repeated (one repeat, after training). Repeat result goes in Status (S passed / U failed).</span>${isPC?`<span>Grey “/” = filled automatically (credited or not required) · red “?” = must be graded</span>`:""}</div>
+   <div class="legend"><span>S Satisfactory · U Unsatisfactory · C Complete · I Incomplete · W Waived · / Not observed</span><span>★ waiver authority (PC) · ✈ certification item</span><span>Repeat: X = maneuver was repeated (one repeat, after training). Repeat result goes in Status (S passed / U failed).</span>${isPC && !isMan(s)?`<span>Grey “/” = filled automatically (credited or not required) · red “?” = must be graded</span>`:""}</div>
    <div class="sheet"><div class="scroll"><table class="rft">${head}<tbody>${rows(left)}</tbody></table></div><div class="scroll"><table class="rft">${head}<tbody>${rows(right)}</tbody></table></div></div>
    ${ui.sel ? `<div class="card" style="margin-top:14px;position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 6px 24px rgba(0,0,0,.18)"><div class="row" style="justify-content:space-between"><span class="eyebrow">Grade item ${ui.sel}</span><button class="btn small" data-act="sel" data-v="">Close</button></div>${gradeWidget(s,p,ui.sel)}</div>` : ""}
    ${isPC ? "" : `<h3>PCWU column — ${esc(pname(s,p))}</h3><div class="cols">${ITEMS.filter(it=>it.cred||it.naf).map(it => gradeWidget(s,p,it.n)).join("")}</div>`}
-   <p class="small muted">${isPC ? "Tap any PC/RFT status block to grade it. Every block must hold S, U, C, I, W or “/”." : "Shaded blocks are not marked on a PCWU. CAT II/III or Non-App F not trained to proficiency (I) must be completed on the PC."}</p>`;
+   <p class="small muted">${isMan(s) ? "Manual sheet — blocks are not checked against the PC Guide. Every U, I or repeated item needs a remark." : isPC ? "Tap any PC/RFT status block to grade it. Every block must hold S, U, C, I, W or “/”." : "Shaded blocks are not marked on a PCWU. CAT II/III or Non-App F not trained to proficiency (I) must be completed on the PC."}</p>`;
 }
 
 /* ============================================================ DEBRIEF */
@@ -1647,7 +1707,7 @@ function exportCSV(s){
   const out = [["program","kind","session","date","pc_type","pilot","emp","duty","item","item_name","requirement","repeat","pc_status","pcwu_status","credited","subs","note"].join(",")];
   GP(s).forEach(p => ITEMS.forEach(it => { const n = it.n, g = (s.g[p]||{})[n] || {};
     const r = s.kind === "PC" ? req(s,p,n) : {};
-    const pcw = s.kind === "PCWU" ? pcwuCell(s,p,n).val : (pcwuOf(s,p) ? ((pcwuOf(s,p).items[n]||{}).st||"") : "");
+    const pcw = isMan(s) ? (g.pw||"") : s.kind === "PCWU" ? pcwuCell(s,p,n).val : (pcwuOf(s,p) ? ((pcwuOf(s,p).items[n]||{}).st||"") : "");
     out.push(["N&O", s.kind, s.id, s.setup.date, pcat(s,p), pname(s,p), s.setup.pilots[p].emp, s.setup.pilots[p].duty, n, it.t, s.kind==="PC"?r.code:"", g.rep||"", s.kind==="PC"?eff(s,p,n):"", pcw, r.credited?"Y":"", Object.keys(g.subs||{}).filter(k=>g.subs[k]).join("/"), g.note||""].map(q).join(","));
   }));
   return out.join("\n");
@@ -1717,17 +1777,17 @@ function wrapLines(txt, max){ const out = []; String(txt||"").split(/\n+/).forEa
 function formValues(s,p){ // → {text:{field:value}, check:[field...], remarks:[lines]}
   const isPC = s.kind === "PC", P = s.setup.pilots[p], L = pcwuOf(s,p), c = CAT(pcat(s,p)), T = {}, C = [];
   T["EmployeeName"] = P.name; T["EEID"] = P.emp; T["Fleet"] = P.acType; C.push(P.duty === "CA" ? "CA" : "FO");
-  if (isCatQ(s)) C.push("CAT II  III"); else { C.push("Check Box60"); if (s.setup.typeRating) C.push("TYPE RATING"); }
-  const oral = isOral(s), catq = isCatQ(s);
+  FORM_EVENTS.forEach(e => { if (evFlags(s).has(e.k)) C.push(e.f); });
+  const oral = isOral(s), catq = isCatQ(s), man = isMan(s);
   if (isPC && !oral && !catq) Object.entries(FF_DOC).forEach(([k,f]) => { if ((s.docs[p]||{})[k]) C.push(f); });
   const sim = simById(s.setup.sim);
   const dev = simNo(s.setup.device) || (sim ? sim.faa : "");
-  T["Text9"] = oral ? "" : catq ? dev : isPC ? (L ? simNo(L.device) : "") : dev; T["Simulator ID"] = isPC && !oral && !catq ? dev : "";
+  T["Text9"] = man ? simNo(s.setup.device2) : oral ? "" : catq ? dev : isPC ? (L ? simNo(L.device) : "") : dev; T["Simulator ID"] = isPC && !oral && !catq ? dev : "";
   const cn = s.counts[p] || {}; T["Text10"] = oral ? "" : cn.to || ""; T["CATEGORY"] = oral ? "" : cn.ldg || "";
-  T["PC  RFT  RLOFTQLOFT Time"] = oral || catq ? "" : isPC ? (L ? L.time : "") : fmtHM(totalEl(s));
-  if (isPC && !oral && !catq) T["Text11"] = fmtHM(totalEl(s));
-  if (catq) T["Other Training Time HrsMin"] = s.setup.otherTime || "";
-  if (oral || catq) { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = s.debrief.signedBy || s.setup.conductor.name; T["Employee No_2"] = s.setup.conductor.emp; T["RESULT"] = mdy(s.debrief.signedAt || s.setup.date); }
+  T["PC  RFT  RLOFTQLOFT Time"] = man ? (s.setup.pcwuTime||"") : oral || catq ? "" : isPC ? (L ? L.time : "") : fmtHM(totalEl(s));
+  if (isPC && !oral && !catq) T["Text11"] = man ? (s.setup.evTime||"") : fmtHM(totalEl(s));
+  if (catq || man) T["Other Training Time HrsMin"] = s.setup.otherTime || "";
+  if (oral || catq || (man && (s.setup.signLine||"INSTR") !== "PC")) { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = s.debrief.signedBy || s.setup.conductor.name; T["Employee No_2"] = s.setup.conductor.emp; T["RESULT"] = mdy(s.debrief.signedAt || s.setup.date); }
   else if (isPC) { if (L) { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = L.conductor||""; T["Employee No_2"] = L.condEmp||""; T["RESULT"] = mdy(L.date); }
     T["PC Check Pilot  APD"] = s.debrief.signedBy || s.setup.conductor.name; T["Employee No_3"] = s.setup.conductor.emp; T["FAA InspectorExaminer"] = mdy(s.debrief.signedAt || s.setup.date); }
   else { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = s.debrief.signedBy || s.setup.conductor.name; T["Employee No_2"] = s.setup.conductor.emp; T["RESULT"] = mdy(s.debrief.signedAt || s.setup.date); }
@@ -1737,7 +1797,7 @@ function formValues(s,p){ // → {text:{field:value}, check:[field...], remarks:
   ITEMS.forEach(it => { const n = it.n, F = FF_ITEM[n], g = (s.g[p]||{})[n] || {};
     if (oral && n !== 1) return;
     if (isPC) { if (F[0] && g.rep) T[F[0]] = "X"; const v = eff(s,p,n); if (F[1]) T[F[1]] = v; }
-    if (F[2]) T[F[2]] = isPC ? (L ? ((L.items[n]||{}).st || "") : "") : pcwuCell(s,p,n).val || "";
+    if (F[2]) T[F[2]] = man ? (g.pw || "") : isPC ? (L ? ((L.items[n]||{}).st || "") : "") : pcwuCell(s,p,n).val || "";
     let subs = g.subs || {}; if (isPC && (n===14||n===15) && !g.st && L) subs = (L.items[n]||{}).subs || {};
     if (!isPC && !(n===14||n===15)) subs = {};
     if (FF_SUB[n]) Object.entries(FF_SUB[n]).forEach(([k,f]) => { if (subs[k]) C.push(f); }); });
@@ -1751,7 +1811,7 @@ function formValues(s,p){ // → {text:{field:value}, check:[field...], remarks:
   }
   const lines = wrapLines(rem.join("\n"), 138);
   C.push(lines.length ? "Y" : "N");
-  return {T, C, lines};
+  return {T, C, lines, other: evFlags(s).has("OTH") ? (s.setup.evOther||"") : ""};
 }
 async function buildFormPDF(s){
   const {PDFDocument, StandardFonts} = await loadPdfLib();
@@ -1759,7 +1819,7 @@ async function buildFormPDF(s){
   const tpl = await r.arrayBuffer(), out = await PDFDocument.create();
   for (const p of GP(s)) {
     const doc = await PDFDocument.load(tpl), form = doc.getForm(), font = await doc.embedFont(StandardFonts.Helvetica);
-    const {T, C, lines} = formValues(s,p);
+    const {T, C, lines, other} = formValues(s,p);
     const set = (name, v) => { try { const f = form.getTextField(name); f.setText(winAnsi(v)); } catch(e){ console.warn("field", name, e.message); } };
     Object.entries(T).forEach(([k,v]) => set(k, v));
     const shown = lines.slice(0,7); if (lines.length > 7) shown[6] = shown[6].slice(0,110) + " … (continued in N&O record)";
@@ -1770,6 +1830,7 @@ async function buildFormPDF(s){
     marks.forEach(r => {   // draw a clear X in the printed box, after flattening so no field appearance covers it
         const x0 = Math.min(r.x, r.x + r.width), y0 = Math.min(r.y, r.y + r.height), w = Math.abs(r.width), h = Math.abs(r.height), sz = Math.min(w,h), cx = x0 + w/2, cy = y0 + h/2, d = sz/2 - 0.4;
         pg1.drawLine({start:{x:cx-d,y:cy-d}, end:{x:cx+d,y:cy+d}, thickness:1.3}); pg1.drawLine({start:{x:cx-d,y:cy+d}, end:{x:cx+d,y:cy-d}, thickness:1.3}); });
+    if (other) pg1.drawText(winAnsi(other).slice(0,28), {x:500, y:693.5, size:6.5, font});   // EVENT “Other:” has no text field
     const pages = await out.copyPages(doc, doc.getPageIndices()); pages.forEach(pg => out.addPage(pg));
   }
   const sd = (s.simDisc||{}).items || [];
@@ -1961,6 +2022,11 @@ document.addEventListener("click", ev => {
     case "catqall": GP(s).forEach(p => CATQ_ITEMS.forEach(n => { const r = req(s,p,n); if (r.na || eff(s,p,n) && !isAuto(s,p,n)) return; const g = gRec(s,p,n); g.st = IT(n).naf ? "C" : "S"; if ((n===14||n===15) && !((g.subs||{}).nrm||(g.subs||{}).oei)) g.subs = {nrm:1}; }));
       GP(s).forEach(p => { if (!s.debrief.p[p].result) s.debrief.p[p].result = "SAT"; }); touch(s); toast("Marked — review CAT II/III normal / OEI"); break;
     case "startcatq": { const x = newSession("PC"); x.setup.catQual = true; x.setup.cat = "INI"; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
+    case "startman": { const x = newSession("PC"); x.setup.manual = true; x.setup.evx = {}; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
+    case "evx": { if (evLocked(s).includes(v)) return; if (v === "TR") s.setup.typeRating = !s.setup.typeRating; else { s.setup.evx = s.setup.evx || {}; s.setup.evx[v] = s.setup.evx[v] ? 0 : 1; }
+      if (isMan(s) && v === "PC" && s.setup.evx.PC) s.setup.signLine = "PC"; touch(s); break; }
+    case "signline": s.setup.signLine = v; touch(s); break;
+    case "gpw": { const g = gRec(s,p,n); g.pw = g.pw === v ? "" : v; touch(s); break; }
     case "startoral": { const x = newSession("PC"); x.setup.oralOnly = true; x.setup.cat = "INI"; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "oraldone": { s.setup.oralDone = s.setup.oralDone || [null,null]; s.setup.oralDone[p] = s.setup.oralDone[p] ? null : {date:"", by:"", sid:""}; touch(s); break; }
     case "oraluse": { const c = oralCandidates(s,p)[+v]; if (c) { s.setup.oralDone = s.setup.oralDone || [null,null]; s.setup.oralDone[p] = oralSnap(c.w, c.i); touch(s); toast(`Oral ${c.w.setup.date} applied — item 1 is “/”`); } break; }
