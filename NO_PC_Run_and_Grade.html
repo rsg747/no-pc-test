@@ -558,6 +558,11 @@ function gustHTML(id){
 /* ---------- Reference pop-ups for briefing items (Standardized PC Briefing, Oct 2026) ---------- */
 const ul = a => `<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
 const REFS = {
+ smgcs:{h:"SMGCS — Surface Movement Guidance and Control System", src:"FAA SMGCS briefing · AWO Lesson Guide 06 MAR 25", html:() => ul(["Enhances taxiing in low visibility with additional markings and lights. Required at airports with air-carrier takeoffs or landings below 1,200 RVR; the airport must publish a low-visibility taxi (SMGCS) plan. Applies to aircrew and vehicle operators (not Part 91).","Two levels: below 1,200 RVR down to and including 600 RVR · below 600 RVR.","Stop bar lights — a row of red in-pavement lights at a runway hold position (elevated where snow may cover them). Stop bar ON (red) = STOP, all lead-on lights off. Stop bar OFF = GO, lead-on lights green. Sensors switch the lead-on lights behind each aircraft.","Runway guard lights — flashing yellow “wig wags”, elevated both sides of the hold line (in-pavement every 10 ft when the intersection is over 150 ft wide).","Taxiway centerline lights — green, in-pavement, on all SMGCS routes. SMGCS taxiway centerlines are 12 in wide, highlighted in black.","Below 600 RVR also: clearance bar lights (yellow in-pavement) with geographic position markings (“pink spots”) at taxiway hold points, and intermediate hold position markings.","Sim taxi demo: forward visibility at 150 m / 500 ft, 300 m / 1,000 ft, 350 m / 1,200 ft, then back to 500 for takeoff."]) + `<p><button class="btn small" data-act="awopdf" data-v="smgcs">Open the FAA SMGCS slides (PDF)</button></p>`},
+ prm:{h:"ILS PRM 28L — breakout", src:"AWO Lesson Guide 06 MAR 25", html:() => ul(["KSFO PRM Attention All Users Page and the ILS PRM 28L chart are on JEPP FD PRO, Company tab. The LDA chart is no longer available — all simulators fly the ILS 28L PRM.","Flown by Captains; with 2 CA or 2 FO both trainees do the breakout from their own seat.","Monitor the PRM frequency, use the glideslope, report traffic in sight — do not pass; traffic must be acquired before the MAP.","ATC breakout: “TRAFFIC ALERT, turn right immediately heading 010, climb and maintain 4,000.” Review the FCOM breakout maneuver; climbing and descending breakouts.","Reposition for additional ILS / PRM breakouts as needed."])},
+ par:{h:"PAR / GCA approach", src:"AWO Lesson Guide 06 MAR 25", html:() => ul(["CAT I minimums. Flown by the Captain with A/P and A/T; HDG SEL and V/S. Level at the intermediate altitude with ALT as the pitch FMA before final descent.","Crew completes final landing configuration and checklist; Captain sets the DA in the MCP altitude window.","Controller transmits at least every 1 minute while vectored to final and every 5 seconds on final. “Begin descent” → Captain selects V/S: about 3° — 140 kt GS 750 fpm · 160 kt 850 fpm · 180 kt 1,000 fpm.","Guidance: slightly / well above / below glide path · slightly / well left / right of course (and holding / correcting) · going above / below glide path · on glide path / on course · decision height · over approach lights.","Crew calls runway in sight (this also stops the controller’s instructions); Captain disconnects the A/P. Controller advises “over the landing threshold”; Captain disconnects the A/T and lands. Sample KNGU PAR charts are in the lesson guide."]) + `<p><button class="btn small" data-act="awopdf" data-v="guide">Open the lesson guide (PDF)</button></p>`},
+ awogrd:{h:"AWO grading", src:"AWO Lesson Guide 06 MAR 25", html:() => ul(["Demonstrate proficiency in AWO operations.","CAT II / CAT III certification must be accomplished by a Check Airman.","Document CAT II / CAT III certification on a PC form with an “S” (items 14 and 15, with Normal / One Engine Inop), and grade PRM (32), PAR (33) and Seat Specific (31, if required — Captains) with a “C”.","2 CA or 2 FO pairing: both trainees accomplish the CAT II / CAT III requirements and the PRM breakout from their own crew positions.","Every other PC/RFT and Non-Appendix F block prints “/”. TO / LDGs and the training time (Other Training Time) are recorded."])},
+ awofd:{h:"Flight data — KSEA → EHAM (GTI 400)", src:"AWO Lesson Guide 06 MAR 25", html:() => `<div class="scroll"><table class="tbl"><tbody>${[["Route","KSEA BANGR_ ARRIE DCT PAE DCT DIABO YNY YMM DCT 67N090W DCT TOPPA EHAM · RWY 16C · BANGR# departure · takeoff alternate KPDX"],["Fuel","Ramp 96.4 · taxi 0.9 · reserve 8.9 · CI 28 · FL370 · 4,401 nm · DDG none"],["Load sheet","ZFW 200.0 · TOGW 296.4 · CG 21%"],["ATIS Alpha","Wind 290/08, vis ¼ SM FG, OVC001, 23/22, A30.05, departing 16C, RVR 500/500/500"],["Clearance","Cleared to Amsterdam Schiphol, BANGR_ departure, ARRIE, then as filed. Climb 5,000, expect FL370 10 min after departure, squawk 1747, expect 16C"],["TLR — KGS (CF6-80C2B5F, kg / N1)","16C MTOW 296.4 · Flaps 20 · ATM 49 °C · D-TO2 · N1 95.9* · V1 140 VR 149 V2 158 · trim 6.5 · Vref30 155"],["TLR — Southcoast (PW4056, lbs / EPR)","16C · Flaps 10 · ATM 50 °C · D-TO · EPR 1.40* · V1 140 VR 149 V2 158 · trim 6.5 · Vref30 155"]].map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div><p class="small muted">*May differ slightly between B1 / B5 engines. Full OFP, TLR strip and KNGU PAR charts in the lesson guide.</p><p><button class="btn small" data-act="awopdf" data-v="guide">Open the lesson guide (PDF)</button></p>`},
  tol:{h:"Performance tolerances", src:"AQS Appendix E · 8900.1", html:() => `<div class="scroll"><table class="tbl"><tbody>${TOL.map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div><p class="small muted">Momentary deviation outside these values is not, by itself, unsatisfactory.</p>`},
  wx:{h:"IOS weather setup", src:"PC Guide 6.7.2", html:() => `<div class="scroll"><table class="tbl"><thead><tr><th>Task</th><th>Crosswind</th><th>Visibility / RVR</th><th>Ceiling</th><th>Temp</th></tr></thead><tbody>${WX_SETUP.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`},
  waiver:{h:"Waiver authority", src:"Standardized PC Briefing · PC Guide 6.7.2", html:() => ul(["Items with waiver authority (★): Rejected takeoff · RNAV1 departure or arrival (one always required) · Holding · Steep turns · Approach to stall (two of three may be waived; one in a 15–30° turn, T/O config, always required).","Not permitted: PIC upgrade PC · requalification PC · following failure of a qualification event · initial PC · once any item has been repeated or graded U (FAA view — the app locks waivers automatically).","Eligibility: currently qualified, or completed an approved curriculum for the type and position within the preceding six calendar months.","Judgment standard: high performance = liberal use of waivers; minimum acceptable = no items waived.","The Judgement Standard must be used for the Rejected takeoff for an FO or an FO/FO pairing. The RTO is not automatically waived."])},
@@ -579,8 +584,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.10";
+const APP_VERSION = "2026.11.07.11";
 const REVISIONS = [
+ {v:"2026.11.07.11", d:"7 Nov 2026", n:["CAT II/III sim is now the guided AWO lesson (Initial CAT II/III Certification with PRM/PAR, 06 MAR 25): Brief (training materials, briefing items, flight data, SMGCS, PRM, PAR, grading; KGS or Southcoast lesson guide by simulator, FAA SMGCS slides), Run (stick diagram — SMGCS taxi demo, 500 RVR takeoff, CAT III full stop, OEI CAT II MAP and full stop, PRM breakouts, PAR, CA right-seat takeoff / landing; both pilots graded on each event, one ~2:00 sim clock), Grade sheet and Debrief as before."]},
  {v:"2026.11.07.10", d:"7 Nov 2026", n:["Start an event: PCWU and PC (with PC + Type Rating) up top; Oral exam only and CAT II/III qualification sim moved under Other events with the manual-sheet events."]},
  {v:"2026.11.07.9", d:"7 Nov 2026", n:["Events are chosen on Sessions → Start an event: PCWU, PC, PC + Type Rating, Oral, CAT II/III, and every other EVENT on the form (RFT, RLOFT, QLOFT, UPRT/EET, TO/LDG Recency, TO/LDG Currency, 767 CFD Currency, 767 LDS Diff., Other) as a manual grade sheet with that box checked. A PC is just a PC — Setup no longer shows the event boxes (only Type rating)."]},
  {v:"2026.11.07.8", d:"7 Nov 2026", n:["EVENT and CATEGORY match the 13 APR 26 form: Setup shows all 12 EVENT boxes (PC, UPRT/EET, TO/LDG Recency, RFT, Type Rating, TO/LDG Currency, RLOFT, CAT II/III, 767 CFD Currency, QLOFT, 767 LDS Diff., Other + text) and every category (Initial, Transition, Upgrade, Recurrent, Requalification, Refresher, Consolidation, Administrative, Special Tracking). AIMS will fill them once connected.","New: Manual grade sheet (Sessions → New manual sheet) — any event / category; mark the status blocks and PCWU column yourself, header entries (sim IDs, times, TO/LDG, documents, which signature line) and print the official form. Only the result and remarks for U / I / repeats are checked."]},
@@ -722,6 +728,34 @@ const PC_EVENTS = [
  {id:"P29",t:"Seat specific (CA right seat)",opt:1,items:[31],ios:["Takeoff engine failure (V1–V2) and visual approach and landing from the right seat"]},
  {id:"P30",t:"Oral, CRM & general",opt:1,items:[1,34,36,37,38,39],ios:["Graded across the whole check","English proficiency from the oral and from crew / ATC communication"]}
 ];
+/* ---------- AWO — Initial CAT II/III Certification with PRM / PAR (Flight Training Lesson Guide, 06 MAR 25; KGS and Southcoast versions).
+   KSEA: AWO and CAT II / III. KSFO: PRM and PAR. Device ~2:00. Both pilots fly CAT II / III and the PRM breakout from their own seat
+   (2 CA or 2 FO pairing: both). PAR flown by the Captain. Graded on the PC form: 14 CAT II and 15 CAT III “S”, 32 PRM, 33 PAR/ASR and
+   31 Seat Specific (CA) “C”. CAT II / III certification by a Check Airman. */
+const AWO_SRC = "Flight Training Lesson Guide — 747 Initial CAT II/III Certification with PRM/PAR (AWO), 06 MAR 25";
+const AWO_EVENTS = [
+ {id:"A01",t:"Abbreviated preflight",s:"Preflight",x:3,y:0,items:[],ios:["Abbreviated procedures","Program FMC, set trim, airspeeds and MCP","Instructor configures the overhead panel"]},
+ {id:"A02",t:"Pushback / start",s:"Start",x:7,y:0,items:[],ios:["Pushback / start procedure","Fast start accomplished by the instructor"]},
+ {id:"A03",t:"Low-vis taxi — SMGCS demo",s:"SMGCS taxi",x:12,y:0,items:[],ios:["During taxi show forward visibility at 150 m / 500 ft, 300 m / 1,000 ft, 350 m / 1,200 ft, then back to takeoff minimums (500)","Stop bars, taxiway centerline lights, geographic position markings (pink spots), directional low-visibility taxi routes","SMGCS / LVP / surface incursion prevention — some airports use 1,200–500 RVR and 500-and-below charts"],ref:"smgcs"},
+ {id:"A04",t:"Low-vis takeoff (500 RVR)",s:"LVTO 500",x:21,y:0,items:[],ios:["KSEA 16C, RVR 500/500/500 — instrument, crosswind","Lowest visibility for the runway; rejected takeoff low-visibility considerations"]},
+ {id:"A05",t:"ILS CAT III — full stop",s:"CAT III full stop",x:32,y:1,items:[15],ios:["Position freeze at 100 ft and 50 ft","Approach callouts; visibility demonstration at RVR 1200, 1000, 600 and 300","Seat height and cutoff angle","Mode failures — LAND 2 vs LAND 3; FMAs","Exit the runway with the low-visibility taxi chart; A/P disconnect after landing","2 CA or 2 FO: both trainees accomplish CAT II / III from their own crew position"]},
+ {id:"A06",t:"CAT II seat position vs flight vis demo",s:"Seat vs vis",x:41,y:2,items:[],ios:["Reposition — ILS CAT II seat position vs. flight visibility demonstration"]},
+ {id:"A07",t:"Engine-inop ILS CAT II — missed approach",s:"OEI CAT II MAP",x:50,y:0.4,items:[14],ios:["KSFO — reposition 8–12 nm final","Engine inoperative; flight mode annunciations","Autopilot missed approach"]},
+ {id:"A08",t:"Engine-inop ILS CAT II — full stop",s:"OEI CAT II F/S",x:59,y:0.4,items:[14],ios:["Reposition 8–12 nm final","Flight director information, use of autothrottles, FMAs","Select one mode failure: auto speedbrake, autobrakes, reverser or rollout","Reposition for more CAT II / III approaches as needed"]},
+ {id:"A09",t:"ILS PRM 28L — breakout",s:"PRM breakouts",x:72,y:1,items:[32],ios:["All simulators: select the ILS 28L and conduct the PRM approach","Attention All Users Page and ILS PRM 28L chart: JEPP FD PRO, Company tab (the LDA chart is no longer available)","Monitor the PRM frequency; use the glideslope","“TRAFFIC ALERT, turn right immediately heading 010, climb and maintain 4,000”","Climbing and descending breakouts; crew duties; aircraft configuration","2 CA or 2 FO: both accomplish the breakout from their own crew position"],ref:"prm"},
+ {id:"A10",t:"PAR / GCA approach — full stop",s:"PAR F/S",x:86,y:0.5,items:[33],ios:["Reposition 8–12 nm final · CAT I minimums · flown by the Captain with A/P and A/T","HDG SEL and V/S as roll and pitch modes; level at the intermediate altitude with ALT before final descent","Final landing configuration and checklist complete; Captain sets the DA in the MCP altitude window","Controller: every 1 min while vectored to final, every 5 s on final — “Begin descent”","Runway in sight → Captain disconnects the A/P; controller advises over the threshold; A/T off and land"],ref:"par"},
+ {id:"A11",t:"PIC right-seat takeoff & landing",s:"CA right seat",x:99,y:2,items:[31],ios:["Required and documented for Captains (Seat Specific, item 31)","One takeoff with an engine failure after V1 and before V2","One manually flown 3-engine ILS to minimums","FO: not applicable (“/”)"]},
+ {id:"A12",t:"After landing, shutdown, securing",s:"Shutdown",x:113,y:0,items:[]}
+];
+const AWO_PATH = [[0,0],[19,0],[24,3],[29,3],[33,0],[37,0],[39,2],[46,2],[49,0.4],[51,2.5],[55,2.5],[59,0],[63,0],[65,3],[69,3],[71,1.5],[74,3],[80,3],[86,0],[92,0],[95,2],[101,2],[105,0],[120,0]];
+const BRIEF_AWO = [
+ {h:"Training materials", items:["Portable EFB","Glare-shield checklists","QRH section AWO","Flight data — flight plan, DDG, weather, W&B, clearance, TLR / FDP||awofd"]},
+ {h:"Briefing items", items:["Review paperwork","Normal preflight","SMGCS / LVP / surface incursion prevention (some airports use 1,200–500 RVR and 500-and-below charts)||smgcs","Low-visibility takeoff (500 ft / 150 m RVR) — lowest visibility for the runway","Rejected takeoff — low-visibility considerations"]},
+ {h:"CAT II and CAT III approaches", items:["Briefing / callouts","Visibility / RVR requirements","CA and FO duties","Mode failures","Course / glidepath deviations"]},
+ {h:"Engine inoperative", items:["Engine-inop CAT II approach — A/P and A/T; A/P, no A/T","One-engine-inop missed approach","One-engine-inop CAT III approach — landing with rollout mode failure"]},
+ {h:"PRM and PAR", items:["PRM approach — flown by Captains; review the Attention All Users Page||prm","PRM monitor frequency, use glideslope, report traffic in sight (do not pass; acquire before the MAP)","Breakout phraseology “TRAFFIC ALERT”; review the FCOM breakout maneuver","PAR approach — review the sample KNGU PAR charts; flown by the Captain with A/P and A/T, HDG SEL and V/S||par"]},
+ {h:"Seat dependent & CRM", items:["If required: PIC right-seat takeoffs and manual landings","CRM / TEM — proactive planning and bottom lines in normal and non-normal procedures","Grading: CAT II / III “S” by a Check Airman; PRM, PAR and Seat Specific (if required) “C” on the PC form||awogrd"]}
+];
 const PC_PATH = [[0,0],[17,0],[21,10],[25,20],[29,20],[30,22],[31,20],[33,14],[35,11],[38,7],[41,3],[44,0],[53,0],[55,1.5],[60,1.5],[61,4],[64,2.5],[67,1],[71,1],[73,2],[78,2],[81,0],[90,0],[94,2],[99,2],[102,0.5],[105,0.5],[107,2],[111,3],[114,0],[127,0]];
 
 const TSTAT = [{k:"P",l:"Proficient",c:"ok"},{k:"C",l:"Coached",c:"warn"},{k:"N",l:"Not yet",c:"bad"},{k:"D",l:"Demo",c:"info"},{k:"X",l:"Not done",c:"mute"}];
@@ -743,6 +777,7 @@ const GP = s => [0,1].filter(p => !isSSI(s,p));
 /* device time per PC Guide 6.7.2 schedule: PC crew 4:30; trainee plus seat support 3:00; PC concurrent with type rating 3:00 (brief 1:00 / debrief 1:00) */
 function simTarget(s){   // run = one applicant's period; m = whole device period
   if (s.kind === "PCWU") return GP(s).length === 1 ? {run:270, m:270, why:"PCWU 4:30"} : {run:135, m:270, why:"PCWU 4:30 · 2:15 per run"};
+  if (isCatQ(s)) return {run:120, m:120, why:"AWO CAT II/III PRM/PAR ~2:00"};
   if (s.setup.pilots.some(x => x.ssi)) return {run:180, m:180, why:"PC 3:00 — trainee plus seat support"};
   if (s.setup.typeRating) return {run:180, m:180, why:"PC 3:00 — concurrent with type rating"};
   return {run:135, m:270, why:"PC 4:30 — two applicants, 2:15 per run"};
@@ -776,8 +811,8 @@ function runEl(s,r){ const t = ((s.run.t)||[])[r] || {}; return (t.elapsed||0) +
 const totalEl = s => runEl(s,0) + runEl(s,1);
 const briefTarget = s => s.kind === "PCWU" ? 120 : (s.setup.typeRating ? 60 : 90);   // graded pilots — a seat-support (SSI) seat is never graded
 const seatLab = p => String(p+1);
-const EVENTS = s => s.kind === "PCWU" ? PCWU_EVENTS : PC_EVENTS;
-const PATH = s => s.kind === "PCWU" ? PCWU_PATH : PC_PATH;
+const EVENTS = s => s.kind === "PCWU" ? PCWU_EVENTS : isCatQ(s) ? AWO_EVENTS : PC_EVENTS;
+const PATH = s => s.kind === "PCWU" ? PCWU_PATH : isCatQ(s) ? AWO_PATH : PC_PATH;
 
 function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",ssi:false}; }
 function newSession(kind){
@@ -997,6 +1032,7 @@ function seatRestricted(s,p){ return s.kind === "PC" && ITEMS.some(it => ["U","I
 /* per-pilot status for a stick-diagram event */
 function evState(s,e,p){
   if (isSSI(s,p)) return isSSI(s,1-p) ? "none" : evState(s,e,1-p);
+  if (!e.items.length) return "none";
   if (s.kind === "PCWU") {
     const r = (((s.run.ev[e.id]||{}).p)||[])[p] || {};
     return r.st ? TSBY[r.st].c : (e.items.some(n => pcwuCell(s,p,n).val && !pcwuCell(s,p,n).auto) ? "ok" : "none");
@@ -1104,7 +1140,7 @@ function sampleSessions(){
 }
 
 /* ============================================================ render: header + nav */
-const VIEWS = s => isCatQ(s) || isMan(s) ? [["home","Sessions"],["setup","Setup"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
+const VIEWS = s => isMan(s) ? [["home","Sessions"],["setup","Setup"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
   : isOral(s) ? [["home","Sessions"],["setup","Setup"],["brief","Oral"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
   : [["home","Sessions"],["setup","Setup"],["brief","Brief"],["run","Run"],["sheet","Grade sheet"],["debrief","Debrief & submit"]];
 function renderStatus(state){
@@ -1150,7 +1186,7 @@ function renderHome(){
     <h3>Other events</h3>
     <div class="manstarts">
       <button class="btn" data-act="startoral"><span class="chip oral">ORAL</span> Oral exam only <small class="muted">— new hire, transition / type rating, long-course requal; item 1 only</small></button>
-      <button class="btn" data-act="startcatq"><span class="chip catq">CAT II/III</span> CAT II / III qualification sim <small class="muted">— long-course requal, new hire</small></button>
+      <button class="btn" data-act="startcatq"><span class="chip catq">CAT II/III</span> AWO — CAT II / III with PRM / PAR <small class="muted">— new hire, initial equipment, long-course requal</small></button>
     </div>
     <p class="muted small" style="margin:10px 0 8px"><span class="chip man">MANUAL</span> No lesson guide yet: you mark the status blocks yourself and it prints the official form with that EVENT box checked. Each pilot’s category is picked in Setup.</p>
     <div class="manstarts">${FORM_EVENTS.filter(e => !["PC","TR","CAT"].includes(e.k)).map(e => `<button class="btn" data-act="startman" data-v="${e.k}"><span class="chip man">MANUAL</span> ${esc(e.l)}</button>`).join("")}<button class="btn" data-act="startman" data-v=""><span class="chip man">MANUAL</span> Blank form — pick boxes</button></div>
@@ -1233,7 +1269,7 @@ function aimsBtn(){ return `<button class="btn aimsload" data-act="aimsopen">⤓
    printed on their own last page of the grade-sheet PDF for the simulator logbook / sim maintenance. Not part of the grade record. */
 function simDisc(s){ s.simDisc = s.simDisc || {fstd:"", items:[]}; if (!s.simDisc.fstd) { const sim = SIMS.find(x => x.id === s.setup.sim); s.simDisc.fstd = sim ? `${sim.name} · FAA ${sim.faa} · ${sim.loc}` : (s.setup.device ? "FAA " + s.setup.device : ""); } return s.simDisc; }
 function sdBtn(s){ const n = ((s.simDisc||{}).items||[]).length; return `<button class="btn small sdbtn ${n?"has":""}" data-act="sdopen">🛠 Sim discrepancies${n ? " (" + n + ")" : ""}</button>`; }
-function sdStamp(s){ const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}${s.kind === "PCWU" || (s.kind === "PC" && !isOral(s) && !isMan(s) && !isCatQ(s)) ? " · " + simNow(s) : ""}`; }
+function sdStamp(s){ const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}${s.kind === "PCWU" || (s.kind === "PC" && !isOral(s) && !isMan(s)) ? " · " + simNow(s) : ""}`; }
 function drawSD(){
   const s = cur(), v = $("sdView"); if (!s) return; const d = simDisc(s);
   v.innerHTML = `<div class="pdfbar" role="dialog" aria-modal="true" aria-label="Simulator discrepancies"><b>🛠 Simulator discrepancies</b><button class="btn" data-act="sdclose">✓ Done</button></div>
@@ -1284,7 +1320,7 @@ function renderSetup(s){
     ${isMan(s) ? "" : waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
     ${isPC && !isOral(s) && !isCatQ(s) && !isMan(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) || pcat(s,p) === "ST" ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course.</p>`) : ""}</div>`}`; };
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isMan(s) ? "Manual grade sheet" : isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isMan(s) ? "Manual grade sheet — any event on the form" : isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div><div class="row">${isOral(s) ? "" : sdBtn(s)}${s.status==="submitted" ? "" : aimsBtn()}</div></div>
-  ${isCatQ(s) ? `<div class="banner info" style="margin-bottom:10px">CAT II/III qualification conducted on its own (long-course requal, new hire). Graded: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Every other block is “/”. Record TO / LDGs and the training time.</div>
+  ${isCatQ(s) ? `<div class="banner info" style="margin-bottom:10px">AWO lesson — Initial CAT II / III Certification with PRM / PAR (06 MAR 25), conducted on its own (new hire, initial equipment, long-course requal). Brief → Run (KSEA AWO / CAT II-III, then KSFO PRM / PAR) → Grade sheet. Graded: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Every other block is “/”. Record TO / LDGs and the training time.</div>
    <div class="card" style="margin-bottom:12px"><div class="g2"><label class="f">Training time (h+mm, Other Training Time box)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
    ${GP(s).map(p => `<label class="f">${esc(pname(s,p))}: TO / LDGs<span class="row" style="gap:6px">${inp(`counts/${p}/to`, s.counts[p].to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, s.counts[p].ldg, "LDG")}</span></label>`).join("")}</div></div>` : ""}
   ${isMan(s) ? `<div class="banner info" style="margin-bottom:10px">Fill the TC_PC_RFT_REC form directly — for an event the app doesn’t walk you through, or whenever you’d rather just mark the sheet. Pick the EVENT and each pilot’s CATEGORY, then mark the status blocks on the Grade sheet. Nothing is required except the result and a remark for U / I / repeated items.</div>` : ""}
@@ -1311,7 +1347,7 @@ function renderSetup(s){
   ${isMan(s) ? manHdrCard(s) : ""}
   <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
   ${isOral(s) || isCatQ(s) || isMan(s) ? "" : runPlan(s)}
-  <div class="row end"><button class="btn primary" data-act="view" data-v="${isCatQ(s) || isMan(s) ? "sheet" : "brief"}">${isCatQ(s) || isMan(s) ? "Go to grading →" : isOral(s) ? "Go to the oral →" : "Go to brief →"}</button></div>`;
+  <div class="row end"><button class="btn primary" data-act="view" data-v="${isMan(s) ? "sheet" : "brief"}">${isMan(s) ? "Go to grading →" : isCatQ(s) ? "Go to brief →" : isOral(s) ? "Go to the oral →" : "Go to brief →"}</button></div>`;
 }
 /* ⇅ Swap crewmembers: trade who flies Run 1 and Run 2 (PF 1st / PF 2nd). Everything stays with the person — grades, documents, PCWU link, notes and each run's timer. */
 function swapBtn(s){ if (GP(s).length !== 2) return "";
@@ -1429,8 +1465,29 @@ function renderOral(s){
    <h3>Item 1 — Equipment / Oral examination</h3>${itemCard(s, 1, "Grade item 1", "Only item on this record. The pilot’s PC later shows item 1 as “/”.")}
    <div class="row end"><button class="btn primary" data-act="view" data-v="debrief">Go to debrief →</button></div>`;
 }
+function awoGuide(s){ const sim = simById(s.setup.sim); return sim && /Southcoast/i.test(sim.loc) ? "Southcoast" : "KGS"; }
+const AWO_PDF = {guide: s => [`setup/AWO_CATII_III_PRM_PAR_Lesson_Guide_${awoGuide(s)}_06MAR25.pdf`, `AWO lesson guide · ${awoGuide(s)} · 06 MAR 25`], smgcs: () => ["setup/FAA_SMGCS.pdf", "FAA SMGCS briefing"]};
+async function awoPdf(s, which){ const [path, label] = AWO_PDF[which](s);
+  try { toast("Loading…"); const r = await fetch(path); if (!r.ok) throw new Error("HTTP " + r.status);
+    const b = await r.blob(), name = path.split("/").pop();
+    if (window.claude && window.claude.use && store.dl) { await store.dl.save({filename:name, data:b}); toast("Saved — open the PDF to view or print"); }
+    else showPdf(b, name, label); }
+  catch(e){ if (!e || e.code !== "declined") toast("Couldn't load the PDF: " + (e.message || e.code)); } }
+function renderAwoBrief(s){
+  const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0), target = 60;
+  return `<div class="bhead"><div><span class="eyebrow">CAT II/III sim brief</span><h2>AWO — CAT II / III with PRM / PAR</h2>
+    <p class="lede">Initial new hire / initial equipment and long-course requal: training and qualification in All Weather Operations, PRM and PAR, and CAT II / III ILS. AWO and CAT II / III in KSEA; PRM and PAR in KSFO. ${esc(AWO_SRC)}.</p></div>
+   <div class="card clock"><span class="eyebrow">Brief timer</span><div class="big" id="briefClock">${fmtDur(el)}</div><div class="bar"><span id="briefBar" style="width:${Math.min(100, el/(target*600))}%"></span></div>
+   <button class="btn ${s.brief.startedAt?"":"primary"}" data-act="btimer">${s.brief.startedAt?"Pause":"Start brief"}</button></div></div>
+   <div class="tvbar"><span>🖨</span><span class="grow">Lesson guide for this simulator (${awoGuide(s)} — ${awoGuide(s) === "KGS" ? "CF6, kg / N1" : "PW4056, lbs / EPR"} TLR) and the FAA SMGCS slides.</span><button class="btn small" data-act="awopdf" data-v="smgcs">SMGCS slides</button><button class="btn small primary" data-act="awopdf" data-v="guide">Lesson guide (PDF)</button></div>
+   <h3>Briefing items</h3><div class="bgrid">${checklist(s, BRIEF_AWO, "a")}</div>
+   <h3>References</h3><div class="row">${["awofd","smgcs","prm","par","awogrd"].map(k => `<button class="showref" data-act="ref" data-v="${k}">${esc(REFS[k].h)}</button>`).join("")}</div>
+   <h3>Brief notes</h3><textarea class="in" id="f_bnotes" data-k="brief/notes" rows="3" placeholder="What was covered, items to watch">${esc(s.brief.notes)}</textarea>
+   <div class="row end"><button class="btn primary" data-act="view" data-v="run">Go to the sim →</button></div>`;
+}
 function renderBrief(s){
   if (isOral(s)) return renderOral(s);
+  if (isCatQ(s)) return renderAwoBrief(s);
   const isPC = s.kind === "PC", target = briefTarget(s);
   const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0);
   return `<div class="bhead"><div><span class="eyebrow">${s.kind} brief</span><h2>${isPC ? "Standardized Proficiency Check Briefing" : "PCWU briefing summary"}</h2>
@@ -1454,7 +1511,7 @@ function halfDisc(cx, cy, r, c0, c1){
 }
 function stick(s){
   const evs = EVENTS(s).filter(e => !e.opt), path = PATH(s);
-  const maxX = Math.max(...path.map(p=>p[0])) + 4, maxY = s.kind==="PCWU" ? 16 : 24;
+  const maxX = Math.max(...path.map(p=>p[0])) + 4, maxY = s.kind==="PCWU" ? 16 : isCatQ(s) ? 6 : 24;
   /* labels are stacked (wrapped to short lines) and placed so no stem runs through another label */
   const wrap = t => { const w = t.replace(/\//g, "/ ").split(/\s+/).filter(Boolean), out = []; let ln = "";
     w.forEach(x => { const sep = ln.endsWith("/") ? "" : " "; if (ln && (ln + sep + x).length > 10) { out.push(ln); ln = x; } else ln = ln ? ln + sep + x : x; }); if (ln) out.push(ln); return out; };
@@ -1485,7 +1542,7 @@ function stick(s){
     return `<g class="sk-ev ${ui.ev===e.id?"on":""} ${e.crit?"crit":""}" data-act="ev" data-v="${e.id}" tabindex="0" role="button" aria-label="${esc(e.t)}">
       <text class="sk-lab" x="${o.lx}" y="${ly}" text-anchor="middle">${o.lines.map((l,k) => `<tspan x="${o.lx}" dy="${k?LH:0}">${esc(l)}</tspan>`).join("")}</text>
       ${halfDisc(cx,cy,11,c0,c1)}</g>`; }).join("");
-  return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : esc(CAT(pcat(s,runs(s)[curRun(s)].a)).label)+" profile"}</span><span class="eyebrow">Run ${curRun(s)+1} · markers show ${esc(pname(s,runs(s)[curRun(s)].a))} · tap an event</span></div>
+  return `<div class="stickwrap"><div class="sk-cap"><span>${s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : isCatQ(s) ? "747 FFS CAT II/III PRM/PAR (AWO) — KSEA, then KSFO" : esc(CAT(pcat(s,runs(s)[curRun(s)].a)).label)+" profile"}</span><span class="eyebrow">${isCatQ(s) ? "" : `Run ${curRun(s)+1} · `}markers show ${esc(pname(s,runs(s)[curRun(s)].a))} · tap an event</span></div>
    <svg class="stick" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Flight profile">
     <line class="sk-axis" x1="${L}" y1="${Y(0)}" x2="${W-R}" y2="${Y(0)}"/>
     ${ticks.map(t => `<line class="sk-axis" x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(0)+5}"/><text class="sk-time" x="${X(t)}" y="${Y(0)+20}" text-anchor="middle">${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}</text>`).join("")}
@@ -1494,6 +1551,7 @@ function stick(s){
 }
 function xchips(s){
   const opt = EVENTS(s).filter(e => e.opt), ra = runs(s)[curRun(s)].a;
+  if (!opt.length) return "";
   const lab = s.kind==="PCWU" ? "Optional maneuvers & SPOTs" : "Only if not credited on the PCWU · general items";
   return `<div class="xchips"><span class="eyebrow">${lab}</span>${opt.map(e => { const need = s.kind==="PC" && e.items.some(n => !eff(s,ra,n));
     return `<button class="xchip ${ui.ev===e.id?"on":""}" data-act="ev" data-v="${e.id}"><svg width="22" height="22" viewBox="0 0 22 22">${halfDisc(11,11,9,evState(s,e,runs(s)[curRun(s)].a),evState(s,e,runs(s)[curRun(s)].a))}</svg>${esc(e.t)}${s.kind==="PC" ? (need ? ` <span class="chip bad">needed</span>` : ` <span class="chip mute">done / not needed</span>`) : ""}</button>`; }).join("")}</div>`;
@@ -1543,6 +1601,18 @@ function renderRun(s){
       ${s.kind==="PCWU" ? `<input class="note" id="enote_${e.id}_${p}" data-k="run/ev/${e.id}/p/${p}/note" value="${esc(r.note||"")}" placeholder="Training note">` : ""}</div>`;
   };
   const otherTxt = isSSI(s,RUN.o) ? `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")} (seat support)` : `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")}, not graded this run`;
+  if (isCatQ(s)) return `<div class="row end" style="margin-bottom:6px">${sdBtn(s)}</div><div class="runbar">
+    <div class="simclock"><span class="eyebrow">Sim</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${running?"":"primary"}" data-act="rtimer">${running?"Pause":"Start"}</button></div>
+    <span class="chip ${el > T.m*60000 ? "bad" : "info"}" id="simTgt">Device ${hm(T.m)} · <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
+    ${GP(s).map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${CATQ_ITEMS.filter(n => !eff(s,p,n)).length} open</span>`).join("")}
+    <span class="grow"></span><span class="muted small">Reposition as needed — grade whatever was flown.</span></div>
+   <div class="banner info" style="padding:8px 14px">Both pilots fly CAT II / III and the PRM breakout from their own crew position${GP(s).length === 2 && s.setup.pilots[0].duty === s.setup.pilots[1].duty ? ` — <b>2 ${esc(s.setup.pilots[0].duty)} pairing: both must accomplish every CAT II / III requirement and the breakout from their respective seats</b>` : ""}. PAR flown by the Captain. CAT II / III certification by a Check Airman.</div>
+   ${stick(s)}
+   <div class="evcard"><div><span class="eyebrow">Event ${i+1} of ${E.length}${e.items.length ? " · graded: " + e.items.map(n => n + " " + IT(n).t).join(", ") : ""}</span><h2>${esc(e.t)}</h2></div>
+    ${e.ios && e.ios.length ? `<div class="ios"><span class="eyebrow">Script / IOS</span><ul>${e.ios.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${e.ref ? `<button class="showref" style="margin-top:8px" data-act="ref" data-v="${e.ref}">${esc(REFS[e.ref].h)}</button>` : ""}</div>` : ""}
+    ${e.items.length ? `<div class="pilots">${GP(s).map(pcard).join("")}</div>` : `<p class="why" style="margin:0">Training event — nothing graded here.</p>`}
+    ${logBox(s)}
+    <div class="row" style="justify-content:space-between"><button class="btn" data-act="step" data-v="-1" ${i===0?"disabled":""}>← Previous</button><button class="btn primary" data-act="step" data-v="1" ${i===E.length-1?"disabled":""}>Next →</button></div></div>`;
   return `${swapPanel(s)}<div class="row end" style="margin-bottom:6px">${sdBtn(s)}</div><div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Run ${r+1}<small>${esc(pname(s,x.a))} · ${x.seat==="L"?"left":"right"} seat</small></button>`).join("")}</div>${swapBtn(s)}
     <div class="simclock"><span class="eyebrow">Run ${rc+1}</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${running?"":"primary"}" data-act="rtimer">${running?"Pause":"Start"}</button></div>
     <span class="chip ${el > T.run*60000 ? "bad" : "info"}" id="simTgt">Run target ${hm(T.run)} · device ${hm(T.m)} · total <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
@@ -2109,6 +2179,7 @@ document.addEventListener("click", ev => {
     case "pdfsave": savePdf(); return;
     case "pdfclose": closePdf(); return;
     case "ref": openRef(v); return;
+    case "awopdf": awoPdf(s, v); return;
     case "refclose": closeRef(); return;
     case "present": openPresent(v, b.dataset.i, (b.dataset.list||"").split(",").filter(x=>x!=="").map(Number)); return;
     default: return;
