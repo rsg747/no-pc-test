@@ -554,8 +554,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.1";
+const APP_VERSION = "2026.11.07.2";
 const REVISIONS = [
+ {v:"2026.11.07.2", d:"7 Nov 2026", n:["“Oral already done as a separate event” now shows only for Initial / new hire, long-course Requal, Upgrade and Transition PCs. Recurrent, short Requal and Special Tracking always give the oral during the brief."]},
  {v:"2026.11.07.1", d:"7 Nov 2026", n:["Setup: removed “Failed a qualification event” and “PC interval expired (lapsed)” — a crewmember in either case is in a Requal course, so pick the Requal PC type instead (waivers stay locked for Requal)."]},
  {v:"2026.11.06.23", d:"6 Nov 2026", n:["Printed form: remarks on the back only when an item is unsatisfactory / incomplete or repeated (Remarks Y); otherwise Remarks N and the back stays blank."]},
  {v:"2026.11.06.22", d:"6 Nov 2026", n:["CAT II / III qualification sim: PRM is required (C / I) along with PAR/ASR."]},
@@ -787,7 +788,9 @@ const isOral = s => !!(s && s.setup && s.setup.oralOnly);
    and PAR/ASR (33) — PRM (32) if conducted. Form: EVENT “CAT II / III”, “/” in every other status block, time in Other Training Time. */
 const isCatQ = s => !!(s && s.setup && s.setup.catQual);
 const CATQ_ITEMS = [14,15,31,32,33];
-const oralDone = (s,p) => (s.setup.oralDone || [])[p] || null;
+/* oral given before the PC only happens on course PCs: new hire / Initial, long-course Requal, Upgrade, Transition — never Recurrent, short Requal or ST */
+const ORAL_CATS = ["INI","RQ35","RQ59","RQ60","UPG","TRN"];
+const oralDone = (s,p) => ORAL_CATS.includes(pcat(s,p)) ? ((s.setup.oralDone || [])[p] || null) : null;
 function oralCandidates(s,p){
   const emp = (s.setup.pilots[p].emp||"").trim(); if (!emp) return [];
   const out = []; Object.values(sessions).forEach(w => { if (!isOral(w) || w.id === s.id) return;
@@ -1178,7 +1181,7 @@ function renderSetup(s){
       <button class="cb ${(s.setup.st||[])[p]?"on":""}" style="width:auto" data-act="st" data-p="${p}"><span class="box"></span><span>Special Tracking (ST)</span></button>
     </div>
     ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
-    ${isPC && !isOral(s) && !isCatQ(s) ? (PCWU_CATS.includes(pcat(s,p)) && !oralDone(s,p) ? "" : oralBox(s,p)) + (PCWU_CATS.includes(pcat(s,p)) ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">${pcat(s,p)==="ST" ? "Special Tracking: CAT II/III and Non-Appendix F are not required, so there is no PCWU to link." : "No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course."}</p>`) : ""}</div>`}`; };
+    ${isPC && !isOral(s) && !isCatQ(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">${pcat(s,p)==="ST" ? "Special Tracking: CAT II/III and Non-Appendix F are not required, so there is no PCWU to link." : "No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course."}</p>`) : ""}</div>`}`; };
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div>${s.status==="submitted" ? "" : aimsBtn()}</div>
   ${isCatQ(s) ? `<div class="banner info" style="margin-bottom:10px">CAT II/III qualification conducted on its own (long-course requal, new hire). Graded: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Every other block is “/”. Record TO / LDGs and the training time.</div>
    <div class="card" style="margin-bottom:12px"><div class="g2"><label class="f">Training time (h+mm, Other Training Time box)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
@@ -1233,7 +1236,7 @@ function oralBox(s,p){
    <div class="row" style="margin-top:6px"><button class="cb ${o?"on":""}" style="width:auto" data-act="oraldone" data-p="${p}"><span class="box"></span><span>Oral already done as a separate event — item 1 is “/” on this PC</span></button></div>
    ${o ? `<div class="g2" style="margin-top:8px"><label class="f">Oral date${inp(`setup/oralDone/${p}/date`, o.date, "", "date")}</label><label class="f">Given by${inp(`setup/oralDone/${p}/by`, o.by, "Last, First")}</label></div>${o.result && o.result !== "SAT" ? `<p class="why bad" style="margin:6px 0 0">That oral record’s result is ${esc(o.result)} — check before crediting it.</p>` : ""}` : ""}
    ${!o && cands.length ? `<p style="margin:8px 0 4px">Found an oral for this pilot:</p>${cands.slice(0,3).map((x,k) => `<div class="row" style="margin-top:4px"><span class="grow small">${esc(x.w.setup.date)} · ${esc(x.w.setup.conductor.name||"—")} · ${esc(CAT(x.w.setup.cat).label.replace(" PC",""))} · result ${esc(x.w.debrief.p[x.i].result||"open")}</span><button class="btn small" data-act="oraluse" data-p="${p}" data-v="${k}">Use this oral</button></div>`).join("")}` : ""}
-   ${!o && !cands.length ? `<p class="muted small" style="margin:6px 0 0">New hire, transition / type rating or requal long course: if the oral was given before the PC, tick the box (or it is found here by employee number) and skip the oral on this PC.</p>` : ""}</div>`;
+   ${!o && !cands.length ? `<p class="muted small" style="margin:6px 0 0">If the oral was given before this PC, tick the box (or it is found here by employee number) and skip the oral on this PC.</p>` : ""}</div>`;
 }
 function linkBox(s,p){
   const L = s.setup.link[p], cands = pcwuCandidates(s,p);
