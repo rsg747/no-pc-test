@@ -418,7 +418,7 @@ const CATS = [
  {k:"TRN",  label:"Transition PC",                        form:"TRANSITION"},
  {k:"UPG",  label:"Upgrade PC",                           form:"UPGRADE", noW:"PIC Upgrade"},
  {k:"INI",  label:"Initial (new hire) PC",                form:"INITIAL", noW:"Initial qualification", note:"PC Guide 6.7.2 has no Initial column; the app applies the Upgrade column (no waivers, all stalls). Confirm with Standards."},
- {k:"ST",   label:"Special Tracking PC",                  form:"RECURRENT", note:"Checks RECURRENT and the Special Tracking box on the grade sheet."}
+ {k:"ST",   label:"Special Tracking PC",                  form:"SPECIAL TRACKING", note:"Category of event is Special Tracking only (RECURRENT is not checked)."}
 ];
 const CAT = k => CATS.find(c => c.k === k) || CATS[0];
 /* matrix code: R required · W waivable · / not required · * CAT II/III required on PC if U or / on PCWU · N required unless completed (C) on PCWU · T stall: T/O config in turn required, others waivable */
@@ -554,8 +554,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.3";
+const APP_VERSION = "2026.11.07.4";
 const REVISIONS = [
+ {v:"2026.11.07.4", d:"7 Nov 2026", n:["Special Tracking is its own category of event: an ST pilot’s grade sheet and printed form check only SPECIAL TRACKING, not RECURRENT."]},
  {v:"2026.11.07.3", d:"7 Nov 2026", n:["🧪 Testing: PC Setup → PCWU record has “Simulate PCWU — all completed” and “— some not proficient” to try the PCWU credit without a real PCWU. Marked TEST DATA; Unlink removes it."]},
  {v:"2026.11.07.2", d:"7 Nov 2026", n:["“Oral already done as a separate event” now shows only for Initial / new hire, long-course Requal, Upgrade and Transition PCs. Recurrent, short Requal and Special Tracking always give the oral during the brief."]},
  {v:"2026.11.07.1", d:"7 Nov 2026", n:["Setup: removed “Failed a qualification event” and “PC interval expired (lapsed)” — a crewmember in either case is in a Requal course, so pick the Requal PC type instead (waivers stay locked for Requal)."]},
