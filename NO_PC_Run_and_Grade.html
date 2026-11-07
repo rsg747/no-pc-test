@@ -174,7 +174,8 @@ ul.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap
 .cb[disabled]{cursor:default;opacity:.85}
 .evgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 8px;margin-top:4px}
 @media (max-width:640px){.evgrid{grid-template-columns:1fr 1fr}}
-.tl input{width:90px;flex:none}
+label.f .tl input,.tl input{width:96px;min-width:0;max-width:40%;flex:none}
+label.f .tl{display:flex;align-items:center}
 .docbox{font:inherit;font-size:13px;padding:4px 8px;border:1.5px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink);cursor:pointer}
 .docbox.x{background:var(--ok);border-color:var(--ok);color:#fff}
 .docbox.x::before{content:"☒ "}
@@ -618,8 +619,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.20";
+const APP_VERSION = "2026.11.07.21";
 const REVISIONS = [
+ {v:"2026.11.07.21", d:"7 Nov 2026", n:["Result-only grade sheets (RLOFT, QLOFT, UPRT) and manual header: TO / LDG boxes no longer stretch the page sideways."]},
  {v:"2026.11.07.20", d:"7 Nov 2026", n:["PDF viewer shows every page (drawn with pdf.js) — on the iPad the old viewer only showed page 1 of the lesson guides, scripts and paperwork."]},
  {v:"2026.11.07.19", d:"7 Nov 2026", n:["RLOFT 411 crew paperwork (LAX-ANC support docs, 04 NOV 26) added to the brief and the 411 setup card."]},
  {v:"2026.11.07.18", d:"7 Nov 2026", n:["RLOFT 410/411 complete from the Sim 1 instructor script: leg 2 KLAX → ANC — engines running on taxiway Alpha, jumpseater, 27 kt crosswind / tailwind takeoff, surprise wake-turbulence upset (per-sim malfunction), injured DH pilot and the crew’s choice of SFO (RNAV Z 28R, ILS out, gusts) or LAX (RNAV Z 07R), then SPOT."]},
