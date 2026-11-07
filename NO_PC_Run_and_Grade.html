@@ -311,6 +311,7 @@ ul.probs li b{font-family:var(--f-mono)}
 .pdfbar b{font-family:var(--f-display);font-size:20px;flex:1;min-width:160px}
 .pdfbar .btn{min-height:44px;font-size:17px;font-weight:700;background:#ffffff;color:#0c1415;border:1px solid #ffffff}
 .pdfbar .btn.primary{background:#de7419;color:#ffffff;border-color:#de7419}
+.pdfpages{background:#525659;min-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0 40px} .pdfpage{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.35);max-width:100%;height:auto} .pdfload{color:#fff;margin:6px 0;font-size:13px}
 .pdfbody{flex:1;background:#fff;border-radius:0 0 12px 12px;overflow:auto;-webkit-overflow-scrolling:touch}
 .pdfbody iframe{border:0;width:100%;height:100%;display:block}
 .pdfbody .pdfnote{padding:10px 14px;font-size:15px;color:#222;background:#fff6e5;border-bottom:1px solid #e3c98d}
@@ -617,8 +618,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.19";
+const APP_VERSION = "2026.11.07.20";
 const REVISIONS = [
+ {v:"2026.11.07.20", d:"7 Nov 2026", n:["PDF viewer shows every page (drawn with pdf.js) — on the iPad the old viewer only showed page 1 of the lesson guides, scripts and paperwork."]},
  {v:"2026.11.07.19", d:"7 Nov 2026", n:["RLOFT 411 crew paperwork (LAX-ANC support docs, 04 NOV 26) added to the brief and the 411 setup card."]},
  {v:"2026.11.07.18", d:"7 Nov 2026", n:["RLOFT 410/411 complete from the Sim 1 instructor script: leg 2 KLAX → ANC — engines running on taxiway Alpha, jumpseater, 27 kt crosswind / tailwind takeoff, surprise wake-turbulence upset (per-sim malfunction), injured DH pilot and the crew’s choice of SFO (RNAV Z 28R, ILS out, gusts) or LAX (RNAV Z 07R), then SPOT."]},
  {v:"2026.11.07.17", d:"7 Nov 2026", n:["RLOFT is a guided event (Other events → Recurrent LOFT + SPOT): presents the RLOFT student briefing rev 17 (61 slides); hot-topic checklist; support docs and instructor scripts in the viewer. Scenario picked by simulator — 412/413 (Sims 2, 3, 4: PVG → HKG with GEN 2 OFF, metric altitudes, offset, ABBEY hold / fuel, early go-around; HKG → ANC with cargo fire, air turnback, overweight landing, fire chief) or 410 (Sim 1, PanAm, Southcoast: SFO → LAX with BLEED DUCT LEAK L, 27 kt crosswind; leg 2 script not received) — then SPOT (stalls, JFK VOR 31L, visual pattern, crosswind, balked landing, landing currency). Observations per pilot; result only (Sat / Unsat / Incomplete); 3 takeoffs and landings each."]},
@@ -2348,8 +2350,34 @@ function showPdf(blob, name, title){
   const v = $("pdfView");
   v.innerHTML = `<div class="pdfbar" role="dialog" aria-modal="true" aria-label="${esc(title)}"><b>${esc(title)}</b>
      <button class="btn primary" data-act="pdfshare">🖨 Print / Share</button><button class="btn" data-act="pdfsave">Save PDF</button><button class="btn" data-act="pdfclose">✕ Close</button></div>
-   <div class="pdfbody">${isIOS() ? `<div class="pdfnote">Tap <b>🖨 Print / Share</b>, then <b>Print</b> in the list. The preview below may show only the first page — the print has every page.</div>` : ""}<iframe id="pdfFrame" src="${url}" title="${esc(title)}"></iframe></div>`;
+   <div class="pdfbody">${isIOS() ? `<div class="pdfnote">Tap <b>🖨 Print / Share</b>, then <b>Print</b> in the list.</div>` : ""}<div id="pdfPages" class="pdfpages"><p class="pdfload">Loading pages…</p></div></div>`;
   v.hidden = false;
+  renderPdfPages(blob, pdfCur).catch(e => {   // fallback: the browser's own viewer (iPad shows only page 1 that way)
+    if (!pdfCur || pdfCur.url !== url) return;
+    const box = $("pdfPages"); if (box) box.outerHTML = `<iframe id="pdfFrame" src="${url}" title="${esc(title)}"></iframe>`; });
+}
+/* Draw every page with pdf.js — an iframe / embed on iPad Safari only ever shows the first page */
+let pdfjsReady = null;
+function loadPdfjs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (pdfjsReady) return pdfjsReady;
+  return pdfjsReady = new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; ok(window.pdfjsLib); };
+    sc.onerror = () => { pdfjsReady = null; no(new Error("pdf.js didn’t load")); }; document.head.appendChild(sc); });
+}
+async function renderPdfPages(blob, ref){
+  const lib = await loadPdfjs(), doc = await lib.getDocument({data: new Uint8Array(await blob.arrayBuffer())}).promise;
+  const box = $("pdfPages"); if (!box || pdfCur !== ref) return;
+  box.innerHTML = `<p class="pdfload">${doc.numPages} page${doc.numPages === 1 ? "" : "s"}</p>`;
+  const W = Math.min(box.clientWidth || 900, 1100), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (let i = 1; i <= doc.numPages; i++) {
+    if (pdfCur !== ref) return;
+    const pg = await doc.getPage(i), vp1 = pg.getViewport({scale:1}), scale = W / vp1.width, vp = pg.getViewport({scale: scale * dpr});
+    const c = document.createElement("canvas"); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = Math.floor(vp1.width * scale) + "px"; c.className = "pdfpage"; c.setAttribute("aria-label", `Page ${i}`);
+    box.appendChild(c);
+    await pg.render({canvasContext: c.getContext("2d"), viewport: vp}).promise;
+    pg.cleanup();
+  }
 }
 function closePdf(){ const v = $("pdfView"); if (!v) return; v.hidden = true; v.innerHTML = ""; if (pdfCur) { const u = pdfCur.url; setTimeout(() => URL.revokeObjectURL(u), 1000); } pdfCur = null; }
 async function sharePdf(){
@@ -2358,7 +2386,9 @@ async function sharePdf(){
   if (navigator.canShare && navigator.share && navigator.canShare({files:[file]})) {
     try { await navigator.share({files:[file], title:pdfCur.title}); } catch(e){ if (e && e.name !== "AbortError") toast("Couldn't open the share sheet: " + e.message); }
     return; }
-  try { const fr = $("pdfFrame"); fr.contentWindow.focus(); fr.contentWindow.print(); return; } catch(e){}
+  try { const fr = $("pdfFrame"); if (fr) { fr.contentWindow.focus(); fr.contentWindow.print(); return; } } catch(e){}
+  try { const fr = document.createElement("iframe"); fr.style.cssText = "position:fixed;width:1px;height:1px;opacity:0;border:0"; fr.src = pdfCur.url;   // desktop: print through a hidden frame (no new tab — it traps the Home Screen app)
+    fr.onload = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch(e){ savePdf(); } setTimeout(() => fr.remove(), 60000); }; document.body.appendChild(fr); return; } catch(e){}
   savePdf();
 }
 function savePdf(){ if (!pdfCur) return; const a = document.createElement("a"); a.href = pdfCur.url; a.download = pdfCur.name; document.body.appendChild(a); a.click(); a.remove(); }
