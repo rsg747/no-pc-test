@@ -108,7 +108,7 @@ main{padding-block:22px 80px}
 .chip{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
 .chip.oral{background:#3b2a6b;color:#fff} .start.oral{border-top:4px solid #3b2a6b}
 .chip.catq{background:#1d4775;color:#fff} .start.catq{border-top:4px solid #1d4775}
-.chip.ql{background:#0f6b5c;color:#fff} .chip.up{background:#8a2d2d;color:#fff} .chip.rf{background:#3d5a1e;color:#fff} .chip.man{background:#5b3a8a;color:#fff} .start.man{border-top:4px solid #5b3a8a}
+.chip.ql{background:#0f6b5c;color:#fff} .chip.up{background:#8a2d2d;color:#fff} .chip.rf{background:#3d5a1e;color:#fff} .chip.rl{background:#1f5f7a;color:#fff} .chip.man{background:#5b3a8a;color:#fff} .start.man{border-top:4px solid #5b3a8a}
 .manstarts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px} .manstarts .btn{gap:8px} .manstarts .chip{font-size:11px}
 .chip.ok{background:var(--okbg);color:var(--ok)} .chip.warn{background:var(--warnbg);color:var(--warn)} .chip.bad{background:var(--badbg);color:var(--bad)}
 .chip.info{background:var(--infobg);color:var(--info)} .chip.mute{background:var(--mutebg);color:var(--mute)}
@@ -447,9 +447,11 @@ const FORM_EVENTS = [
 const isQL = s => !!(s && s.setup && s.setup.qloft);
 const isUP = s => !!(s && s.setup && s.setup.uprt);
 const isRF = s => !!(s && s.setup && s.setup.rft);
-const isMan = s => !!(s && s.setup && (s.setup.manual || s.setup.qloft || s.setup.uprt || s.setup.rft));
-const resultOnly = s => isQL(s) || isUP(s);   // Scott: QLOFT and UPRT record nothing but Sat / Unsat / Incomplete   // QLOFT / UPRT use the manual grade sheet (SCP marks the blocks)   // QLOFT uses the manual grade sheet (non-jeopardy; SCP marks the blocks)
-const evLocked = s => isQL(s) ? ["QLOFT"] : isUP(s) ? ["UPRT"] : isRF(s) ? ["RFT"] : isMan(s) ? [] : isCatQ(s) ? ["CAT"] : ["PC"];
+const isRL = s => !!(s && s.setup && s.setup.rloft);
+const isLO = s => isQL(s) || isRL(s);
+const isMan = s => !!(s && s.setup && (s.setup.manual || s.setup.qloft || s.setup.uprt || s.setup.rft || s.setup.rloft));
+const resultOnly = s => isLO(s) || isUP(s);   // Scott: QLOFT and UPRT record nothing but Sat / Unsat / Incomplete   // QLOFT / UPRT use the manual grade sheet (SCP marks the blocks)   // QLOFT uses the manual grade sheet (non-jeopardy; SCP marks the blocks)
+const evLocked = s => isRL(s) ? ["RLOFT"] : isQL(s) ? ["QLOFT"] : isUP(s) ? ["UPRT"] : isRF(s) ? ["RFT"] : isMan(s) ? [] : isCatQ(s) ? ["CAT"] : ["PC"];
 function evFlags(s){ const on = new Set(evLocked(s)); if (s.setup.typeRating) on.add("TR"); Object.entries(s.setup.evx || {}).forEach(([k,v]) => { if (v) on.add(k); }); return on; }
 /* matrix code: R required · W waivable · / not required · * CAT II/III required on PC if U or / on PCWU · N required unless completed (C) on PCWU · T stall: T/O config in turn required, others waivable */
 function baseCode(n, cat){
@@ -563,6 +565,13 @@ function gustHTML(id){
 /* ---------- Reference pop-ups for briefing items (Standardized PC Briefing, Oct 2026) ---------- */
 const ul = a => `<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
 const REFS = {
+ rlbasics:{h:"RLOFT basics and the facilitator", src:"RLOFT Student Briefing rev 17", html:() => ul(["Simulates line operations — 2 legs today. Keep it real: address every EICAS and status message as in the airplane.","Time is built in for required maneuvers (go-around, holding, landings) — more landings is better.","Don’t worry about time; but expedite preflight and engine start as if meeting a curfew.","After the pre-brief the instructor is no longer the instructor: dispatch, scheduling, maintenance, a flight attendant, the PSR.","Debrief as a crew: capture the crew’s mindset vs. SOPs, why decisions were made, crew self-analysis.","CRM 7 critical skills: decision making, assertiveness, workload management, communication, leadership / teamwork, adaptability / flexibility, situational awareness."])},
+ rlspot:{h:"SPOT — Special Purpose Operational Training", src:"RLOFT Student Briefing rev 17 · script 413", html:() => ul(["After the RLOFT: scenario- and maneuver-based stall prevention while completing 3 takeoffs and landings each.","Takeoff departure stall (390, heavy — replicates an FCR) · clean configuration stall · landing configuration stall — recover at stick shaker or buffet (training only).","KJFK VOR 31L: runway alignment, wind drift, still stable below 1,000 ft? no last-minute corrections; below Vref = pod strike — if in doubt go around. Winds 220/10–15.","Visual traffic pattern (FCOM MAN.1.16 / MAN.2.7), manual flight, 25+ kt crosswind — PIO and hard-landing mitigation.","Balked landing (FCTM 6.19): keep wind correction, bank and pitch in limits; centerline.","Landing currency: main gear on the runway, straddling the centerline. Seat support: only the student’s currency."])},
+ rlfuel:{h:"Fuel — FMC reserves, MINIMUM and MAYDAY FUEL", src:"RLOFT Student Briefing rev 17 · FOM 10.1.38 / 10.1.41", html:() => ul(["FMC Reserve = fuel to the alternate plus 45 min at 1,500 ft AGL — INSUFFICIENT FUEL when predicted destination fuel falls below it.","MINIMUM FUEL: committed to one airport, little or no delay acceptable — not priority handling, and not legal while a valid alternate with enough fuel remains.","Dropping the alternate (with dispatch): new FMC reserve ≈ FRES ÷ its minutes × 45.","MAYDAY, MAYDAY, MAYDAY, FUEL: predicted to land with 30 min or less — don’t delay the declaration."])},
+ rl410set:{h:"410 setup — KSFO → KLAX", src:"RLOFT script 410 rev 1b", html:() => `<div class="scroll"><table class="tbl"><tbody>${[["Sims","Sim 1 (722) · PanAm (1322) · Southcoast 1 (267) · Southcoast 2 (420)"],["Position","KSFO Superbay Plot 40 (Ramp 2 – Exec) · N37°37:36 W122°22:42 · hdg 190 · runway 10L"],["Route","RWY10L SAHEY_ SUSEY EBAYE AVE SADDE_ RWY07R"],["Aircraft","APU off · EXT 1 · ZFW 238.7 · fuel 31.0 · CG 24.3"],["Environment","150/10 · 11 °C · A30.11 · 10 sm · SCT 7,500 · turbulence light"]].map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div>`},
+ rl410wx:{h:"KLAX arrival — ATIS Delta", src:"RLOFT script 410", html:() => ul(["Wind 150/28 · 1½ sm BR · BKN 007 · 14/12 · A30.08 · ILS 07R","Landing: HW 5, XW 27, Vref +5 · cobblestone MED below 2,500"])},
+ rl412set:{h:"412 setup — ZSPD → VHHH", src:"RLOFT Sim 2-3 script 412-413 Nov 25", html:() => `<div class="scroll"><table class="tbl"><tbody>${[["Sims","Sim 2 (1092) · Sim 3 (584) · Sim 4 747-400 version (1091)"],["Position","ZSPD spot 338 — N31:07:51.65 E121:47:16.83 (must use lat/long) · hdg 256 · runway 35L"],["Route","ZSPD HSN91D SHZ B221 LJG A470 DOTMI V512 ABBEY ABEY3B VHHH"],["Aircraft","APU off · EXT 1 · ZFW 237.4 · fuel 34.7 · CG 23.3"],["Environment","260/19 · 21 °C · 1008 hPa · SCT 4,500 tops 16,000 · 10 km"]].map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div><p class="small muted">Corrections: RLOFT747@AtlasAir.com</p>`},
+ rl413set:{h:"413 setup — VHHH → PANC", src:"RLOFT Sim 2-3 script 412-413 Nov 25", html:() => `<div class="scroll"><table class="tbl"><tbody>${[["Position","VHHH runway 07R holding short — engines running"],["Route","VHHH DALOL_A DALOL V631 ENVAR PUTER A590 HAMND NEELL6 PANC"],["Aircraft","APU off · ZFW 270.5 · fuel 126.3 (above min fuel 124.6) · CG 20.6"],["Environment","120/10 gust 25 (FAA Gust) · 18 °C · 1014 hPa · SCT 5,000 · 10 km · turbulence light"]].map(([a,b])=>`<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div>`},
  rfintro:{h:"RFT — how it is run", src:"RFT Lesson Guide 10 DEC 25", html:() => ul(["Two pilots trained in one session per §121.409(b)(1): at least 4 hours at the controls; both get crew-concept training throughout.","Emphasis on events not met in routine line flying; may be tailored to problems seen on the line. Specific training on every event only as needed for proficiency.","Incomplete if a crewmember can’t reach proficiency in the allotted time — an additional training segment before revenue flying; may warrant a PC.","Trainer acts as dispatcher, maintenance and ATC; realistic ATC except during maneuvers. Headsets / hand mics / speakers not mandatory. Real time except repositioning or maneuver training; freeze and reposition to use time well. Failures removed after each landing.","Use the cockpit resources (A/P, A/T) unless told otherwise. Not both pilots need every non-normal.","Crew pairing other than CA/FO: swap seats at about the midpoint; the second PF flies the first half again from the takeoff.","All items are training events — guidance before and during; repeat as time permits. Order may vary; repositioning allowed to complete all elements."])},
  rfstd:{h:"Performance standards", src:"RFT Lesson Guide 10 DEC 25 · 8900.1", html:() => ul(["Taxi: centerline; < 15 kt congested, < 30 kt non-congested.","Takeoff: standard callouts; rotate at VR, 2.5–3.0°/s; runway centerline; positive rate to low-altitude level-off.","Climb / cruise / descent / holding: airspeed ±10 kt · altitude ±100 ft · heading ±10° · course ±5°.","Precision (FAF to DH): airspeed ±5 kt · localizer ½ dot · glideslope ½ dot.","Non-precision (FAF to MDA(H)): ±5 kt; < half-scale CDI or ±5° RMI; VNAV ±75 ft of the path. MDA(H) to MAP: +50 / −0 ft.","Below 1,000 ft AGL: stabilized approach criteria."])},
  rfwx:{h:"Weather / ATIS guidance", src:"RFT Lesson Guide 10 DEC 25", html:() => ul(["Taxi / takeoff: initial taxi RVR 1200; RTO with RVR 500; issue a runway change on taxi out.","ILS: RVR at the published minimum; ceiling so the runway is visual ~50–100 ft above DA.","Non-ILS: visibility ~¼ mi above minimums (2 mi for LNAV / VNAV to a DA); ceiling visual ~50–100 ft above DA.","Visual approaches: CAVOK. Engine failure V1–V2: CAT I ILS minimums with a 12 kt crosswind.","ATIS printed, electronic or spoken with proper phraseology."])},
@@ -606,8 +615,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.16";
+const APP_VERSION = "2026.11.07.17";
 const REVISIONS = [
+ {v:"2026.11.07.17", d:"7 Nov 2026", n:["RLOFT is a guided event (Other events → Recurrent LOFT + SPOT): presents the RLOFT student briefing rev 17 (61 slides); hot-topic checklist; support docs and instructor scripts in the viewer. Scenario picked by simulator — 412/413 (Sims 2, 3, 4: PVG → HKG with GEN 2 OFF, metric altitudes, offset, ABBEY hold / fuel, early go-around; HKG → ANC with cargo fire, air turnback, overweight landing, fire chief) or 410 (Sim 1, PanAm, Southcoast: SFO → LAX with BLEED DUCT LEAK L, 27 kt crosswind; leg 2 script not received) — then SPOT (stalls, JFK VOR 31L, visual pattern, crosswind, balked landing, landing currency). Observations per pilot; result only (Sat / Unsat / Incomplete); 3 takeoffs and landings each."]},
  {v:"2026.11.07.16", d:"7 Nov 2026", n:["RFT is training: items are marked C (complete), I (not yet proficient) or / — no S / U / W and no repeat column."]},
  {v:"2026.11.07.15", d:"7 Nov 2026", n:["RFT is a guided event (Other events → Recurrent Flight Training, RFT lesson guide 10 DEC 25): 2:00 brief with documents, briefing-room items, passenger ops, FO PIC RTO technique, performance standards, weather / ATIS guidance and KLAX → KCVG flight data; setup material PDF picked by simulator (748 sim → 747-8 support material 15 JUN 15; Southcoast → 19 SEP 22; others → KGS 4 MAY 24; LBS version too). Run in two halves (CA PF, then FO PF; seat swap for CA/CA or FO/FO) following the profiles, grading the PF’s form items as trained; required-event count per pilot. Grade sheet marked by the instructor (optional “mark blank blocks /”); form EVENT RFT, RFT time from the half clocks."]},
  {v:"2026.11.07.14", d:"7 Nov 2026", n:["QLOFT and UPRT / EET record nothing but the result (Satisfactory / Unsat / Incomplete): the grade sheet is a result page per pilot, item blocks print blank, remarks only for Unsat / Incomplete.","QLOFT leg 2 starts with the engines running in the takeoff position (KLAX 25R at Foxtrot) per the lesson guide; script and setup card match; script weather used (350/15, 1½ mi, OVC 700)."]},
@@ -900,6 +910,65 @@ const BRIEF_RF = [
  {h:"Rejected takeoff and engine failures", items:["RTO — decision criteria, responsibility and control, CA / FO responsibilities, non-normal communication","FO PIC RTO technique||rfrto","Engine failure V1–V2 — control, A/P, ATC, EFP, immediate actions, flaps / thrust, NNC, E/O climb (VNAV)","One-engine-inop ILS — profile, rudder trim; rejected landing E/O and 2nd engine failure on climb","Visual with 50% thrust loss — no G/S or PAPI / VASI, both failures same side"]},
  {h:"Setup", items:["Weather / ATIS guidance for each event||rfwx","Flight data — KLAX → KCVG||rffd"]}
 ];
+/* ---------- RLOFT — Recurrent LOFT (Student Briefing rev 17, 08 DEC 25) + SPOT. Two scenarios by simulator:
+   412 / 413 (Sims 2, 3, 4 — FAA 1092, 584, 1091): PVG → HKG (gen off, offset, holding / fuel, early go-around), then HKG → ANC
+   (main-deck / aft cargo fire, air turnback, overweight landing, fire chief) — instructor script Nov 25.
+   410 (Sim 1 722, PanAm 1322, Southcoast 267 / 420): SFO → LAX (BLEED DUCT LEAK L, 27 kt crosswind) — script rev 1b; leg 2 script not received.
+   Then SPOT: departure / clean / landing stalls, KJFK VOR 31L, visual pattern, 25+ kt crosswind, balked landing, 3 takeoffs and landings each. */
+const RL_SRC = "747 RLOFT Student Briefing rev 17 (08 DEC 25) · RLOFT 747-400 Sim 2-3 Instructor Script 412-413 (Nov 25) · RLOFT script 410 SFO-LAX rev 1b · support docs 04 NOV 26";
+const rlScen = s => s.setup.rlScen || (["MIA1","PAA","SC2"].includes(s.setup.sim) ? "410" : "412");
+const RL410_1 = [
+ {id:"L01",t:"Preflight → engine start (KSFO)",s:"Preflight",x:12,y:0,items:[],ref:"rl410set",ios:["After the brief: OFP / WX paperwork; PF / PM roles","KSFO ATIS Papa: 150/10, 10 sm, SCT 075, 11/04, A30.11, departing 10L","MX close to departure: “Daily check accomplished. Log has one deferral — TR #4. Dispatch notified.”","Clearance (voice or ACARS): SAHEY_ departure, SUSEY transition, climb via SID, expect FL390 10 min after, departure 135.1, squawk 7225","Uncontrolled pushback — Pushback Left on the IOS if applicable"]},
+ {id:"L02",t:"Taxi out — 10L",s:"Taxi",x:35,y:0,items:[],ios:["Flaps set before the airplane moves","Ground: taxi 10L via C, hold short 10L at R, number one, tower 120.5","Takeoff departure review; runway and trim verification; line up and wait 10L"]},
+ {id:"L03",t:"Takeoff → climb (RNAV ORYAN)",s:"T/O & climb",x:50,y:10,items:[],ios:["Tower: wind 150/10, RNAV ORYAN, 10L cleared for takeoff; NORCAL 135.1","NORCAL: “Can you be above 14,000 passing 5,000 in 4 minutes?” — altitude awareness","Passing 10,000: Oakland 127.95 — direct EBAYE, FL310 final"]},
+ {id:"L04",t:"Cruise — BLEED DUCT LEAK L",s:"Bleed duct leak",x:66,y:31,items:[],crit:1,ios:["Approaching EBAYE: LA Center 134.9. After check-in: BLEED DUCT LEAK L (QRH 2.4)","Dispatch requests continuing to LAX (2 in, 2 out); ACARS FDP landing distance and live calculation unavailable","Don’t steer the crew — many valid options; note PAN / MAYDAY for the debrief","Don’t suggest QRH PI.22.11 / .12 for the landing distance — note if it isn’t used","After AVE: FL290 for traffic; through FL300: LA Center 130.25 — cross SYMON 12,000, A30.08"]},
+ {id:"L05",t:"Descent — say airspeed, crossing restrictions",s:"Descent",x:82,y:20,items:[],ref:"rl410wx",ios:["Through FL280: “Say airspeed?” → maintain 320 kt in the transition","Note flaps 25 vs 30 and autobrake planning for the debrief","Through FL250: configure IOS for KLAX 07R — cross SADDE at 250 kt, BAYST at 10,000","Through FL190: SOCAL 128.6; KLAX ATIS Delta 150/28, 1½ sm BR, BKN 007"]},
+ {id:"L06",t:"Arrival → ILS 07R",s:"ILS 07R",x:95,y:7,items:[],ios:["SOCAL: after SADEE direct TIMSE, ILS 07R, A30.08","Through 11,000: descend 5,000, 220 kt; past SADEE: cross TIMSE at or above 2,600, cleared ILS 07R, tower at FUMBL"]},
+ {id:"L07",t:"Approach & landing — 27 kt crosswind",s:"Landing 07R",x:103,y:1,items:[],crit:1,ios:["HW 5 · XW 27 · Vref +5; cobblestone turbulence MED descending through 2,500","PM assertiveness if the approach becomes unstable — note stabilized-approach exceedances","Tower: wind 150 at 28, 07R cleared to land; right when able, Alpha, ground point 75"]},
+ {id:"L08",t:"Taxi in — end of leg 1",s:"End leg 1",x:109,y:0,items:[],ios:["Ground: stop on Alpha. Give time for the flaps-up after landing","“Set the parking brake and leave the engines running. This is the end of leg 1 — we resume from here.”"]}
+];
+const RL410_1P = [[0,0],[45,0],[50,10],[58,31],[72,31],[85,15],[96,6],[104,0],[112,0]];
+const RL412_1 = [
+ {id:"P01",t:"Preflight → engine start (ZSPD stand 338)",s:"Preflight",x:15,y:0,items:[],ref:"rl412set",ios:["After the prebrief: OFP / WX paperwork without the DDG item; PF / PM — crew decides","ATIS P: departing 35R / 34L, PDC in operation, caution birds; 260/10 MPS, 6000 HZ, FEW 045, 21/14, QNH 1008","MX: daily check done, log complete — “the DDG on your release is the only one in the can”","Loadmaster: “We added cargo — here is your loadsheet, am I cleared to close the door?” → MINF ADJ","PDC / voice: HSN91D, climb 1,800 m, expect 10,400 m, dep 120.3, squawk 7225, 35R · Jepp 20-1P6: apply NADP1","Pushback: stand 338, tail south — ‘PB Left’ on the IOS; interphone terminology"]},
+ {id:"P02",t:"Taxi — runway change 35R → 35L",s:"Rwy change",x:35,y:0,items:[],ios:["Flaps set before movement; taxi P2, C, holding point P1","On C: “Runway 35R closed for maintenance — runway 35L, HSN91D departure” → Runway Change checklist (may be done while moving)","Runway and trim verification; number one, tower 118.8"]},
+ {id:"P03",t:"Takeoff → climb — metric altitudes",s:"T/O metric",x:49,y:6,items:[],ios:["Tower: RNAV PD501, climb 600 m (2,000 ft), wind 260/10 MPS, 35L cleared — runway verification in and out","Jepp 20-3E note 5: contact departure immediately once airborne (only give the frequency if asked)","Departure: climb via HSN91D to 3,600 m on standard (11,800 ft; TL 9,850) — crew must read back “on standard”"]},
+ {id:"P04",t:"ELEC GEN 2 OFF on the SID",s:"GEN 2 OFF",x:53,y:11,items:[],crit:1,ios:["Climbing on the SID: ELEC GEN 2 OFF (Sim 3: Generator Off – Over Excitation, then clear the malfunction — EICAS stays until the QRH is done)","Crew completes the QRH and manages the aircraft and time"]},
+ {id:"P05",t:"Offset and lower final altitude",s:"Offset · 7800 m",x:58,y:24,items:[],ios:["At NINAS: “direct HSN, offset 3 miles right, climb 7,800 m on standard — final” — FMC won’t offset on a published departure: crew says unable (continuous offset direct HSN or after)","7,800 m = 25,600 ft — change VNAV cruise alt; FOM 10.1.48 (more than 4,000 ft lower) → dispatch reanalysis; new expected arrival fuel 12.5 if asked","20 nm before HSN: Hefei Control 118.97"]},
+ {id:"P06",t:"Cruise → reposition to DOTMI",s:"Repo DOTMI",x:66,y:26,items:[],ios:["Approaching HSN: climb FL260 (VNAV cruise alt change)","3 min after FL260: heading 225, then reposition N23:11:00 E116:51:00, hdg 225, fuel 17.0","“Direct DOTMI, Hong Kong Radar 118.92” → expect ABBEY 3B; cross MUSEL at FL130"]},
+ {id:"P07",t:"Holding at ABBEY — fuel decision",s:"Hold ABBEY",x:80,y:13,items:[],crit:1,ref:"rlfuel",ios:["At FISHA: configure IOS for HKG; ATIS T — arrival 25R, 190/18, 10 km, OVC 5,000, 18/17, QNH 1014","“Hold at ABBEY as published, left turns, EFC (crossing + 10 min), FL130” — crew should advise dispatch of holding","Entering: “What is your hold time available?” — FMC HOLD AVAIL; INSUFFICIENT FUEL → set EFC to now to show HOLD AVAIL","Icing: best hold speed clean, 230 kt max at FL130; crew may amend reserves / drop the alternate with dispatch"]},
+ {id:"P08",t:"Arrival — ILS 25R RIVMI transition",s:"RIVMI arr",x:92,y:8,items:[],ios:["After 3 turns or a MINIMUM FUEL call: right turn direct TEDUR, ABBEY 3B (FMC may draw a left turn — use HDG SEL)","Approach 121.3: ILS 25R RIVMI transition; descend via RIVMI, QNH 1014 — TL FL110: crew must change the VNAV transition level (shows FL090)"]},
+ {id:"P09",t:"Early go-around → complex missed approach",s:"Go-around",x:100,y:3,items:[],crit:1,ios:["Passing RUNSU: from TOPUN cleared ILS 25R, tower 118.7 (HW 8, Vref +5)","At SAGNI: “Traffic, go around, fly the published missed approach, Director 119.5” — TOGA, or A/P–A/T off and both FDs off / on to drop LOC / GS","Emphasis: positive control and altitude awareness; complex missed approach","Approaching VH526: speed your discretion, cleared ILS 25R BOKAG transition"]},
+ {id:"P10",t:"ILS 25R — landing",s:"Landing 25R",x:113,y:1,items:[],ios:["Passing RUNSU: tower 118.7 — wind 190 at 18, 25R cleared to land","Diversion alternatives if chosen: Shenzhen ZGSZ (20 nm N, RWY 15 / 16) or Macao VMMC (20 nm SW, RWY 16 LOC / RNAV)"]},
+ {id:"P11",t:"Taxi in — end of leg 1",s:"End leg 1",x:124,y:0,items:[],ios:["Right turn, left on Charlie, hold short Yankee, ground 121.6 — stop: “End of leg 1, we resume from this position after the break”","IOS: reposition VHHH holding short 07R, engines running; reset BRAKE TEMP, clear malfunctions"]}
+];
+const RL412_1P = [[0,0],[45,0],[50,6],[54,11],[59,25],[66,26],[74,13],[86,13],[94,6],[99,1],[101,4],[109,4],[116,0],[128,0]];
+const RL_SPOT = [
+ {id:"S01",t:"SPOT — reposition KJFK",s:"SPOT · JFK",x:50,y:0,items:[],ref:"rlspot",ios:["RLOFT complete — give the crew time to finish the situation; then SPOT: 2 more takeoffs and landings each","Sim reset; reset any CBs pulled for the DDG before landing currency; with seat support only the student’s landing currency is needed"]},
+ {id:"S02",t:"Takeoff — departure stall (390 kg)",s:"Dep stall",x:56,y:4,items:[],ios:["Heavy weight (390) to replicate a previous FCR","Recover at the first indication — stick shaker (artificial) or buffet (natural)"]},
+ {id:"S03",t:"Clean configuration stall",s:"Clean stall",x:62,y:7,items:[],ios:["Recognize and recover per FCOM; TEM to use the crew in the recovery"]},
+ {id:"S04",t:"Landing configuration stall",s:"Ldg stall",x:67,y:5,items:[],ios:["During the approach set-up"]},
+ {id:"S05",t:"KJFK VOR 31L — visual segment",s:"VOR 31L",x:73,y:1.5,items:[],ios:["Winds 220/10–15 recommended. Runway alignment and wind drift planning; when can you maneuver once the runway is in sight?","Still stable maneuvering below 1,000 ft? Last-minute corrections not advised; below Vref = pod-strike risk — if in doubt, go around"]},
+ {id:"S06",t:"Visual traffic pattern — crosswind 25+ kt",s:"Visual pattern",x:82,y:1.5,items:[],ios:["Manual flight, pitch / power, energy management, stabilized criteria (SAFO 13002) — FCOM MAN.1.16 / MAN.2.7","25+ kt crosswind recommended: PIO and hard-landing mitigation"]},
+ {id:"S07",t:"Balked landing",s:"Balked ldg",x:88,y:0.3,items:[],ios:["FCTM 6.19 — hold wind correction, bank and pitch within limits; stay on centerline (pod / tail strike risk)"]},
+ {id:"S08",t:"Landing currency — 3 takeoffs and landings each",s:"Ldg currency",x:95,y:1,items:[],ios:["Low-energy go-arounds or full stops at instructor discretion — 3 takeoffs and 3 landings each (total)","Main gear must touch the runway straddling the centerline to count"]},
+ {id:"S09",t:"Taxi to park — shutdown and secure",s:"Secure",x:104,y:0,items:[],ios:["“Secure Checklist Complete” ends the simulator period"]}
+];
+const RL413_2 = [
+ {id:"H01",t:"Leg 2 start — engines running, hold short 07R",s:"Eng running 07R",x:4,y:0,items:[],ref:"rl413set",ios:["Select FAA Gust. OFP / WX paperwork; PF / PM alternate","ATIS T: departing 07R, 120/10 gusting 25, 10 km, OVC 5,000, QNH 1014","MX: transit check done; DDG on the release is the only one in the can. Loadmaster: loadsheet and NOTOC — close the door?","If not in position: hold short 07R, flaps up, engines running, RTO selected — wave-off received; flaps and flight control check still to do","Set fuel above min fuel (124.6) for the engines running"]},
+ {id:"H02",t:"Takeoff 07R — gusty crosswind, RNAV PORPA",s:"T/O gust",x:10,y:6,items:[],ios:["Before Takeoff checklist; runway and trim verification; NP.35.1 — minimum runway on alignment when stop margin < 1,000 ft","Tower: 120/10 G25, 07R RNAV PORPA, cleared for takeoff → departure 123.8: maintain 14,000, high speed approved"]},
+ {id:"H03",t:"FIRE MAIN DECK / FIRE AFT CARGO",s:"Cargo fire",x:18,y:14,items:[],crit:1,ios:["Passing SEGPO: FIRE MAIN DECK (Sim 2) or FIRE AFT CARGO (Sim 3) — expect a MAYDAY and a request","“Mayday Polar 483, direct LIMES, descend 6,000, expect ILS 07R” → estimate LIMES, souls and fuel (minutes), squawk 7700","Written for an air turnback to HKG — another course may not be wrong. Dispatch not expected; be brief if called","ATIS W: 120/15, 4 km, OVC 1,100 — overweight landing required"]},
+ {id:"H04",t:"Air turnback — ILS 07R, overweight",s:"ILS 07R",x:28,y:4,items:[],crit:1,ios:["QRH FIRE MAIN DECK step 14: VMO / MMO until 15 nm from the runway","Director: cross LIMES at or above 3,000, cleared ILS 07R; passing LIMES tower 118.4","Note stabilized exceedances not called / corrected — PM assertiveness"]},
+ {id:"H05",t:"Landing — stop on the runway, fire chief",s:"Fire chief",x:36,y:0,items:[],crit:1,ios:["Tower: 120 at 15, 07R cleared to land — “say estimated stopping position” (CFR); QRH step 17 autobrakes MAX AUTO","Touchdown: runway closed; hold position, fire equipment in transit, monitor 122.95","Fire Chief One: “how do you read?… confirm position on 07R… standby, approaching your aircraft”","Give time to finish the emergency; then SPOT"]}
+];
+const RL413_2P = [[0,0],[6,0],[12,8],[18,14],[24,9],[32,1],[37,0],[50,0],[54,4],[60,7],[66,5],[73,1],[76,0],[80,1.5],[84,0],[87,1.5],[90,0],[93,1.5],[96,0],[110,0]];
+const RL410_2 = [{id:"N01",t:"Leg 2 (scenario 411) — script not received",s:"Leg 2",x:4,y:0,items:[],ios:["Only the leg 1 script (410 SFO → LAX rev 1b) was provided. Run leg 2 from your script, then SPOT."]}];
+const RL410_2P = [[0,0],[48,0],[54,4],[60,7],[66,5],[73,1],[76,0],[80,1.5],[84,0],[87,1.5],[90,0],[93,1.5],[96,0],[110,0]];
+const RL_LEGS = {"412":[[RL412_1,RL412_1P,"PVG → HKG (412)"],[[...RL413_2, ...RL_SPOT],RL413_2P,"HKG → ANC (413) · SPOT"]], "410":[[RL410_1,RL410_1P,"SFO → LAX (410)"],[[...RL410_2, ...RL_SPOT],RL410_2P,"Leg 2 · SPOT"]]};
+const BRIEF_RL = [
+ {h:"Before the brief", items:["FTSP photo for any non-U.S. citizen / national / green card holder (once per curriculum)","Present the RLOFT student briefing — facilitate, don’t read the slides"]},
+ {h:"Hot topics (SMS data)", items:["Updated OFP — CONT, FRES, PCF, TOF, DOW, SWA","Carriage of animals and perishables — APU / packs until offloaded","GPS jamming / spoofing — SP 11.13; report to ATC and dispatch","Adverse weather de / anti-icing off the stand — SP.16.7 / 16.10 / 16.11; flap usage","Fuel policy — FMC reserves, MINIMUM vs MAYDAY FUEL||rlfuel","Thrust reverser usage — landing energy management, stow at reverse idle","Discontinued / missed approach — “Thrust Set”, lateral above 400, vertical at 1,000","Anatomy of a landing — seat, A/P disengage height, visual transition, ground effect, 50 ft"]},
+ {h:"RLOFT and SPOT", items:["RLOFT basics — 2 legs, keep it real, expedite the preflight||rlbasics","Facilitator role — I’m dispatch, MX, a flight attendant, the PSR","SPOT — stalls, JFK VOR 31L, visual pattern, 25+ kt crosswind, balked landing, landing currency||rlspot","CRM 7 critical skills — TEM is what we do, CRM is how we do it"]}
+];
 const PC_PATH = [[0,0],[17,0],[21,10],[25,20],[29,20],[30,22],[31,20],[33,14],[35,11],[38,7],[41,3],[44,0],[53,0],[55,1.5],[60,1.5],[61,4],[64,2.5],[67,1],[71,1],[73,2],[78,2],[81,0],[90,0],[94,2],[99,2],[102,0.5],[105,0.5],[107,2],[111,3],[114,0],[127,0]];
 
 const TSTAT = [{k:"P",l:"Proficient",c:"ok"},{k:"C",l:"Coached",c:"warn"},{k:"N",l:"Not yet",c:"bad"},{k:"D",l:"Demo",c:"info"},{k:"X",l:"Not done",c:"mute"}];
@@ -923,6 +992,7 @@ function simTarget(s){   // run = one applicant's period; m = whole device perio
   if (s.kind === "PCWU") return GP(s).length === 1 ? {run:270, m:270, why:"PCWU 4:30"} : {run:135, m:270, why:"PCWU 4:30 · 2:15 per run"};
   if (isCatQ(s)) return {run:120, m:120, why:"AWO CAT II/III PRM/PAR ~2:00"};
   if (isQL(s)) return {run:120, m:240, why:"QLOFT 4+00 — two legs"};
+  if (isRL(s)) return {run:130, m:240, why:"RLOFT — two legs and SPOT"};
   if (isUP(s)) return {run:120, m:120, why:"UPRT/EET ~2:00 profile"};
   if (isRF(s)) return {run:120, m:240, why:"RFT 4+00 — two halves"};
   if (s.setup.pilots.some(x => x.ssi)) return {run:180, m:180, why:"PC 3:00 — trainee plus seat support"};
@@ -936,6 +1006,7 @@ const pcat = (s,p) => (s.setup.oralOnly || s.setup.catQual) ? s.setup.cat : (s.s
 function catLabel(s){
   if (isRF(s)) return "RFT · " + [...new Set(GP(s).map(p => CAT(pcat(s,p)).form))].map(x => x[0] + x.slice(1).toLowerCase()).join(" / ");
   if (isUP(s)) return "UPRT / EET · " + [...new Set(GP(s).map(p => CAT(pcat(s,p)).form))].map(x => x[0] + x.slice(1).toLowerCase()).join(" / ");
+  if (isRL(s)) return `RLOFT ${rlScen(s) === "410" ? "410" : "412/413"} · ` + [...new Set(GP(s).map(p => CAT(pcat(s,p)).form))].map(x => x[0] + x.slice(1).toLowerCase()).join(" / ");
   if (isQL(s)) return "QLOFT · " + [...new Set(GP(s).map(p => CAT(pcat(s,p)).form))].map(x => x[0] + x.slice(1).toLowerCase()).join(" / ");
   if (isMan(s)) { const ev = FORM_EVENTS.filter(e => evFlags(s).has(e.k)).map(e => e.k === "OTH" && s.setup.evOther ? s.setup.evOther : e.l);
     return "Manual · " + (ev.join(" + ") || "event not set") + " · " + [...new Set(GP(s).map(p => CAT(pcat(s,p)).form))].map(x => x[0] + x.slice(1).toLowerCase()).join(" / "); }
@@ -961,8 +1032,8 @@ function runEl(s,r){ const t = ((s.run.t)||[])[r] || {}; return (t.elapsed||0) +
 const totalEl = s => runEl(s,0) + runEl(s,1);
 const briefTarget = s => s.kind === "PCWU" ? 120 : (s.setup.typeRating ? 60 : 90);   // graded pilots — a seat-support (SSI) seat is never graded
 const seatLab = p => String(p+1);
-const EVENTS = s => s.kind === "PCWU" ? PCWU_EVENTS : isRF(s) ? [...(curRun(s) === 1 ? RF2_EVENTS : RF1_EVENTS), RF_GEN] : isUP(s) ? UP_EVENTS : isQL(s) ? (curRun(s) === 1 ? QL2_EVENTS : QL1_EVENTS) : isCatQ(s) ? AWO_EVENTS : PC_EVENTS;
-const PATH = s => s.kind === "PCWU" ? PCWU_PATH : isRF(s) ? (curRun(s) === 1 ? RF2_PATH : RF1_PATH) : isUP(s) ? UP_PATH : isQL(s) ? (curRun(s) === 1 ? QL2_PATH : QL1_PATH) : isCatQ(s) ? AWO_PATH : PC_PATH;
+const EVENTS = s => s.kind === "PCWU" ? PCWU_EVENTS : isRL(s) ? RL_LEGS[rlScen(s)][curRun(s) === 1 ? 1 : 0][0] : isRF(s) ? [...(curRun(s) === 1 ? RF2_EVENTS : RF1_EVENTS), RF_GEN] : isUP(s) ? UP_EVENTS : isQL(s) ? (curRun(s) === 1 ? QL2_EVENTS : QL1_EVENTS) : isCatQ(s) ? AWO_EVENTS : PC_EVENTS;
+const PATH = s => s.kind === "PCWU" ? PCWU_PATH : isRL(s) ? RL_LEGS[rlScen(s)][curRun(s) === 1 ? 1 : 0][1] : isRF(s) ? (curRun(s) === 1 ? RF2_PATH : RF1_PATH) : isUP(s) ? UP_PATH : isQL(s) ? (curRun(s) === 1 ? QL2_PATH : QL1_PATH) : isCatQ(s) ? AWO_PATH : PC_PATH;
 
 function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",ssi:false}; }
 function newSession(kind){
@@ -1109,6 +1180,7 @@ function problems(s,p){
     if ((res === "UNSAT" || res === "INC") && !(s.debrief.p[p].remarks||"").trim()) add(0,"Unsat / Incomplete — write the remarks (back of the form)");
     if (isUP(s)) { const c = s.counts[p]; if (!(+c.to >= 3 && +c.ldg >= 3)) add(0,"Record 3 takeoffs and 3 landings (UPRT / EET lesson guide)");
       const d = upCover(s,p), miss = UP_REQ.filter(([k]) => !d[k]).map(x => x[1]); if (miss.length) add(0, `§121.423 not marked done on the Run tab: ${miss.join("; ")}`, true); }
+    if (isRL(s)) { const c = s.counts[p]; if (!isSSI(s,p) && !(+c.to >= 3 && +c.ldg >= 3)) add(0,"Record 3 takeoffs and 3 landings (SPOT landing currency)", true); }
     return out;
   }
   if (isMan(s)) {   // manual grade sheet: the SCP fills the form; only the result and remarks for U / I / repeats are checked
@@ -1196,7 +1268,7 @@ function seatRestricted(s,p){ return s.kind === "PC" && ITEMS.some(it => ["U","I
 /* per-pilot status for a stick-diagram event */
 function evState(s,e,p){
   if (isSSI(s,p)) return isSSI(s,1-p) ? "none" : evState(s,e,1-p);
-  if (isQL(s) || isUP(s)) { const rr = (((s.run.ev[e.id]||{}).p)||[])[p] || {}; return rr.st ? TSBY[rr.st].c : "none"; }
+  if (isLO(s) || isUP(s)) { const rr = (((s.run.ev[e.id]||{}).p)||[])[p] || {}; return rr.st ? TSBY[rr.st].c : "none"; }
   if (!e.items.length) return "none";
   if (s.kind === "PCWU") {
     const r = (((s.run.ev[e.id]||{}).p)||[])[p] || {};
@@ -1306,7 +1378,7 @@ function sampleSessions(){
 
 /* ============================================================ render: header + nav */
 const VIEWS = s => isUP(s) || isRF(s) ? [["home","Sessions"],["setup","Setup"],["brief","Brief"],["run","Run"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
-  : isQL(s) ? [["home","Sessions"],["setup","Setup"],["brief","Brief"],["run","LOFT"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
+  : isLO(s) ? [["home","Sessions"],["setup","Setup"],["brief","Brief"],["run","LOFT"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
   : isMan(s) ? [["home","Sessions"],["setup","Setup"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
   : isOral(s) ? [["home","Sessions"],["setup","Setup"],["brief","Oral"],["sheet","Grade sheet"],["debrief","Debrief & submit"]]
   : [["home","Sessions"],["setup","Setup"],["brief","Brief"],["run","Run"],["sheet","Grade sheet"],["debrief","Debrief & submit"]];
@@ -1323,7 +1395,7 @@ function renderHeader(){
   $("hdr").innerHTML = `<div class="brandrow"><span class="stamp">N&amp;O</span>
     <div class="ttl"><span class="eyebrow">N&amp;O · 747 Non-AQP</span><h1>PCWU · PC Run-and-Grade</h1>
       <div class="ver">v${APP_VERSION} · <button data-act="update">↻ Check for updates</button> · <button data-act="ref" data-v="revs">Revisions</button>${newerVer ? ` <button class="newver" data-act="update">Update to v${esc(newerVer)}</button>` : ""}</div></div>
-    ${s ? `<span class="kchip ${s.kind==="PC"?"pc":""}">${isRF(s) ? "RFT" : isUP(s) ? "UPRT" : isQL(s) ? "QLOFT" : isMan(s) ? "MANUAL" : isCatQ(s) ? "CAT II/III" : isOral(s) ? "ORAL" : s.kind}</span>` : ""}
+    ${s ? `<span class="kchip ${s.kind==="PC"?"pc":""}">${isRL(s) ? "RLOFT" : isRF(s) ? "RFT" : isUP(s) ? "UPRT" : isQL(s) ? "QLOFT" : isMan(s) ? "MANUAL" : isCatQ(s) ? "CAT II/III" : isOral(s) ? "ORAL" : s.kind}</span>` : ""}
     <span class="grow"></span>
     ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(catLabel(s))} · ${esc(s.setup.date)}</span></div>` : ""}
     <span class="pill" id="storeState"></span>
@@ -1337,7 +1409,7 @@ function renderHeader(){
 /* ============================================================ HOME */
 function renderHome(){
   const list = Object.values(sessions).sort((a,b) => b.updatedAt - a.updatedAt);
-  const row = s => `<div class="srow"><span class="scode"><span class="chip ${isRF(s)?"rf":isUP(s)?"up":isQL(s)?"ql":isMan(s)?"man":isCatQ(s)?"catq":isOral(s)?"oral":s.kind==="PC"?"pc":"pcwu"}">${isRF(s)?"RFT":isUP(s)?"UPRT":isQL(s)?"QLOFT":isMan(s)?"MANUAL":isCatQ(s)?"CAT II/III":isOral(s)?"ORAL":s.kind}</span></span>
+  const row = s => `<div class="srow"><span class="scode"><span class="chip ${isRL(s)?"rl":isRF(s)?"rf":isUP(s)?"up":isQL(s)?"ql":isMan(s)?"man":isCatQ(s)?"catq":isOral(s)?"oral":s.kind==="PC"?"pc":"pcwu"}">${isRL(s)?"RLOFT":isRF(s)?"RFT":isUP(s)?"UPRT":isQL(s)?"QLOFT":isMan(s)?"MANUAL":isCatQ(s)?"CAT II/III":isOral(s)?"ORAL":s.kind}</span></span>
      <div class="smain"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span class="muted small">${esc(catLabel(s))} · ${esc(s.setup.date)} · ${esc(s.setup.conductor.name || "—")} (${esc(s.setup.conductor.role)})</span></div>
      <span class="chip ${s.status==="submitted"?"ok":"info"}">${s.status==="submitted"?"Submitted":"In progress"}</span>
      <div class="sact"><button class="btn small" data-act="open" data-v="${s.id}">Open</button>
@@ -1353,13 +1425,14 @@ function renderHome(){
     <h3>Other events</h3>
     <div class="manstarts">
       <button class="btn" data-act="startoral"><span class="chip oral">ORAL</span> Oral exam only <small class="muted">— new hire, transition / type rating, long-course requal; item 1 only</small></button>
+      <button class="btn" data-act="startrl"><span class="chip rl">RLOFT</span> Recurrent LOFT + SPOT <small class="muted">— 412/413 PVG-HKG-ANC or 410 SFO-LAX, by sim</small></button>
       <button class="btn" data-act="startrf"><span class="chip rf">RFT</span> Recurrent Flight Training <small class="muted">— 4+00, KLAX → KCVG</small></button>
       <button class="btn" data-act="startup"><span class="chip up">UPRT</span> UPRT / EET and bounced landing <small class="muted">— §121.423, KJFK</small></button>
       <button class="btn" data-act="startql"><span class="chip ql">QLOFT</span> Qualification LOFT <small class="muted">— SFO → LAX → HNL, initial / transition / upgrade</small></button>
       <button class="btn" data-act="startcatq"><span class="chip catq">CAT II/III</span> AWO — CAT II / III with PRM / PAR <small class="muted">— new hire, initial equipment, long-course requal</small></button>
     </div>
     <p class="muted small" style="margin:10px 0 8px"><span class="chip man">MANUAL</span> No lesson guide yet: you mark the status blocks yourself and it prints the official form with that EVENT box checked. Each pilot’s category is picked in Setup.</p>
-    <div class="manstarts">${FORM_EVENTS.filter(e => !["PC","TR","CAT","QLOFT","UPRT","RFT"].includes(e.k)).map(e => `<button class="btn" data-act="startman" data-v="${e.k}"><span class="chip man">MANUAL</span> ${esc(e.l)}</button>`).join("")}<button class="btn" data-act="startman" data-v=""><span class="chip man">MANUAL</span> Blank form — pick boxes</button></div>
+    <div class="manstarts">${FORM_EVENTS.filter(e => !["PC","TR","CAT","QLOFT","UPRT","RFT","RLOFT"].includes(e.k)).map(e => `<button class="btn" data-act="startman" data-v="${e.k}"><span class="chip man">MANUAL</span> ${esc(e.l)}</button>`).join("")}<button class="btn" data-act="startman" data-v=""><span class="chip man">MANUAL</span> Blank form — pick boxes</button></div>
     <h3>Sessions</h3>
     ${list.length ? `<div class="slist">${list.map(row).join("")}</div>` : `<div class="empty">No sessions yet. Start a PCWU or a PC above${store.db ? "" : "; sessions are kept on this device"}. A PC finds the pilot’s PCWU by employee number from the shared store, this device, or an imported .json file.</div>`}
     <p class="muted small" style="margin-top:18px">Sources: ${Object.values(SRC).map(esc).join(" · ")}</p>`;
@@ -1439,7 +1512,7 @@ function aimsBtn(){ return `<button class="btn aimsload" data-act="aimsopen">⤓
    printed on their own last page of the grade-sheet PDF for the simulator logbook / sim maintenance. Not part of the grade record. */
 function simDisc(s){ s.simDisc = s.simDisc || {fstd:"", items:[]}; if (!s.simDisc.fstd) { const sim = SIMS.find(x => x.id === s.setup.sim); s.simDisc.fstd = sim ? `${sim.name} · FAA ${sim.faa} · ${sim.loc}` : (s.setup.device ? "FAA " + s.setup.device : ""); } return s.simDisc; }
 function sdBtn(s){ const n = ((s.simDisc||{}).items||[]).length; return `<button class="btn small sdbtn ${n?"has":""}" data-act="sdopen">🛠 Sim discrepancies${n ? " (" + n + ")" : ""}</button>`; }
-function sdStamp(s){ const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}${s.kind === "PCWU" || (s.kind === "PC" && !isOral(s) && (!isMan(s) || isQL(s) || isUP(s) || isRF(s))) ? " · " + simNow(s) : ""}`; }
+function sdStamp(s){ const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}${s.kind === "PCWU" || (s.kind === "PC" && !isOral(s) && (!isMan(s) || isLO(s) || isUP(s) || isRF(s))) ? " · " + simNow(s) : ""}`; }
 function drawSD(){
   const s = cur(), v = $("sdView"); if (!s) return; const d = simDisc(s);
   v.innerHTML = `<div class="pdfbar" role="dialog" aria-modal="true" aria-label="Simulator discrepancies"><b>🛠 Simulator discrepancies</b><button class="btn" data-act="sdclose">✓ Done</button></div>
@@ -1465,11 +1538,11 @@ function evCard(s){
    <p class="why" style="margin:6px 0 0">Check every box that applies; they print exactly as marked. AIMS will fill these when it is connected.</p></div>`;
 }
 function manHdrCard(s){
-  const ql = isQL(s) || isUP(s) || isRF(s);
+  const ql = isLO(s) || isUP(s) || isRF(s);
   return `<div class="card" style="margin-top:12px"><h4>Form header entries</h4><div class="g2">
    ${ql ? "" : `<label class="f">Simulator ID — PCWU box${inp("setup/device2", s.setup.device2||"", "blank if none")}</label>
    <label class="f">PCWU time (h+mm)${inp("setup/pcwuTime", s.setup.pcwuTime||"", "e.g. 4+30")}</label>`}
-   <label class="f">${isRF(s) ? "RFT time (h+mm) — blank = the two half clocks" : isUP(s) ? "UPRT / EET time (h+mm) — blank = the sim clock" : ql ? "QLOFT time (h+mm) — blank = the two leg clocks" : "PC / RFT / R-LOFT / QLOFT time (h+mm)"}${inp("setup/evTime", s.setup.evTime||"", ql ? fmtHM(totalEl(s)) : "e.g. 2+15")}</label>
+   <label class="f">${isRL(s) ? "RLOFT time (h+mm) — blank = the leg clocks" : isRF(s) ? "RFT time (h+mm) — blank = the two half clocks" : isUP(s) ? "UPRT / EET time (h+mm) — blank = the sim clock" : ql ? "QLOFT time (h+mm) — blank = the two leg clocks" : "PC / RFT / R-LOFT / QLOFT time (h+mm)"}${inp("setup/evTime", s.setup.evTime||"", ql ? fmtHM(totalEl(s)) : "e.g. 2+15")}</label>
    <label class="f">Other Training Time (h+mm)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
    ${GP(s).map(p => `<label class="f">${esc(pname(s,p))}: TO / LDGs<span class="row tl" style="gap:6px;flex-wrap:nowrap">${inp(`counts/${p}/to`, s.counts[p].to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, s.counts[p].ldg, "LDG")}</span></label>`).join("")}
    </div>
@@ -1490,10 +1563,12 @@ function renderSetup(s){
     ${CAT(pcat(s,p)).note ? `<p class="why" style="margin:6px 0 0">${esc(CAT(pcat(s,p)).note)}</p>` : ""}`}
     ${isMan(s) ? "" : waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
     ${isPC && !isOral(s) && !isCatQ(s) && !isMan(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) || pcat(s,p) === "ST" ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course.</p>`) : ""}</div>`}`; };
-  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isRF(s) ? "RFT" : isUP(s) ? "UPRT / EET" : isQL(s) ? "QLOFT" : isMan(s) ? "Manual grade sheet" : isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isRF(s) ? "Recurrent Flight Training — KLAX → KCVG" : isUP(s) ? "UPRT / EET and bounced landing" : isQL(s) ? "Qualification LOFT — SFO → LAX → HNL" : isMan(s) ? "Manual grade sheet — any event on the form" : isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div><div class="row">${isOral(s) ? "" : sdBtn(s)}${s.status==="submitted" ? "" : aimsBtn()}</div></div>
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isRL(s) ? "RLOFT" : isRF(s) ? "RFT" : isUP(s) ? "UPRT / EET" : isQL(s) ? "QLOFT" : isMan(s) ? "Manual grade sheet" : isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isRL(s) ? `Recurrent LOFT — ${rlScen(s) === "410" ? "SFO → LAX (410)" : "PVG → HKG → ANC (412/413)"} + SPOT` : isRF(s) ? "Recurrent Flight Training — KLAX → KCVG" : isUP(s) ? "UPRT / EET and bounced landing" : isQL(s) ? "Qualification LOFT — SFO → LAX → HNL" : isMan(s) ? "Manual grade sheet — any event on the form" : isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div><div class="row">${isOral(s) ? "" : sdBtn(s)}${s.status==="submitted" ? "" : aimsBtn()}</div></div>
   ${isCatQ(s) ? `<div class="banner info" style="margin-bottom:10px">AWO lesson — Initial CAT II / III Certification with PRM / PAR (06 MAR 25), conducted on its own (new hire, initial equipment, long-course requal). Brief → Run (KSEA AWO / CAT II-III, then KSFO PRM / PAR) → Grade sheet. Graded: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Every other block is “/”. Record TO / LDGs and the training time.</div>
    <div class="card" style="margin-bottom:12px"><div class="g2"><label class="f">Training time (h+mm, Other Training Time box)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
    ${GP(s).map(p => `<label class="f">${esc(pname(s,p))}: TO / LDGs<span class="row tl" style="gap:6px;flex-wrap:nowrap">${inp(`counts/${p}/to`, s.counts[p].to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, s.counts[p].ldg, "LDG")}</span></label>`).join("")}</div></div>` : ""}
+  ${isRL(s) ? `<div class="banner info" style="margin-bottom:10px">Recurrent LOFT: two legs, then SPOT (stalls, JFK VOR 31L, visual pattern, crosswind, balked landing — 3 takeoffs and landings each). Scenario by simulator — <b>412/413</b> for Sims 2, 3, 4; <b>410</b> for Sim 1, PanAm, Southcoast. Result only (Sat / Unsat / Incomplete). Form EVENT: RLOFT.
+    <div class="seg" style="margin-top:8px">${[["412","412/413 · PVG → HKG → ANC"],["410","410 · SFO → LAX"]].map(([k,l]) => `<button class="${rlScen(s)===k?"on":""}" data-act="rlscen" data-v="${k}">${l}${!s.setup.rlScen && rlScen(s)===k ? " (by sim)" : ""}</button>`).join("")}</div></div>` : ""}
   ${isRF(s) ? `<div class="banner info" style="margin-bottom:10px">Recurrent Flight Training (RFT 10 DEC 25): one 4+00 session — 1st half CA PF, 2nd half FO PF. CA/CA or FO/FO: swap seats at half-time and fly the first half again from the takeoff. Brief → Run (mark the PF’s items C as trained, I if not proficient) → Grade sheet → Debrief. Form EVENT: RFT.</div>` : ""}
   ${isUP(s) ? `<div class="banner info" style="margin-bottom:10px">UPRT / EET and bounced landing (§121.423 — every element every 2 years). Brief 2:00 with the student PowerPoint → Run (both pilots, each exercise) → Grade sheet (result only: Sat / Unsat / Incomplete; 3 takeoffs and landings each) → Debrief. Form EVENT: UPRT / EET.</div>` : ""}
   ${isQL(s) ? `<div class="banner info" style="margin-bottom:10px">Qualification LOFT (FFSQ 4.2 — initial, transition, upgrade): two legs, complete crew. Leg 1 PF is the crew’s choice; leg 2 alternates. CA/CA: each CA flies his leg from the left seat; FO/FO: switch seats before leg 2. Brief → LOFT (observe, don’t grade) → Grade sheet (result only: Sat / Unsat / Incomplete) → Debrief. Form EVENT: QLOFT.</div>` : isMan(s) ? `<div class="banner info" style="margin-bottom:10px">Fill the TC_PC_RFT_REC form directly — for an event the app doesn’t walk you through, or whenever you’d rather just mark the sheet. Pick the EVENT and each pilot’s CATEGORY, then mark the status blocks on the Grade sheet. Nothing is required except the result and a remark for U / I / repeated items.</div>` : ""}
@@ -1507,7 +1582,7 @@ function renderSetup(s){
      ${isOral(s) || isCatQ(s) ? `<label class="f wide" style="grid-column:1/-1">Course (category of event on the form)<select id="f_cat" data-k="setup/cat">${CATS.filter(x=>x.k!=="ST").map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>` : ""}
    </div>
    ${isPC && !isOral(s) && !isCatQ(s) ? `<p class="why" style="margin:8px 0 0">${isMan(s) ? "Category of event" : "PC type"} is set for each pilot under Crew.</p>` : ""}
-   ${isMan(s) && !isQL(s) && !isUP(s) && !isRF(s) ? evCard(s) : `<p class="why" style="margin:10px 0 0">Event on the form: <b>${FORM_EVENTS.filter(e => evFlags(s).has(e.k)).map(e => e.l).join(" + ")}</b></p>
+   ${isMan(s) && !isLO(s) && !isUP(s) && !isRF(s) ? evCard(s) : `<p class="why" style="margin:10px 0 0">Event on the form: <b>${FORM_EVENTS.filter(e => evFlags(s).has(e.k)).map(e => e.l).join(" + ")}</b></p>
    ${isPC && !isOral(s) && !isCatQ(s) ? `<div class="row" style="margin-top:6px"><button class="cb ${s.setup.typeRating?"on":""}" style="width:auto" data-act="tr"><span class="box"></span><span>Type rating</span></button></div>` : ""}`}
    </div>
    <div class="card"><h4>${isMan(s) ? "Conducted by (Instructor / Check Pilot / APD)" : isCatQ(s) ? "Conducted by (Instructor / Check Airman / APD)" : isOral(s) ? "Oral given by (Instructor / Check Airman / APD)" : isPC ? "PC Check Airman / APD" : "PCWU conducted by"}</h4><div class="g2">
@@ -1518,11 +1593,11 @@ function renderSetup(s){
    </div>
   </div>
   ${isMan(s) ? manHdrCard(s) : ""}
-  ${isQL(s) ? runPlan(s).replace("<h3>Run plan</h3>", "<h3>Leg plan</h3>").replace(/Run 1 applicant/g, "Leg 1 PF").replace(/<b>Run (\d):/g, "<b>Leg $1:") : ""}
+  ${isLO(s) ? runPlan(s).replace("<h3>Run plan</h3>", "<h3>Leg plan</h3>").replace(/Run 1 applicant/g, "Leg 1 PF").replace(/<b>Run (\d):/g, "<b>Leg $1:") : ""}
   ${isRF(s) ? runPlan(s).replace("<h3>Run plan</h3>", "<h3>Half plan</h3>").replace(/Run 1 applicant/g, "1st half PF").replace(/<b>Run 1:/g, "<b>1st half:").replace(/<b>Run 2:/g, "<b>2nd half:") : ""}
   <h3>Crew</h3><div class="cols">${pil(0)}${pil(1)}</div>
   ${isOral(s) || isCatQ(s) || isMan(s) ? "" : runPlan(s)}
-  <div class="row end"><button class="btn primary" data-act="view" data-v="${isMan(s) && !isQL(s) && !isUP(s) && !isRF(s) ? "sheet" : "brief"}">${isQL(s) || isUP(s) || isRF(s) ? "Go to brief →" : isMan(s) ? "Go to grading →" : isCatQ(s) ? "Go to brief →" : isOral(s) ? "Go to the oral →" : "Go to brief →"}</button></div>`;
+  <div class="row end"><button class="btn primary" data-act="view" data-v="${isMan(s) && !isLO(s) && !isUP(s) && !isRF(s) ? "sheet" : "brief"}">${isLO(s) || isUP(s) || isRF(s) ? "Go to brief →" : isMan(s) ? "Go to grading →" : isCatQ(s) ? "Go to brief →" : isOral(s) ? "Go to the oral →" : "Go to brief →"}</button></div>`;
 }
 /* ⇅ Swap crewmembers: trade who flies Run 1 and Run 2 (PF 1st / PF 2nd). Everything stays with the person — grades, documents, PCWU link, notes and each run's timer. */
 function swapBtn(s){ if (GP(s).length !== 2) return "";
@@ -1719,8 +1794,29 @@ function renderRfBrief(s){
    <h3>Brief notes</h3><textarea class="in" id="f_bnotes" data-k="brief/notes" rows="3" placeholder="What was covered, items to watch">${esc(s.brief.notes)}</textarea>
    <div class="row end"><button class="btn primary" data-act="view" data-v="run">Go to the sim →</button></div>`;
 }
+const RL_PDF = {brief:["setup/RLOFT_Student_Briefing_Rev17_08DEC25.pdf","RLOFT student briefing · rev 17 · 08 DEC 25"], d410:["setup/RLOFT_410_SupportDocs_SFO_LAX_04NOV26.pdf","RLOFT 410 support docs SFO-LAX · 04 NOV 26"], s410:["setup/RLOFT_410_Script_SFO_LAX_Rev1b.pdf","RLOFT 410 script SFO-LAX · rev 1b"], d412:["setup/RLOFT_412_SupportDocs_PVG_HKG_04NOV26.pdf","RLOFT 412 support docs PVG-HKG · 04 NOV 26"], d413:["setup/RLOFT_413_SupportDocs_HKG_ANC_04NOV26.pdf","RLOFT 413 support docs HKG-ANC · 04 NOV 26"], s412:["setup/RLOFT_412_413_Instructor_Script_Nov25.pdf","RLOFT 412-413 instructor script · Nov 25"]};
+async function rlPdf(which){ const [path, label] = RL_PDF[which];
+  try { toast("Loading…"); const r = await fetch(path); if (!r.ok) throw new Error("HTTP " + r.status);
+    const b = await r.blob(), name = path.split("/").pop();
+    if (window.claude && window.claude.use && store.dl) { await store.dl.save({filename:name, data:b}); toast("Saved — open the PDF to view or print"); }
+    else showPdf(b, name, label); }
+  catch(e){ if (!e || e.code !== "declined") toast("Couldn't load the PDF: " + (e.message || e.code)); } }
+function renderRlBrief(s){
+  const el = s.brief.elapsed + (s.brief.startedAt ? Date.now()-s.brief.startedAt : 0), target = 60, sc = rlScen(s);
+  return `<div class="bhead"><div><span class="eyebrow">RLOFT pre-brief</span><h2>Recurrent LOFT — ${sc === "410" ? "SFO → LAX (410)" : "PVG → HKG → ANC (412 / 413)"} + SPOT</h2>
+    <p class="lede">Simulated line operations, two legs, then SPOT stall and landing training. ${esc(RL_SRC)}.</p></div>
+   <div class="card clock"><span class="eyebrow">Brief timer</span><div class="big" id="briefClock">${fmtDur(el)}</div><div class="bar"><span id="briefBar" style="width:${Math.min(100, el/(target*600))}%"></span></div>
+   <button class="btn ${s.brief.startedAt?"":"primary"}" data-act="btimer">${s.brief.startedAt?"Pause":"Start brief"}</button></div></div>
+   ${tvBar("rloft", "Present the RLOFT student briefing (61 slides)", null)}
+   <div class="tvbar"><span>🖨</span><span class="grow">Crew paperwork and the instructor script for scenario ${sc === "410" ? "410" : "412 / 413"}.</span>${sc === "410" ? `<button class="btn small primary" data-act="rlpdf" data-v="d410">Support docs 410</button><button class="btn small" data-act="rlpdf" data-v="s410">Script 410</button>` : `<button class="btn small primary" data-act="rlpdf" data-v="d412">Leg 1 docs (412)</button><button class="btn small primary" data-act="rlpdf" data-v="d413">Leg 2 docs (413)</button><button class="btn small" data-act="rlpdf" data-v="s412">Script 412-413</button>`}<button class="btn small" data-act="rlpdf" data-v="brief">Briefing (PDF)</button></div>
+   <h3>Briefing items</h3><div class="bgrid">${checklist(s, BRIEF_RL, "l")}</div>
+   <h3>References</h3><div class="row">${["rlbasics","rlspot","rlfuel", sc === "410" ? "rl410set" : "rl412set", sc === "410" ? "rl410wx" : "rl413set","qldeb"].map(k => `<button class="showref" data-act="ref" data-v="${k}">${esc(REFS[k].h)}</button>`).join("")}</div>
+   <h3>Brief notes</h3><textarea class="in" id="f_bnotes" data-k="brief/notes" rows="3" placeholder="What was covered, items to watch">${esc(s.brief.notes)}</textarea>
+   <div class="row end"><button class="btn primary" data-act="view" data-v="run">Go to the LOFT →</button></div>`;
+}
 function renderBrief(s){
   if (isOral(s)) return renderOral(s);
+  if (isRL(s)) return renderRlBrief(s);
   if (isRF(s)) return renderRfBrief(s);
   if (isUP(s)) return renderUpBrief(s);
   if (isQL(s)) return renderQlBrief(s);
@@ -1748,7 +1844,7 @@ function halfDisc(cx, cy, r, c0, c1){
 }
 function stick(s){
   const evs = EVENTS(s).filter(e => !e.opt), path = PATH(s);
-  const maxX = Math.max(...path.map(p=>p[0])) + 4, maxY = s.kind==="PCWU" ? 16 : isCatQ(s) ? 6 : isQL(s) ? 42 : isUP(s) ? 40 : isRF(s) ? 20 : 24;
+  const maxX = Math.max(...path.map(p=>p[0])) + 4, maxY = s.kind==="PCWU" ? 16 : isCatQ(s) ? 6 : isRL(s) ? (curRun(s) === 1 ? 16 : 34) : isQL(s) ? 42 : isUP(s) ? 40 : isRF(s) ? 20 : 24;
   /* labels are stacked (wrapped to short lines) and placed so no stem runs through another label */
   const wrap = t => { const w = t.replace(/\//g, "/ ").split(/\s+/).filter(Boolean), out = []; let ln = "";
     w.forEach(x => { const sep = ln.endsWith("/") ? "" : " "; if (ln && (ln + sep + x).length > 10) { out.push(ln); ln = x; } else ln = ln ? ln + sep + x : x; }); if (ln) out.push(ln); return out; };
@@ -1779,12 +1875,12 @@ function stick(s){
     return `<g class="sk-ev ${ui.ev===e.id?"on":""} ${e.crit?"crit":""}" data-act="ev" data-v="${e.id}" tabindex="0" role="button" aria-label="${esc(e.t)}">
       <text class="sk-lab" x="${o.lx}" y="${ly}" text-anchor="middle">${o.lines.map((l,k) => `<tspan x="${o.lx}" dy="${k?LH:0}">${esc(l)}</tspan>`).join("")}</text>
       ${halfDisc(cx,cy,11,c0,c1)}</g>`; }).join("");
-  return `<div class="stickwrap"><div class="sk-cap"><span>${isRF(s) ? `RFT ${curRun(s) === 1 ? "2nd half — FO PF" : "1st half — CA PF"} (${esc(pname(s,runs(s)[curRun(s)].a))})` : isUP(s) ? "747 FFS UPRT / EET and bounced landing — KJFK" : isQL(s) ? (curRun(s) === 1 ? "QLOFT leg 2 — KLAX → PHNL, diversion to KSFO" : "QLOFT leg 1 — KSFO → KLAX") : s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : isCatQ(s) ? "747 FFS CAT II/III PRM/PAR (AWO) — KSEA, then KSFO" : esc(CAT(pcat(s,runs(s)[curRun(s)].a)).label)+" profile"}</span><span class="eyebrow">${isCatQ(s) || isUP(s) ? "" : `${isQL(s) ? "Leg" : isRF(s) ? "Half" : "Run"} ${curRun(s)+1} · `}markers show ${esc(pname(s,runs(s)[curRun(s)].a))} · tap an event</span></div>
+  return `<div class="stickwrap"><div class="sk-cap"><span>${isRL(s) ? `RLOFT leg ${curRun(s)+1} — ${RL_LEGS[rlScen(s)][curRun(s) === 1 ? 1 : 0][2]}` : isRF(s) ? `RFT ${curRun(s) === 1 ? "2nd half — FO PF" : "1st half — CA PF"} (${esc(pname(s,runs(s)[curRun(s)].a))})` : isUP(s) ? "747 FFS UPRT / EET and bounced landing — KJFK" : isQL(s) ? (curRun(s) === 1 ? "QLOFT leg 2 — KLAX → PHNL, diversion to KSFO" : "QLOFT leg 1 — KSFO → KLAX") : s.kind==="PCWU" ? "747 Recurrent PCWU (FFSQ-1)" : isCatQ(s) ? "747 FFS CAT II/III PRM/PAR (AWO) — KSEA, then KSFO" : esc(CAT(pcat(s,runs(s)[curRun(s)].a)).label)+" profile"}</span><span class="eyebrow">${isCatQ(s) || isUP(s) ? "" : `${isLO(s) ? "Leg" : isRF(s) ? "Half" : "Run"} ${curRun(s)+1} · `}markers show ${esc(pname(s,runs(s)[curRun(s)].a))} · tap an event</span></div>
    <svg class="stick" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Flight profile">
     <line class="sk-axis" x1="${L}" y1="${Y(0)}" x2="${W-R}" y2="${Y(0)}"/>
     ${ticks.map(t => `<line class="sk-axis" x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(0)+5}"/><text class="sk-time" x="${X(t)}" y="${Y(0)+20}" text-anchor="middle">${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}</text>`).join("")}
     <polyline class="sk-line" points="${pts}"/>${stems}${marks}</svg>
-   <div class="sk-key">${s.kind==="PCWU" || isQL(s) || isUP(s) ? TSTAT.map(x=>`<span><i class="h-${x.c}" style="background:var(--${x.c})"></i>${x.l}</span>`).join("") : `<span><i style="background:var(--ok)"></i>Graded S / C</span><span><i style="background:var(--warn)"></i>Partly graded</span><span><i style="background:var(--bad)"></i>U / I</span><span><i style="background:var(--mute)"></i>Credited / waived / not required</span><span><i style="background:var(--panel2);border:1px solid var(--line)"></i>Not yet</span>`}<span style="color:var(--bad)">Red label = critical maneuver</span></div></div>`;
+   <div class="sk-key">${s.kind==="PCWU" || isLO(s) || isUP(s) ? TSTAT.map(x=>`<span><i class="h-${x.c}" style="background:var(--${x.c})"></i>${x.l}</span>`).join("") : `<span><i style="background:var(--ok)"></i>Graded S / C</span><span><i style="background:var(--warn)"></i>Partly graded</span><span><i style="background:var(--bad)"></i>U / I</span><span><i style="background:var(--mute)"></i>Credited / waived / not required</span><span><i style="background:var(--panel2);border:1px solid var(--line)"></i>Not yet</span>`}<span style="color:var(--bad)">Red label = critical maneuver</span></div></div>`;
 }
 function xchips(s){
   const opt = EVENTS(s).filter(e => e.opt), ra = runs(s)[curRun(s)].a;
@@ -1876,17 +1972,17 @@ function renderRun(s){
     ${e.ios && e.ios.length ? `<div class="ios"><span class="eyebrow">Script / IOS</span><ul>${e.ios.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${e.ref ? `<button class="showref" style="margin-top:8px" data-act="ref" data-v="${e.ref}">${esc(REFS[e.ref].h)}</button>` : ""}</div>` : ""}
     <div class="pilots">${GP(s).map(ucard).join("")}</div>
     <div class="row" style="justify-content:space-between"><button class="btn" data-act="step" data-v="-1" ${i===0?"disabled":""}>← Previous</button><button class="btn primary" data-act="step" data-v="1" ${i===E.length-1?"disabled":""}>Next →</button></div></div>`; }
-  if (isQL(s)) { const qcard = p => { const r = ((er.p||[])[p]) || {};
+  if (isLO(s)) { const qcard = p => { const r = ((er.p||[])[p]) || {};
       return `<div class="pcard p${p}"><div class="ph"><span class="seat">${seatLab(p)}</span><b>${esc(pname(s,p))}</b><span class="muted small">${esc(s.setup.pilots[p].duty)} · ${p === RUN.a ? "PF" : "PM"} this leg · ${seatName(p === RUN.a ? RUN.seat : (RUN.seat === "L" ? "R" : "L"))}</span></div>
        <div class="sts">${TSTAT.map(x => `<button class="st ${x.c} ${r.st===x.k?"on":""}" data-act="tst" data-p="${p}" data-v="${x.k}">${x.l}</button>`).join("")}</div>
        <input class="note" id="enote_${e.id}_${p}" data-k="run/ev/${e.id}/p/${p}/note" value="${esc(r.note||"")}" placeholder="Observation for the debrief (CRM / TEM, callouts, PAs…)"></div>`; };
-    return `<div class="row end" style="margin-bottom:6px">${sdBtn(s)}</div><div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Leg ${r+1}<small>${r ? "LAX → HNL (div SFO)" : "SFO → LAX"} · PF ${esc(pname(s,x.a))}</small></button>`).join("")}</div>${swapBtn(s)}
+    return `<div class="row end" style="margin-bottom:6px">${sdBtn(s)}</div><div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Leg ${r+1}<small>${isRL(s) ? RL_LEGS[rlScen(s)][r][2] : r ? "LAX → HNL (div SFO)" : "SFO → LAX"} · PF ${esc(pname(s,x.a))}</small></button>`).join("")}</div>${swapBtn(s)}
     <div class="simclock"><span class="eyebrow">Leg ${rc+1}</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${running?"":"primary"}" data-act="rtimer">${running?"Pause":"Start"}</button></div>
-    <span class="chip ${totalEl(s) > T.m*60000 ? "bad" : "info"}" id="simTgt">Sim 4+00 · total <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
-    <span class="grow"></span><span class="muted small">Non-jeopardy · no repositioning · don’t interrupt — observe and take notes.</span></div>
+    <span class="chip ${totalEl(s) > T.m*60000 ? "bad" : "info"}" id="simTgt">${isRL(s) ? "RLOFT + SPOT" : "Sim 4+00"} · total <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
+    <span class="grow"></span><span class="muted small">${isRL(s) ? "Facilitate — observe and take notes; SPOT after leg 2." : "Non-jeopardy · no repositioning · don’t interrupt — observe and take notes."}</span></div>
    ${swapPanel(s)}
    ${rc === 1 && swapNeeded(s) ? `<div class="banner warn"><b>${esc(s.setup.pilots[0].duty)}/${esc(s.setup.pilots[1].duty)} crew — switch seats before leg 2.</b></div>` : ""}
-   <div class="banner info" style="padding:8px 14px">Leg ${rc+1}: <b>${esc(pname(s,RUN.a))}</b> PF from the ${seatName(RUN.seat)} · ${esc(pname(s,RUN.o))} PM. ${rc === 0 ? "Leg 1 is all normal procedures." : "Leg 2 starts with the engines running in the takeoff position (25R at Foxtrot). Engine failure at cruise and diversion — don’t pre-brief it."}</div>
+   <div class="banner info" style="padding:8px 14px">Leg ${rc+1}: <b>${esc(pname(s,RUN.a))}</b> PF from the ${seatName(RUN.seat)} · ${esc(pname(s,RUN.o))} PM. ${isRL(s) ? (rc === 0 ? "Keep it real — address every EICAS and status message. Facilitator = dispatch, MX, cabin, PSR." : rlScen(s) === "410" ? "Leg 2 (411) script not received — run it from your script, then SPOT (both pilots, 3 takeoffs and landings each)." : "Leg 2 starts with the engines running holding short 07R. Cargo fire after takeoff — don’t pre-brief it. Then SPOT (both pilots, 3 takeoffs and landings each).") : rc === 0 ? "Leg 1 is all normal procedures." : "Leg 2 starts with the engines running in the takeoff position (25R at Foxtrot). Engine failure at cruise and diversion — don’t pre-brief it."}</div>
    ${stick(s)}
    <div class="evcard"><div><span class="eyebrow">Leg ${rc+1} · event set ${i+1} of ${E.length}${e.crit ? " · non-normal" : ""}</span><h2>${esc(e.t)}</h2></div>
     ${e.ios && e.ios.length ? `<div class="ios"><span class="eyebrow">Script / IOS</span><ul>${e.ios.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${e.ref ? `<button class="showref" style="margin-top:8px" data-act="ref" data-v="${e.ref}">${esc(REFS[e.ref].h)}</button>` : ""}</div>` : ""}
@@ -1993,15 +2089,15 @@ function quickGrade(s,p){
   toast(`${open.length} item${open.length===1?"":"s"} marked — review the sheet`);
 }
 function renderResultSheet(s){
-  const nm = isQL(s) ? "QLOFT" : "UPRT / EET";
+  const nm = isRL(s) ? "RLOFT" : isQL(s) ? "QLOFT" : "UPRT / EET";
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Pilot Training / Check Grade Sheet · TC_PC_RFT_REC 13 APR 26</span><h2>${nm} — result only</h2></div><button class="btn primary" data-act="printform">Print grade sheet</button></div>
    <p class="lede">Nothing is recorded in the item blocks for a ${nm} — only Satisfactory / complete, Unsat or Incomplete. Remarks go on the back only when it is Unsat or Incomplete.</p>
    <div class="cols">${GP(s).map(p => { const d = s.debrief.p[p], c = s.counts[p];
      return `<div class="card"><h4>${esc(pname(s,p))} <span class="muted small">${esc(s.setup.pilots[p].duty)} · ${esc(CAT(pcat(s,p)).form)}</span></h4>
       <div class="seg">${[["SAT","Satisfactory / complete"],["UNSAT","Unsat — removed from flight status"],["INC","Incomplete — sim or illness"]].map(([k,l]) => `<button class="${d.result===k?"on":""}" data-act="result" data-p="${p}" data-v="${k}">${l}</button>`).join("")}</div>
-      <label class="f" style="margin-top:10px">TO / LDGs${isUP(s) ? " (3 each required)" : ""}<span class="row tl" style="gap:6px;flex-wrap:nowrap">${inp(`counts/${p}/to`, c.to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, c.ldg, "LDG")}</span></label>
+      <label class="f" style="margin-top:10px">TO / LDGs${isUP(s) || isRL(s) ? " (3 each required)" : ""}<span class="row tl" style="gap:6px;flex-wrap:nowrap">${inp(`counts/${p}/to`, c.to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, c.ldg, "LDG")}</span></label>
       ${d.result === "UNSAT" || d.result === "INC" ? `<label class="f" style="margin-top:10px">Remarks (back of the form)<textarea id="rem_${p}" data-k="debrief/p/${p}/remarks" rows="3">${esc(d.remarks)}</textarea></label>` : ""}</div>`; }).join("")}</div>
-   <p class="why">Form: EVENT ${nm}, category per pilot, ${isQL(s) ? "QLOFT" : "UPRT / EET"} time from the sim clock (or Setup), your name on the Instructor line.</p>`;
+   <p class="why">Form: EVENT ${nm}, category per pilot, ${nm} time from the sim clock (or Setup), your name on the Instructor line.</p>`;
 }
 function renderSheet(s){
   if (!GP(s).includes(ui.p)) ui.p = GP(s)[0] ?? 0;
@@ -2051,15 +2147,15 @@ function renderDebrief(s){
   const isPC = s.kind === "PC";
   const pcol = p => { if (isSSI(s,p)) return `<div class="card"><div class="ph"><span class="seat" style="background:${p?"var(--info)":"var(--brand2)"};color:#fff">${seatLab(p)}</span><h4 style="margin:0">${esc(pname(s,p))}</h4></div><p class="why" style="margin:8px 0 0">Seat support — not graded and not part of this record’s checks.</p></div>`;
     const pr = problems(s,p), bl = pr.filter(x=>!x.warn), d = s.debrief.p[p];
-    const runs = (isQL(s) ? [...QL1_EVENTS, ...QL2_EVENTS] : isUP(s) ? UP_EVENTS : isRF(s) ? [] : EVENTS(s)).map(e => ({e, r:(((s.run.ev[e.id]||{}).p)||[])[p]||{}})).filter(x => x.r.st || x.r.note);
+    const runs = (isRL(s) ? [...RL_LEGS[rlScen(s)][0][0], ...RL_LEGS[rlScen(s)][1][0]] : isQL(s) ? [...QL1_EVENTS, ...QL2_EVENTS] : isUP(s) ? UP_EVENTS : isRF(s) ? [] : EVENTS(s)).map(e => ({e, r:(((s.run.ev[e.id]||{}).p)||[])[p]||{}})).filter(x => x.r.st || x.r.note);
     return `<div class="card"><div class="ph"><span class="seat" style="background:${p?"var(--info)":"var(--brand2)"};color:#fff">${seatLab(p)}</span><h4 style="margin:0">${esc(pname(s,p))}</h4><span class="muted small">${esc(s.setup.pilots[p].duty)} · emp ${esc(s.setup.pilots[p].emp||"—")}</span></div>
      ${seatRestricted(s,p) ? `<div class="banner bad" style="margin-top:10px">Unsatisfactory — no crew seat or seat support for the rest of the session. Complete the failure documentation and notify company personnel per the FOTM.</div>` : ""}
      <h5>${isPC ? (bl.length ? `${bl.length} item${bl.length>1?"s":""} block submission` : "All status blocks complete") : "Record check"}</h5>
      ${pr.length ? `<ul class="probs">${pr.map(x => `<li class="${x.warn?"w":""}" ${x.n?`data-act="goto" data-p="${p}" data-v="${x.n}"`:""}>${x.n?`<b>${x.n}</b> `:""}${esc(x.msg)}</li>`).join("")}</ul>` : `<p class="banner ok" style="margin:0">${isPC ? "Ready to submit." : "PCWU column entries are valid."}</p>`}
      ${!isPC ? `<h5>What the PC must still cover (${esc(CAT(pcat(s,p)).label)})</h5><div class="carry">${carryPreview(s,p)}</div>` : ""}
-     ${isQL(s) ? `<p class="why" style="margin:8px 0 0">LOFT is non-jeopardy. If a deficiency was found, record the additional training given (and repeat LOFT if needed) — it must be corrected before line operations. <button class="showref" data-act="ref" data-v="qldeb">Debriefing and analysis</button></p>` : ""}
+     ${isLO(s) ? `<p class="why" style="margin:8px 0 0">LOFT is non-jeopardy. If a deficiency was found, record the additional training given (and repeat LOFT if needed) — it must be corrected before line operations. <button class="showref" data-act="ref" data-v="qldeb">Debriefing and analysis</button></p>` : ""}
      ${isUP(s) ? upCoverBox(s,p) : ""}
-     ${runs.length ? `<h5>${isQL(s) ? "LOFT observations" : isUP(s) ? "UPRT / EET exercises" : "Training notes"}</h5><ul class="small">${runs.map(x => `<li><b>${esc(x.e.t)}</b>${x.r.st?` — ${TSBY[x.r.st].l}`:""}${x.r.reps?` (${x.r.reps} repeats)`:""}${x.r.note?`: ${esc(x.r.note)}`:""}</li>`).join("")}</ul>` : ""}
+     ${runs.length ? `<h5>${isLO(s) ? "LOFT observations" : isUP(s) ? "UPRT / EET exercises" : "Training notes"}</h5><ul class="small">${runs.map(x => `<li><b>${esc(x.e.t)}</b>${x.r.st?` — ${TSBY[x.r.st].l}`:""}${x.r.reps?` (${x.r.reps} repeats)`:""}${x.r.note?`: ${esc(x.r.note)}`:""}</li>`).join("")}</ul>` : ""}
      ${isPC ? `<h5>Result</h5><div class="seg">${[["SAT","Satisfactory / complete"],["UNSAT","Unsat — removed from flight status"],["INC","Incomplete — sim or illness"]].map(([k,l]) => `<button class="${d.result===k?"on":""}" data-act="result" data-p="${p}" data-v="${k}">${l}</button>`).join("")}</div>` : ""}
      <label class="f" style="margin-top:12px">Remarks (reverse of form)<textarea id="rem_${p}" data-k="debrief/p/${p}/remarks" rows="3" placeholder="Brief and specific — required for U, I and repeated items; name any Emergency / Abnormal procedure graded U or I">${esc(d.remarks)}</textarea></label>
      <label class="f" style="margin-top:8px">${isPC?"Debrief / study items":"What to review before the PC"}<textarea id="study_${p}" data-k="debrief/p/${p}/study" rows="2">${esc(d.study)}</textarea></label></div>`; };
@@ -2169,7 +2265,7 @@ function formValues(s,p){ // → {text:{field:value}, check:[field...], remarks:
   T["Text9"] = man ? simNo(s.setup.device2) : oral ? "" : catq ? dev : isPC ? (L ? simNo(L.device) : "") : dev; T["Simulator ID"] = isPC && !oral && !catq ? dev : "";
   const cn = s.counts[p] || {}; T["Text10"] = oral ? "" : cn.to || ""; T["CATEGORY"] = oral ? "" : cn.ldg || "";
   T["PC  RFT  RLOFTQLOFT Time"] = man ? (s.setup.pcwuTime||"") : oral || catq ? "" : isPC ? (L ? L.time : "") : fmtHM(totalEl(s));
-  if (isPC && !oral && !catq) T["Text11"] = man ? (s.setup.evTime || ((isQL(s) || isUP(s) || isRF(s)) && totalEl(s) > 0 ? fmtHM(totalEl(s)) : "")) : fmtHM(totalEl(s));
+  if (isPC && !oral && !catq) T["Text11"] = man ? (s.setup.evTime || ((isLO(s) || isUP(s) || isRF(s)) && totalEl(s) > 0 ? fmtHM(totalEl(s)) : "")) : fmtHM(totalEl(s));
   if (catq || man) T["Other Training Time HrsMin"] = s.setup.otherTime || "";
   if (oral || catq || (man && (s.setup.signLine||"INSTR") !== "PC")) { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = s.debrief.signedBy || s.setup.conductor.name; T["Employee No_2"] = s.setup.conductor.emp; T["RESULT"] = mdy(s.debrief.signedAt || s.setup.date); }
   else if (isPC) { if (L) { T["PCWURFTTypeInit PC OralLOFTUPRTEETOther InstructorCk PilotAPD"] = L.conductor||""; T["Employee No_2"] = L.condEmp||""; T["RESULT"] = mdy(L.date); }
@@ -2409,6 +2505,7 @@ document.addEventListener("click", ev => {
       GP(s).forEach(p => { if (!s.debrief.p[p].result) s.debrief.p[p].result = "SAT"; }); touch(s); toast("Marked — review CAT II/III normal / OEI"); break;
     case "startcatq": { const x = newSession("PC"); x.setup.catQual = true; x.setup.cat = "INI"; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "starttr": { const x = newSession("PC"); x.setup.typeRating = true; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
+    case "startrl": { const x = newSession("PC"); x.setup.rloft = true; x.setup.pcat = ["REC","REC"]; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "startrf": { const x = newSession("PC"); x.setup.rft = true; x.setup.pcat = ["REC","REC"]; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "startup": { const x = newSession("PC"); x.setup.uprt = true; x.setup.pcat = ["INI","INI"]; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
     case "startql": { const x = newSession("PC"); x.setup.qloft = true; x.setup.pcat = ["INI","INI"]; sessions[x.id] = x; ui.cur = x.id; ui.view = "setup"; ui.ev = null; ui.p = 0; touch(x); break; }
@@ -2436,7 +2533,7 @@ document.addEventListener("click", ev => {
     case "bchk": s.brief.checked[v] = s.brief.checked[v] ? 0 : 1; touch(s); break;
     case "btimer": toggleTimer(s.brief); touch(s); break;
     case "rtimer": { const r = curRun(s), t = s.run.t[r]; const was = !!t.startedAt; pauseRuns(s); if (!was) t.startedAt = Date.now(); touch(s); break; }
-    case "run": { const r = +v; if (r !== curRun(s)) { pauseRuns(s); s.run.cur = r; if (isQL(s) || isRF(s)) ui.ev = null; touch(s); } break; }
+    case "run": { const r = +v; if (r !== curRun(s)) { pauseRuns(s); s.run.cur = r; if (isLO(s) || isRF(s)) ui.ev = null; touch(s); } break; }
     case "update": checkUpdates(true); return;
     case "qg": ui.qg[b.dataset.k] = v; ui.qgOpen = true; break;
     case "qgw": ui.qg.waive[v] = !ui.qg.waive[v]; ui.qgOpen = true; break;
@@ -2494,6 +2591,8 @@ document.addEventListener("click", ev => {
     case "qlpdf": qlPdf(v); return;
     case "uppdf": upPdf(v); return;
     case "rfpdf": rfPdf(s, v); return;
+    case "rlpdf": rlPdf(v); return;
+    case "rlscen": s.setup.rlScen = v; ui.ev = null; touch(s); break;
     case "rfslash": GP(s).forEach(p => ITEMS.forEach(it => { const g = gRec(s,p,it.n); if (!g.st) g.st = "/"; })); toast("Blank blocks marked “/”"); touch(s); break;
     case "refclose": closeRef(); return;
     case "present": openPresent(v, b.dataset.i, (b.dataset.list||"").split(",").filter(x=>x!=="").map(Number)); return;
