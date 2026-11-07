@@ -554,8 +554,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.5";
+const APP_VERSION = "2026.11.07.6";
 const REVISIONS = [
+ {v:"2026.11.07.6", d:"7 Nov 2026", n:["Special Tracking: the PCWU can be linked (or imported) so the record shows the ST pilot got a PCWU and what the instructor trained. Those items stay not required on the PC (“/”), but the PCWU column on the grade sheet and printed form shows what was done, and the Setup chips show it for the next instructor."]},
  {v:"2026.11.07.5", d:"7 Nov 2026", n:["PC type is now chosen for each pilot under Crew (crews can mix types), and Special Tracking is one of the PC types instead of a checkbox. Existing sessions keep their types."]},
  {v:"2026.11.07.4", d:"7 Nov 2026", n:["Special Tracking is its own category of event: an ST pilot’s grade sheet and printed form check only SPECIAL TRACKING, not RECURRENT."]},
  {v:"2026.11.07.3", d:"7 Nov 2026", n:["🧪 Testing: PC Setup → PCWU record has “Simulate PCWU — all completed” and “— some not proficient” to try the PCWU credit without a real PCWU. Marked TEST DATA; Unlink removes it."]},
@@ -833,6 +834,7 @@ function req(s,p,n){
       credited = true; cwhy = `CAT II/III certified S on PCWU ${link.date} by SCP ${link.conductor||""}`.trim();
     } else if (it.cred && link.role !== "SCP") cwhy = "PCWU not conducted by a SCP — CAT II/III certification must be graded on the PC";
     else if (it.cred && pw.st === "I") cwhy = `Incomplete (I) on PCWU ${link.date} — grade on the PC`;
+    if (code === "/" && pw.st && pw.st !== "/") why = `Not required — but done on the PCWU ${link.date} (${pw.st}) by ${link.conductor || "—"}`;
   }
   return {code, lock, why, credited, cwhy, waivable: code === "W" || code === "T"};
 }
@@ -1191,7 +1193,7 @@ function renderSetup(s){
     ${isOral(s) || isCatQ(s) ? "" : `<label class="f" style="margin-top:10px">${isPC ? "PC type" : "PC type (PCWU for)"}<select id="f_pcat${p}" data-k="setup/pcat/${p}">${CATS.filter(x => isPC || ["REC","RQF","RQ12","ST"].includes(x.k)).map(x => `<option value="${x.k}" ${x.k===pcat(s,p)?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
     ${CAT(pcat(s,p)).note ? `<p class="why" style="margin:6px 0 0">${esc(CAT(pcat(s,p)).note)}</p>` : ""}`}
     ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
-    ${isPC && !isOral(s) && !isCatQ(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">${pcat(s,p)==="ST" ? "Special Tracking: CAT II/III and Non-Appendix F are not required, so there is no PCWU to link." : "No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course."}</p>`) : ""}</div>`}`; };
+    ${isPC && !isOral(s) && !isCatQ(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) || pcat(s,p) === "ST" ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course.</p>`) : ""}</div>`}`; };
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div>${s.status==="submitted" ? "" : aimsBtn()}</div>
   ${isCatQ(s) ? `<div class="banner info" style="margin-bottom:10px">CAT II/III qualification conducted on its own (long-course requal, new hire). Graded: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Every other block is “/”. Record TO / LDGs and the training time.</div>
    <div class="card" style="margin-bottom:12px"><div class="g2"><label class="f">Training time (h+mm, Other Training Time box)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
@@ -1250,9 +1252,10 @@ function oralBox(s,p){
 }
 function linkBox(s,p){
   const L = s.setup.link[p], cands = pcwuCandidates(s,p);
-  const cnt = L ? Object.entries(L.items).filter(([n,x]) => x.st === "S" || x.st === "C").length : 0;
-  return `<div class="ios" style="margin-top:12px"><span class="eyebrow">PCWU record</span>
-   ${L ? `<p style="margin:4px 0">${L.test ? `<span class="chip warn">🧪 TEST DATA</span> ` : ""}<b>Linked:</b> PCWU ${esc(L.date)} · ${esc(L.device||"")} · ${esc(L.conductor||"—")} (${L.role==="SCP"?"SCP":"Instructor"}) · ${cnt} item${cnt===1?"":"s"} credited</p>
+  const cnt = L ? Object.entries(L.items).filter(([n,x]) => x.st === "S" || x.st === "C").length : 0, stP = pcat(s,p) === "ST";
+  const stNote = pcat(s,p) === "ST" ? `<p class="small" style="margin:2px 0 6px">Special Tracking: nothing on the PCWU is required for this PC, but link it so the record shows the PCWU was done and anything the instructor trained.</p>` : "";
+  return `<div class="ios" style="margin-top:12px"><span class="eyebrow">PCWU record</span>${stNote}
+   ${L ? `<p style="margin:4px 0">${L.test ? `<span class="chip warn">🧪 TEST DATA</span> ` : ""}<b>Linked:</b> PCWU ${esc(L.date)} · ${esc(L.device||"")} · ${esc(L.conductor||"—")} (${L.role==="SCP"?"SCP":"Instructor"}) · ${cnt} item${cnt===1?"":"s"} ${stP ? "done (not required for ST)" : "credited"}</p>
      <div class="carry">${carryChips(s,p)}</div>
      <div class="row" style="margin-top:8px"><button class="btn small" data-act="unlink" data-p="${p}">Unlink</button>${cands.some(x=>x.w.id===L.sid && x.w.updatedAt) ? `<button class="btn small" data-act="relink" data-p="${p}">Refresh from PCWU</button>` : ""}</div>`
    : cands.length ? `<p style="margin:4px 0">Found ${cands.length} PCWU record${cands.length>1?"s":""} for this pilot:</p>${cands.slice(0,4).map(x => `<div class="row" style="margin-top:6px"><span class="grow small">${esc(x.w.setup.date)} · ${esc(x.w.setup.conductor.name||"—")} (${x.w.setup.conductor.role}) · ${x.w.status==="submitted"?"submitted":"in progress"}</span><button class="btn small primary" data-act="link" data-p="${p}" data-v="${x.w.id}" data-i="${x.i}">Link</button></div>`).join("")}`
@@ -1265,7 +1268,7 @@ function testPCWU(s,p,mode){
   const P = s.setup.pilots[p], d = new Date(s.setup.date || today()); d.setDate(d.getDate() - 1);
   const items = {}, ca = P.duty === "CA", st = pcat(s,p) === "ST";
   const v = mode === "all" ? {14:"S",15:"S",28:"C",29:"C",30:"C",31:ca?"C":"/"} : {14:"S",15:"I",28:"C",29:"I",30:"C",31:ca?"C":"/"};
-  ITEMS.forEach(it => { if (!(it.cred || it.naf)) return; let x = v[it.n] || "/"; if (st) x = "/"; items[it.n] = {st:x, subs: it.n===14 ? {oei:1} : it.n===15 ? {nrm:1} : {}}; });
+  ITEMS.forEach(it => { if (!(it.cred || it.naf)) return; let x = v[it.n] || "/"; items[it.n] = {st:x, subs: it.n===14 ? {oei:1} : it.n===15 ? {nrm:1} : {}}; });
   return {sid:"TEST-" + uid(), test:true, date:d.toISOString().slice(0,10), device:s.setup.device || "584", conductor:"TEST, SCP", condEmp:"000000", role:"SCP",
     pilot:P.name, emp:P.emp, idx:p, status:"submitted", time:"4+30", items};
 }
@@ -1273,7 +1276,7 @@ function carryChips(s,p){
   return ITEMS.filter(it => it.cred || it.naf).map(it => { const r = req(s,p,it.n);
     if (r.na) return "";
     if (r.credited) return `<span class="chip ok" title="${esc(r.cwhy)}">${it.n} ✓</span>`;
-    if (r.code === "/") return "";
+    if (r.code === "/") { const L = pcwuOf(s,p), pw = L && (L.items||{})[it.n]; return pw && pw.st && pw.st !== "/" ? `<span class="chip info" title="Not required for this PC type — done on the PCWU">${it.n} ${esc(pw.st)} · PCWU</span>` : ""; }
     return `<span class="chip bad" title="${esc(r.cwhy||r.why)}">${it.n} do on PC</span>`; }).join(" ");
 }
 
