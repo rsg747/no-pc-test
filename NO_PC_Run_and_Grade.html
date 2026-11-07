@@ -554,8 +554,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.4";
+const APP_VERSION = "2026.11.07.5";
 const REVISIONS = [
+ {v:"2026.11.07.5", d:"7 Nov 2026", n:["PC type is now chosen for each pilot under Crew (crews can mix types), and Special Tracking is one of the PC types instead of a checkbox. Existing sessions keep their types."]},
  {v:"2026.11.07.4", d:"7 Nov 2026", n:["Special Tracking is its own category of event: an ST pilot’s grade sheet and printed form check only SPECIAL TRACKING, not RECURRENT."]},
  {v:"2026.11.07.3", d:"7 Nov 2026", n:["🧪 Testing: PC Setup → PCWU record has “Simulate PCWU — all completed” and “— some not proficient” to try the PCWU credit without a real PCWU. Marked TEST DATA; Unlink removes it."]},
  {v:"2026.11.07.2", d:"7 Nov 2026", n:["“Oral already done as a separate event” now shows only for Initial / new hire, long-course Requal, Upgrade and Transition PCs. Recurrent, short Requal and Special Tracking always give the oral during the brief."]},
@@ -718,7 +719,14 @@ function simTarget(s){   // run = one applicant's period; m = whole device perio
 }
 const hm = m => `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
 /* Special Tracking is per pilot: an ST pilot uses the PC Guide ST column; the other pilot keeps the session's PC type */
-const pcat = (s,p) => (s.setup.st && s.setup.st[p]) ? "ST" : (s.setup.cat === "ST" ? "REC" : s.setup.cat);
+/* PC type is per pilot (setup.pcat[p]) — a crew can mix types (rarely); Special Tracking is a PC type, not a flag */
+const pcat = (s,p) => (s.setup.oralOnly || s.setup.catQual) ? s.setup.cat : (s.setup.pcat && s.setup.pcat[p]) || (s.setup.st && s.setup.st[p] ? "ST" : (s.setup.cat === "ST" ? "REC" : s.setup.cat));
+function catLabel(s){
+  if (isOral(s)) return "Oral exam · " + CAT(s.setup.cat).label.replace(" PC","");
+  if (isCatQ(s)) return "CAT II/III sim · " + CAT(s.setup.cat).label.replace(" PC","");
+  const ls = [...new Set(GP(s).map(p => CAT(pcat(s,p)).label))];
+  return s.kind === "PCWU" ? "PCWU" + (ls.some(l => /Special/.test(l)) ? " · ST" : "") : ls.length > 1 ? ls.map(l => l.replace(/ PC\b/,"").replace(/ — /," ")).join(" / ") : ls[0] || "";
+}
 /* Two runs: each applicant flies his own run as PF. Applicant sits in his duty seat (CA left, FO right).
    CA/FO: no seat swap. FO/FO or CA/CA: the other pilot fills the opposite seat, then the crew swaps seats before run 2. */
 function seatFor(s,a){ const o = 1-a, da = s.setup.pilots[a].duty, dob = s.setup.pilots[o].duty;
@@ -743,7 +751,7 @@ function blankPilot(duty){ return {name:"",emp:"",duty,cert:"ATP",acType:"744",s
 function newSession(kind){
   return {schema:SCHEMA, program:"N&O", form:FORM_REV, kind, id:uid(), createdAt:Date.now(), updatedAt:Date.now(), status:"open",
     setup:{date:today(), device:"", sim:"", cat:"REC", st:[false,false], order:[0,1], failedQual:[false,false], lapsed:[false,false], typeRating:false,
-      conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null], oralOnly:false, oralDone:[null,null], catQual:false, otherTime:""},
+      conductor:{name:"", emp:"", role:"SCP"}, pilots:[blankPilot("CA"), blankPilot("FO")], link:[null,null], pcat:["REC","REC"], oralOnly:false, oralDone:[null,null], catQual:false, otherTime:""},
     docs:[{},{}],
     brief:{checked:{}, notes:"", startedAt:null, elapsed:0, bank:1, oral:[{},{}], walk:[{},{}], open:{}},
     run:{t:[{elapsed:0,startedAt:null},{elapsed:0,startedAt:null}], cur:0, ev:{}},
@@ -766,6 +774,7 @@ function migrate(s){ // fill fields added after a record was created
   if (s.setup) { s.setup.failedQual = [false,false]; s.setup.lapsed = [false,false]; }   // removed from Setup: those crewmembers are in a Requal course
   if (Array.isArray(s.log)) s.log = s.log.map(l => (l||[]).filter(x => !/^Crew swapped/.test(x.m||"")));   // swaps are not logged
   if (s.setup.cat === "ST") { s.setup.cat = "REC"; s.setup.st = [true,true]; }
+  if (!Array.isArray(s.setup.pcat)) s.setup.pcat = [0,1].map(p => (s.setup.st && s.setup.st[p]) ? "ST" : s.setup.cat);
   return s;
 }
 
@@ -1065,7 +1074,7 @@ function renderHeader(){
       <div class="ver">v${APP_VERSION} · <button data-act="update">↻ Check for updates</button> · <button data-act="ref" data-v="revs">Revisions</button>${newerVer ? ` <button class="newver" data-act="update">Update to v${esc(newerVer)}</button>` : ""}</div></div>
     ${s ? `<span class="kchip ${s.kind==="PC"?"pc":""}">${s.kind}</span>` : ""}
     <span class="grow"></span>
-    ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(CAT(s.setup.cat).label)} · ${esc(s.setup.date)}</span></div>` : ""}
+    ${s ? `<div class="cur"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span>${esc(catLabel(s))} · ${esc(s.setup.date)}</span></div>` : ""}
     <span class="pill" id="storeState"></span>
     <button class="ghost dispbtn" data-act="theme" aria-label="Change colours" title="Colours: high contrast → standard → dark">◐ ${({hc:"High contrast",light:"Standard",dark:"Dark"})[curTheme()]}</button>
     <button class="ghost dispbtn" data-act="tsize" aria-label="Text size" title="Larger text">${document.documentElement.dataset.size==="lg" ? "A−" : "A+"}</button></div>`;
@@ -1078,7 +1087,7 @@ function renderHeader(){
 function renderHome(){
   const list = Object.values(sessions).sort((a,b) => b.updatedAt - a.updatedAt);
   const row = s => `<div class="srow"><span class="scode"><span class="chip ${isCatQ(s)?"catq":isOral(s)?"oral":s.kind==="PC"?"pc":"pcwu"}">${isCatQ(s)?"CAT II/III":isOral(s)?"ORAL":s.kind}</span></span>
-     <div class="smain"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span class="muted small">${esc(CAT(s.setup.cat).label)} · ${esc(s.setup.date)} · ${esc(s.setup.conductor.name || "—")} (${esc(s.setup.conductor.role)})</span></div>
+     <div class="smain"><b>${esc(pname(s,0))} · ${esc(pname(s,1))}</b><span class="muted small">${esc(catLabel(s))} · ${esc(s.setup.date)} · ${esc(s.setup.conductor.name || "—")} (${esc(s.setup.conductor.role)})</span></div>
      <span class="chip ${s.status==="submitted"?"ok":"info"}">${s.status==="submitted"?"Submitted":"In progress"}</span>
      <div class="sact"><button class="btn small" data-act="open" data-v="${s.id}">Open</button>
      <button class="btn small danger" data-act="del" data-v="${s.id}">${ui.del===s.id?"Tap again to delete":"Delete"}</button></div></div>`;
@@ -1151,11 +1160,11 @@ function aimsApply(ev){
   if (!fresh) { s = newSession(kind); sessions[s.id] = s; ui.cur = s.id; }
   s.setup.oralOnly = oral; s.setup.oralDone = [null,null];
   const sim = SIMS.find(x => x.id === ev.sim);
-  Object.assign(s.setup, {date:today(), sim:ev.sim, device: sim ? sim.faa : "", cat:ev.cat, typeRating:!!ev.tr, order:[0,1], st:[false,false], failedQual:[false,false], lapsed:[false,false], link:[null,null]});
+  Object.assign(s.setup, {pcat:[ev.cat, ev.cat], date:today(), sim:ev.sim, device: sim ? sim.faa : "", cat:ev.cat, typeRating:!!ev.tr, order:[0,1], st:[false,false], failedQual:[false,false], lapsed:[false,false], link:[null,null]});
   s.setup.conductor = {name:si.name||"", emp:si.emp||"", role:si.role||"SCP"};
   ev.crew.forEach((c,i) => { const P = s.setup.pilots[i];
     Object.assign(P, {name: c.ssi ? (si.name||"Seat support") : c.name, emp: c.ssi ? (si.emp||"") : c.emp, duty:c.duty, ssi:!!c.ssi});
-    s.setup.st[i] = !!c.st; });
+    s.setup.st[i] = !!c.st; s.setup.pcat[i] = c.st ? "ST" : ev.cat; });
   let linked = 0;
   let orals = 0;
   if (s.kind === "PC" && !oral) GP(s).forEach(p => { const c = pcwuCandidates(s,p); if (c.length) { s.setup.link[p] = snapPCWU(c[0].w, c[0].i); linked++; }
@@ -1179,9 +1188,8 @@ function renderSetup(s){
     </div>
     <div class="row" style="margin-top:10px"><button class="cb ${P.ssi?"on":""}" style="width:auto" data-act="ssi" data-p="${p}"><span class="box"></span><span>Seat support (SSI) — not graded</span></button></div>
     ${P.ssi ? `<p class="why" style="margin:6px 0 0">This seat is seat support only. It has no grade sheet, no oral or walk-around marks, and is left out of every check.${isPC ? " PC device time becomes 3:00." : ""}</p></div>` : `
-    <div class="row" style="margin-top:10px">
-      <button class="cb ${(s.setup.st||[])[p]?"on":""}" style="width:auto" data-act="st" data-p="${p}"><span class="box"></span><span>Special Tracking (ST)</span></button>
-    </div>
+    ${isOral(s) || isCatQ(s) ? "" : `<label class="f" style="margin-top:10px">${isPC ? "PC type" : "PC type (PCWU for)"}<select id="f_pcat${p}" data-k="setup/pcat/${p}">${CATS.filter(x => isPC || ["REC","RQF","RQ12","ST"].includes(x.k)).map(x => `<option value="${x.k}" ${x.k===pcat(s,p)?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
+    ${CAT(pcat(s,p)).note ? `<p class="why" style="margin:6px 0 0">${esc(CAT(pcat(s,p)).note)}</p>` : ""}`}
     ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
     ${isPC && !isOral(s) && !isCatQ(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">${pcat(s,p)==="ST" ? "Special Tracking: CAT II/III and Non-Appendix F are not required, so there is no PCWU to link." : "No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course."}</p>`) : ""}</div>`}`; };
   return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div>${s.status==="submitted" ? "" : aimsBtn()}</div>
@@ -1195,9 +1203,9 @@ function renderSetup(s){
      <label class="f">Date${inp("setup/date",s.setup.date,"","date")}</label>
      ${isOral(s) ? "" : `<label class="f">Simulator (gust setup per TCB-2026-02)<select id="f_sim" data-k="setup/sim"><option value="">Choose…</option>${SIMS.map(x=>`<option value="${x.id}" ${s.setup.sim===x.id?"selected":""}>${esc(x.name)} · #${esc(x.faa)} · ${esc(x.loc)}</option>`).join("")}</select></label>
      <label class="f">Simulator FAA ID${inp("setup/device",s.setup.device,"e.g. 584")}</label>`}
-     <label class="f wide" style="grid-column:1/-1">${isOral(s) || isCatQ(s) ? "Course (category of event on the form)" : "PC type (drives what is required and waivable · Special Tracking is checked per pilot below)"}<select id="f_cat" data-k="setup/cat">${CATS.filter(x=>x.k!=="ST").map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>
+     ${isOral(s) || isCatQ(s) ? `<label class="f wide" style="grid-column:1/-1">Course (category of event on the form)<select id="f_cat" data-k="setup/cat">${CATS.filter(x=>x.k!=="ST").map(x=>`<option value="${x.k}" ${x.k===s.setup.cat?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>` : ""}
    </div>
-   ${c.note ? `<p class="why" style="margin:8px 0 0">${esc(c.note)}</p>` : ""}
+   ${isPC && !isOral(s) && !isCatQ(s) ? `<p class="why" style="margin:8px 0 0">PC type is set for each pilot under Crew.</p>` : ""}
    ${isPC ? `<div class="row" style="margin-top:10px"><button class="cb ${s.setup.typeRating?"on":""}" style="width:auto" data-act="tr"><span class="box"></span><span>Type rating (form EVENT box)</span></button></div>` : ""}
    </div>
    <div class="card"><h4>${isCatQ(s) ? "Conducted by (Instructor / Check Airman / APD)" : isOral(s) ? "Oral given by (Instructor / Check Airman / APD)" : isPC ? "PC Check Airman / APD" : "PCWU conducted by"}</h4><div class="g2">
@@ -1948,7 +1956,7 @@ document.addEventListener("click", ev => {
     case "swapno": ui.swapAsk = false; break;
     case "swapdo": ui.swapAsk = false; swapCrew(s); touch(s); toast("Crew swapped"); break;
     case "order": s.setup.order = v === "1" ? [1,0] : [0,1]; touch(s); break;
-    case "st": s.setup.st = s.setup.st || [false,false]; s.setup.st[p] = !s.setup.st[p]; touch(s); break;
+
     case "doc": s.docs[p] = s.docs[p] || {}; s.docs[p][v] = s.docs[p][v] ? 0 : 1; touch(s); break;
     case "bank": s.brief.bank = +v; ui.oralTopic = ""; touch(s); break;
     case "oral": { const o = s.brief.oral[p] = s.brief.oral[p] || {}; const k = b.dataset.k; o[k] = o[k] === v ? "" : v; touch(s); break; }
