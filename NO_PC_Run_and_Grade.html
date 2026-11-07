@@ -554,8 +554,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.2";
+const APP_VERSION = "2026.11.07.3";
 const REVISIONS = [
+ {v:"2026.11.07.3", d:"7 Nov 2026", n:["🧪 Testing: PC Setup → PCWU record has “Simulate PCWU — all completed” and “— some not proficient” to try the PCWU credit without a real PCWU. Marked TEST DATA; Unlink removes it."]},
  {v:"2026.11.07.2", d:"7 Nov 2026", n:["“Oral already done as a separate event” now shows only for Initial / new hire, long-course Requal, Upgrade and Transition PCs. Recurrent, short Requal and Special Tracking always give the oral during the brief."]},
  {v:"2026.11.07.1", d:"7 Nov 2026", n:["Setup: removed “Failed a qualification event” and “PC interval expired (lapsed)” — a crewmember in either case is in a Requal course, so pick the Requal PC type instead (waivers stay locked for Requal)."]},
  {v:"2026.11.06.23", d:"6 Nov 2026", n:["Printed form: remarks on the back only when an item is unsatisfactory / incomplete or repeated (Remarks Y); otherwise Remarks N and the back stays blank."]},
@@ -1240,14 +1241,24 @@ function oralBox(s,p){
 }
 function linkBox(s,p){
   const L = s.setup.link[p], cands = pcwuCandidates(s,p);
-  const cnt = L ? Object.entries(L.items).filter(([n,x]) => x.st && x.st !== "/").length : 0;
+  const cnt = L ? Object.entries(L.items).filter(([n,x]) => x.st === "S" || x.st === "C").length : 0;
   return `<div class="ios" style="margin-top:12px"><span class="eyebrow">PCWU record</span>
-   ${L ? `<p style="margin:4px 0"><b>Linked:</b> PCWU ${esc(L.date)} · ${esc(L.device||"")} · ${esc(L.conductor||"—")} (${L.role==="SCP"?"SCP":"Instructor"}) · ${cnt} item${cnt===1?"":"s"} credited</p>
+   ${L ? `<p style="margin:4px 0">${L.test ? `<span class="chip warn">🧪 TEST DATA</span> ` : ""}<b>Linked:</b> PCWU ${esc(L.date)} · ${esc(L.device||"")} · ${esc(L.conductor||"—")} (${L.role==="SCP"?"SCP":"Instructor"}) · ${cnt} item${cnt===1?"":"s"} credited</p>
      <div class="carry">${carryChips(s,p)}</div>
      <div class="row" style="margin-top:8px"><button class="btn small" data-act="unlink" data-p="${p}">Unlink</button>${cands.some(x=>x.w.id===L.sid && x.w.updatedAt) ? `<button class="btn small" data-act="relink" data-p="${p}">Refresh from PCWU</button>` : ""}</div>`
    : cands.length ? `<p style="margin:4px 0">Found ${cands.length} PCWU record${cands.length>1?"s":""} for this pilot:</p>${cands.slice(0,4).map(x => `<div class="row" style="margin-top:6px"><span class="grow small">${esc(x.w.setup.date)} · ${esc(x.w.setup.conductor.name||"—")} (${x.w.setup.conductor.role}) · ${x.w.status==="submitted"?"submitted":"in progress"}</span><button class="btn small primary" data-act="link" data-p="${p}" data-v="${x.w.id}" data-i="${x.i}">Link</button></div>`).join("")}`
    : `<p class="muted small" style="margin:4px 0">${(s.setup.pilots[p].emp||"").trim() ? "No PCWU found for this employee number in the store or on this device." : "Enter the employee number to find this pilot’s PCWU."} Import a PCWU .json file if it was done on another device.</p>`}
-   <div class="row" style="margin-top:6px"><button class="btn small" data-act="import" data-p="${p}">Import PCWU file</button></div></div>`;
+   <div class="row" style="margin-top:6px"><button class="btn small" data-act="import" data-p="${p}">Import PCWU file</button></div>
+   <div class="row" style="margin-top:8px;align-items:center"><span class="small" style="opacity:.9">🧪 Testing only:</span><button class="btn small" data-act="testpcwu" data-p="${p}" data-v="all">Simulate PCWU — all completed</button><button class="btn small" data-act="testpcwu" data-p="${p}" data-v="some">Simulate PCWU — some not proficient</button></div></div>`;
+}
+/* TEST PHASE: fake a PCWU record so the PC credit logic can be tried without a real PCWU. Marked test:true everywhere it shows. */
+function testPCWU(s,p,mode){
+  const P = s.setup.pilots[p], d = new Date(s.setup.date || today()); d.setDate(d.getDate() - 1);
+  const items = {}, ca = P.duty === "CA", st = pcat(s,p) === "ST";
+  const v = mode === "all" ? {14:"S",15:"S",28:"C",29:"C",30:"C",31:ca?"C":"/"} : {14:"S",15:"I",28:"C",29:"I",30:"C",31:ca?"C":"/"};
+  ITEMS.forEach(it => { if (!(it.cred || it.naf)) return; let x = v[it.n] || "/"; if (st) x = "/"; items[it.n] = {st:x, subs: it.n===14 ? {oei:1} : it.n===15 ? {nrm:1} : {}}; });
+  return {sid:"TEST-" + uid(), test:true, date:d.toISOString().slice(0,10), device:s.setup.device || "584", conductor:"TEST, SCP", condEmp:"000000", role:"SCP",
+    pilot:P.name, emp:P.emp, idx:p, status:"submitted", time:"4+30", items};
 }
 function carryChips(s,p){
   return ITEMS.filter(it => it.cred || it.naf).map(it => { const r = req(s,p,it.n);
@@ -1931,6 +1942,7 @@ document.addEventListener("click", ev => {
     case "aimssign": { const n = ($("aims_n").value||"").trim(), e = ($("aims_e").value||"").trim(); if (!n) { toast("Enter your name"); return; } aimsSetSign({name:n, emp:e, role:$("aims_r").value}); drawAims(); return; }
     case "aimsout": aimsSetSign(null); drawAims(); return;
     case "aimsgo": aimsApply(aimsSchedule()[+v]); break;
+    case "testpcwu": s.setup.link[p] = testPCWU(s, p, v); touch(s); toast(v === "all" ? "Test PCWU linked — CAT II/III and Non-App F credited" : "Test PCWU linked — CAT III and CFIT not proficient (grade them on the PC)"); break;
     case "swapask": ui.swapAsk = true; break;
     case "swapno": ui.swapAsk = false; break;
     case "swapdo": ui.swapAsk = false; swapCrew(s); touch(s); toast("Crew swapped"); break;
