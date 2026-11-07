@@ -251,6 +251,10 @@ ul.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap
 .qgrid .eyebrow{margin-bottom:4px}
 .aimsload{background:#0b1f3f;color:#fff;border-color:#0b1f3f;font-weight:700}
 .aimsload small{font-weight:700;opacity:.85;color:#f2b10c}
+.sdbtn{border-color:#c98a1f;color:#6b3f00;background:#fffaf0;font-weight:700}
+.sdbtn.has{background:#fde9c4;border-color:#b07410}
+.sdlist{margin:0;padding-left:22px} .sdlist li{display:flex;gap:10px;align-items:flex-start;border:1px solid #e3c98d;background:#fffaf2;border-radius:8px;padding:8px 10px;margin-bottom:6px;color:#111}
+.sdlist .sd-t{font-size:13px;color:#5a4a30;white-space:nowrap;margin-top:2px} .sdlist .sd-x{flex:1;white-space:pre-wrap}
 .wvtag{font-size:13px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--mutebg);color:var(--mute);white-space:nowrap}
 .wvtag.ok{background:var(--infobg);color:var(--info)} .wvtag.lock{background:var(--badbg);color:var(--bad)}
 .why.bad{color:var(--bad)} .why.cr{color:var(--ok)}
@@ -345,6 +349,7 @@ li.chkrow .cb{flex:1}
 <div id="refModal" class="refmodal" hidden></div>
 <div id="pdfView" class="pdfov" hidden></div>
 <div id="aimsView" class="pdfov" hidden></div>
+<div id="sdView" class="pdfov" hidden></div>
 <script>
 /* ============================================================
    SOURCES (all transcribed from the attached Atlas documents)
@@ -554,8 +559,9 @@ function openRef(key){ const [k, arg] = String(key).split(":"); const r = REFS[k
   m.innerHTML = `<div class="refbox" role="dialog" aria-modal="true" aria-label="${esc(r.h)}"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="eyebrow">${esc(r.src)}</span><h3 style="margin:2px 0 8px">${esc(r.h)}</h3></div><button class="btn small" data-act="refclose">Close</button></div><div class="refbody">${r.html(arg)}</div></div>`;
   m.hidden = false; }
 /* ---------- version, revisions, update check ---------- */
-const APP_VERSION = "2026.11.07.6";
+const APP_VERSION = "2026.11.07.7";
 const REVISIONS = [
+ {v:"2026.11.07.7", d:"7 Nov 2026", n:["🛠 Sim discrepancies (same as the AQP Run-and-Grade): on Setup, the Run tab and Debrief. Record each discrepancy with the Simulator / FSTD ID and an automatic time stamp (clock + sim time); the button shows the count; saved with the session; printed on their own last page of the grade-sheet PDF for the simulator logbook / sim maintenance. Not part of the grade record."]},
  {v:"2026.11.07.6", d:"7 Nov 2026", n:["Special Tracking: the PCWU can be linked (or imported) so the record shows the ST pilot got a PCWU and what the instructor trained. Those items stay not required on the PC (“/”), but the PCWU column on the grade sheet and printed form shows what was done, and the Setup chips show it for the next instructor."]},
  {v:"2026.11.07.5", d:"7 Nov 2026", n:["PC type is now chosen for each pilot under Crew (crews can mix types), and Special Tracking is one of the PC types instead of a checkbox. Existing sessions keep their types."]},
  {v:"2026.11.07.4", d:"7 Nov 2026", n:["Special Tracking is its own category of event: an ST pilot’s grade sheet and printed form check only SPECIAL TRACKING, not RECURRENT."]},
@@ -1177,6 +1183,28 @@ function aimsApply(ev){
 }
 function aimsBtn(){ return `<button class="btn aimsload" data-act="aimsopen">⤓ Load crew <small>(AIMS)</small></button>`; }
 
+/* ============================================================ SIMULATOR DISCREPANCIES (same as the AQP Run-and-Grade)
+   Recorded during or at the end of the session with the FSTD ID and a time stamp; saved with the session, count on the button,
+   printed on their own last page of the grade-sheet PDF for the simulator logbook / sim maintenance. Not part of the grade record. */
+function simDisc(s){ s.simDisc = s.simDisc || {fstd:"", items:[]}; if (!s.simDisc.fstd) { const sim = SIMS.find(x => x.id === s.setup.sim); s.simDisc.fstd = sim ? `${sim.name} · FAA ${sim.faa} · ${sim.loc}` : (s.setup.device ? "FAA " + s.setup.device : ""); } return s.simDisc; }
+function sdBtn(s){ const n = ((s.simDisc||{}).items||[]).length; return `<button class="btn small sdbtn ${n?"has":""}" data-act="sdopen">🛠 Sim discrepancies${n ? " (" + n + ")" : ""}</button>`; }
+function sdStamp(s){ const d = new Date(); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}${s.kind === "PCWU" || (s.kind === "PC" && !isOral(s)) ? " · " + simNow(s) : ""}`; }
+function drawSD(){
+  const s = cur(), v = $("sdView"); if (!s) return; const d = simDisc(s);
+  v.innerHTML = `<div class="pdfbar" role="dialog" aria-modal="true" aria-label="Simulator discrepancies"><b>🛠 Simulator discrepancies</b><button class="btn" data-act="sdclose">✓ Done</button></div>
+   <div class="pdfbody" style="padding:16px">
+    <label class="f">Simulator / FSTD ID <span class="muted small">(filled from the simulator in Setup)</span><input id="sd_fstd" value="${esc(d.fstd)}" placeholder="e.g. 744 Sim #3 · FAA 584"></label>
+    <h4 style="margin:14px 0 6px">Discrepancies this session</h4>
+    ${d.items.length ? `<ol class="sdlist">${d.items.map((it,i) => `<li><span class="sd-t">${esc(it.t)}</span><span class="sd-x">${esc(it.text)}</span><button class="btn small" data-act="sddel" data-v="${i}" aria-label="Delete">✕</button></li>`).join("")}</ol>` : `<p class="muted small">None recorded.</p>`}
+    <label class="f" style="margin-top:12px">Add a discrepancy<textarea id="sd_new" rows="3" placeholder="What happened — system / IOS / visual / motion / control loading, when, and any reset done…"></textarea></label>
+    <div class="row end" style="margin-top:8px"><button class="btn primary" data-act="sdadd">＋ Add</button></div>
+    <p class="muted small" style="margin-top:12px">These print on the last page of the grade-sheet PDF for the simulator logbook / sim maintenance. They are not part of the grade record.</p>
+   </div>`;
+  v.hidden = false;
+  const fi = $("sd_fstd"); fi.addEventListener("input", () => { simDisc(s).fstd = fi.value; touch(s, true); });
+}
+function sdAddPending(s){ const ta = $("sd_new"); const t = ta && (ta.value||"").trim(); if (t) { simDisc(s).items.push({t: sdStamp(s), text: t}); ta.value = ""; return true; } return false; }
+
 /* ============================================================ SETUP */
 function inp(k,v,ph,type){ return `<input id="f_${k.replace(/\W/g,"_")}" data-k="${k}" value="${esc(v)}" placeholder="${esc(ph||"")}" ${type?`type="${type}"`:""}>`; }
 function renderSetup(s){
@@ -1194,7 +1222,7 @@ function renderSetup(s){
     ${CAT(pcat(s,p)).note ? `<p class="why" style="margin:6px 0 0">${esc(CAT(pcat(s,p)).note)}</p>` : ""}`}
     ${waiverLock(s,p) ? `<p class="why bad" style="margin:6px 0 0">🔒 ${esc(waiverLock(s,p))}</p>` : `<p class="why" style="margin:6px 0 0">Waivers available at SCP discretion (judgment standard).</p>`}
     ${isPC && !isOral(s) && !isCatQ(s) ? (ORAL_CATS.includes(pcat(s,p)) ? oralBox(s,p) : "") + (PCWU_CATS.includes(pcat(s,p)) || pcat(s,p) === "ST" ? linkBox(s,p) : `<p class="muted small" style="margin:10px 0 0">No PCWU for this PC type — CAT II/III and Non-Appendix F are handled in the course.</p>`) : ""}</div>`}`; };
-  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div>${s.status==="submitted" ? "" : aimsBtn()}</div>
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${isCatQ(s) ? "CAT II/III sim" : isOral(s) ? "Oral exam" : s.kind} setup</span><h2>${isCatQ(s) ? "CAT II / III Qualification — separate sim" : isOral(s) ? "Equipment Examination (Oral) — separate event" : isPC?"Proficiency Check":"Proficiency Check Warm-Up"}</h2></div><div class="row">${isOral(s) ? "" : sdBtn(s)}${s.status==="submitted" ? "" : aimsBtn()}</div></div>
   ${isCatQ(s) ? `<div class="banner info" style="margin-bottom:10px">CAT II/III qualification conducted on its own (long-course requal, new hire). Graded: CAT II and CAT III (S / U), PRM, PAR/ASR and Seat Specific if CA (C / I). Every other block is “/”. Record TO / LDGs and the training time.</div>
    <div class="card" style="margin-bottom:12px"><div class="g2"><label class="f">Training time (h+mm, Other Training Time box)${inp("setup/otherTime", s.setup.otherTime||"", "e.g. 2+00")}</label>
    ${GP(s).map(p => `<label class="f">${esc(pname(s,p))}: TO / LDGs<span class="row" style="gap:6px">${inp(`counts/${p}/to`, s.counts[p].to, "TO")}<span>/</span>${inp(`counts/${p}/ldg`, s.counts[p].ldg, "LDG")}</span></label>`).join("")}</div></div>` : ""}
@@ -1450,7 +1478,7 @@ function renderRun(s){
       ${s.kind==="PCWU" ? `<input class="note" id="enote_${e.id}_${p}" data-k="run/ev/${e.id}/p/${p}/note" value="${esc(r.note||"")}" placeholder="Training note">` : ""}</div>`;
   };
   const otherTxt = isSSI(s,RUN.o) ? `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")} (seat support)` : `${esc(pname(s,RUN.o))} in the ${seatName(RUN.seat==="L"?"R":"L")}, not graded this run`;
-  return `${swapPanel(s)}<div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Run ${r+1}<small>${esc(pname(s,x.a))} · ${x.seat==="L"?"left":"right"} seat</small></button>`).join("")}</div>${swapBtn(s)}
+  return `${swapPanel(s)}<div class="row end" style="margin-bottom:6px">${sdBtn(s)}</div><div class="runbar"><div class="seg">${RS.map((x,r) => `<button class="${r===rc?"on":""}" data-act="run" data-v="${r}">Run ${r+1}<small>${esc(pname(s,x.a))} · ${x.seat==="L"?"left":"right"} seat</small></button>`).join("")}</div>${swapBtn(s)}
     <div class="simclock"><span class="eyebrow">Run ${rc+1}</span><b id="simClock">${fmtDur(el)}</b><button class="btn small ${running?"":"primary"}" data-act="rtimer">${running?"Pause":"Start"}</button></div>
     <span class="chip ${el > T.run*60000 ? "bad" : "info"}" id="simTgt">Run target ${hm(T.run)} · device ${hm(T.m)} · total <span id="simTotal">${fmtDur(totalEl(s))}</span></span>
     ${s.kind==="PC" ? [RUN.a].map(p => `<span class="chip ${blocking(s,p).length?"warn":"ok"}">${esc(pname(s,p))}: ${ITEMS.filter(it=>!eff(s,p,it.n)).length} items open</span>`).join("") : `<span class="muted small">${s.setup.conductor.role==="SCP"?"SCP — CAT II/III credit available":"Not SCP — CAT II/III graded on PC"}</span>`}
@@ -1592,7 +1620,7 @@ function renderDebrief(s){
      <label class="f" style="margin-top:12px">Remarks (reverse of form)<textarea id="rem_${p}" data-k="debrief/p/${p}/remarks" rows="3" placeholder="Brief and specific — required for U, I and repeated items; name any Emergency / Abnormal procedure graded U or I">${esc(d.remarks)}</textarea></label>
      <label class="f" style="margin-top:8px">${isPC?"Debrief / study items":"What to review before the PC"}<textarea id="study_${p}" data-k="debrief/p/${p}/study" rows="2">${esc(d.study)}</textarea></label></div>`; };
   const okAll = isPC ? GP(s).length > 0 && GP(s).every(p => !blocking(s,p).length) : true;
-  return `<span class="eyebrow">${s.kind} debrief</span><h2>Debrief & submit</h2>
+  return `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">${s.kind} debrief</span><h2>Debrief & submit</h2></div>${isOral(s) ? "" : sdBtn(s)}</div>
    <div class="cols" style="margin-top:14px">${pcol(0)}${pcol(1)}</div>
    <div class="card" style="margin-top:16px"><h4>Sign-off</h4><div class="g2">
     <label class="f">${isPC?"PC Check Airman / APD":"Instructor / Check Airman"}<input id="f_sign" data-k="debrief/signedBy" value="${esc(s.debrief.signedBy || s.setup.conductor.name)}"></label>
@@ -1743,6 +1771,15 @@ async function buildFormPDF(s){
         const x0 = Math.min(r.x, r.x + r.width), y0 = Math.min(r.y, r.y + r.height), w = Math.abs(r.width), h = Math.abs(r.height), sz = Math.min(w,h), cx = x0 + w/2, cy = y0 + h/2, d = sz/2 - 0.4;
         pg1.drawLine({start:{x:cx-d,y:cy-d}, end:{x:cx+d,y:cy+d}, thickness:1.3}); pg1.drawLine({start:{x:cx-d,y:cy+d}, end:{x:cx+d,y:cy-d}, thickness:1.3}); });
     const pages = await out.copyPages(doc, doc.getPageIndices()); pages.forEach(pg => out.addPage(pg));
+  }
+  const sd = (s.simDisc||{}).items || [];
+  if (sd.length) {   // simulator discrepancies: own last page
+    const pg = out.addPage([612, 792]), f = await out.embedFont(StandardFonts.Helvetica), fb = await out.embedFont(StandardFonts.HelveticaBold);
+    let y = 740; const line = (t, font, size) => { wrapLines(winAnsi(t), size > 10 ? 80 : 105).forEach(l => { if (y < 50) return; pg.drawText(l, {x:50, y, size, font}); y -= size + 4; }); };
+    line("Simulator Discrepancies — for the simulator logbook / sim maintenance", fb, 14); y -= 6;
+    line(`Simulator / FSTD: ${(s.simDisc.fstd || s.setup.device || "—")}    Date: ${mdy(s.setup.date)}    ${s.kind}: ${GP(s).map(p => pname(s,p)).join(" / ")}`, f, 9);
+    line(`Conducted by: ${s.setup.conductor.name || "—"} (Emp ${s.setup.conductor.emp || "—"})`, f, 9); y -= 8;
+    sd.forEach((it,i) => { line(`${i+1}.  [${it.t}]  ${it.text}`, f, 10); y -= 4; });
   }
   out.setTitle(`TC_PC_RFT_REC ${s.kind} ${s.setup.date}`);
   return new Blob([await out.save()], {type:"application/pdf"});
@@ -1955,6 +1992,10 @@ document.addEventListener("click", ev => {
     case "aimsout": aimsSetSign(null); drawAims(); return;
     case "aimsgo": aimsApply(aimsSchedule()[+v]); break;
     case "testpcwu": s.setup.link[p] = testPCWU(s, p, v); touch(s); toast(v === "all" ? "Test PCWU linked — CAT II/III and Non-App F credited" : "Test PCWU linked — CAT III and CFIT not proficient (grade them on the PC)"); break;
+    case "sdopen": drawSD(); return;
+    case "sdadd": if (sdAddPending(s)) { touch(s); toast("Discrepancy added"); } else $("sd_new").focus(); drawSD(); return;
+    case "sddel": simDisc(s).items.splice(+v,1); touch(s); drawSD(); return;
+    case "sdclose": if (sdAddPending(s)) toast("Discrepancy added"); $("sdView").hidden = true; $("sdView").innerHTML = ""; touch(s); break;
     case "swapask": ui.swapAsk = true; break;
     case "swapno": ui.swapAsk = false; break;
     case "swapdo": ui.swapAsk = false; swapCrew(s); touch(s); toast("Crew swapped"); break;
